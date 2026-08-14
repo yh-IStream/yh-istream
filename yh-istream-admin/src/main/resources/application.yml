@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: yh-istream
+  profiles:
+    active: dev
+  # Jackson 配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+  # 静态资源配置
+  web:
+    resources:
+      add-mappings: true
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.istream.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: delFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      update-strategy: NOT_NULL
+
+# Sa-Token 配置
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: 1800
+  is-concurrent: true
+  is-share: false
+  token-style: random-64
+  is-log: false
+  is-print: false
+
+# Knife4j Next 配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# 日志
+logging:
+  level:
+    root: INFO
+    com.istream: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+
+# Actuator 监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+#      show-details: when-authorized
+      show-details: always

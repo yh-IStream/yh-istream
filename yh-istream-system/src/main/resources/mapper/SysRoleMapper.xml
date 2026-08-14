@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.istream.system.mapper.SysRoleMapper">
+
+    <select id="selectRolePage" resultType="com.istream.system.entity.SysRole">
+        SELECT id, role_name, role_key, role_sort, data_scope, status,
+               create_by, create_time, update_by, update_time, del_flag, remark
+        FROM sys_role
+        WHERE del_flag = 0
+        <if test="query.roleName != null and query.roleName != ''">
+            AND role_name LIKE CONCAT('%', #{query.roleName}, '%')
+        </if>
+        <if test="query.roleKey != null and query.roleKey != ''">
+            AND role_key LIKE CONCAT('%', #{query.roleKey}, '%')
+        </if>
+        <if test="query.status != null">
+            AND status = #{query.status}
+        </if>
+        ORDER BY role_sort ASC
+    </select>
+
+</mapper>

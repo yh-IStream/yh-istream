@@ -1,0 +1,43 @@
+package com.istream.system.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.istream.common.model.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("sys_menu")
+public class SysMenu extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
+
+    private Long parentId;
+
+    private String menuName;
+
+    private String menuType;
+
+    private String path;
+
+    private String component;
+
+    private String query;
+
+    private String permission;
+
+    private String icon;
+
+    private Integer orderNum;
+
+    private Integer visible;
+
+    private Integer status;
+
+    @TableField(exist = false)
+    private List<SysMenu> children = new ArrayList<>();
+}
