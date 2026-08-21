@@ -1,6 +1,8 @@
 package com.istream.system.listener;
 
 import com.istream.common.event.OperLogEvent;
+import com.istream.common.model.sse.SseEvent;
+import com.istream.framework.sse.SseService;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.service.SysOperLogService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class OperLogListener {
 
     private final SysOperLogService sysOperLogService;
+    private final SseService sseService;
 
     @Async
     @EventListener
@@ -26,6 +29,7 @@ public class OperLogListener {
         logEntry.setRequestMethod(event.getRequestMethod());
         logEntry.setOperUrl(event.getOperUrl());
         logEntry.setOperIp(event.getOperIp());
+        logEntry.setOperLocation(event.getOperLocation());
         logEntry.setOperParam(event.getOperParam());
         logEntry.setJsonResult(event.getJsonResult());
         logEntry.setStatus(event.getStatus());
@@ -35,5 +39,7 @@ public class OperLogListener {
         logEntry.setOperName(event.getOperName());
         logEntry.setOperTime(event.getOperTime());
         sysOperLogService.save(logEntry);
+
+        sseService.broadcast(SseEvent.of("OPER_LOG", logEntry));
     }
 }

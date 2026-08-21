@@ -3,6 +3,7 @@ package com.istream.system.aspect;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.istream.common.annotation.DataScope;
 import com.istream.common.enums.DataScopeEnum;
+import com.istream.common.enums.StatusEnum;
 import com.istream.common.model.BaseQuery;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.system.entity.SysDept;
@@ -23,8 +24,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -48,19 +51,25 @@ public class DataScopeAspect {
 
     @Around("@annotation(dataScope)")
     public Object around(ProceedingJoinPoint point, DataScope dataScope) throws Throwable {
+        Long userId;
         try {
-            Long userId = SecurityUtils.getLoginUserId();
-            SysUser user = sysUserMapper.selectById(userId);
-            if (user == null) {
-                return point.proceed();
-            }
-
-            String sql = buildDataScopeSql(user, dataScope);
-            if (sql != null) {
-                injectParams(point.getArgs(), sql);
-            }
+            userId = SecurityUtils.getLoginUserId();
         } catch (Exception e) {
-            log.debug("数据权限处理异常（非登录态时忽略）: {}", e.getMessage());
+            log.debug("数据权限处理跳过（非登录态）: {}", e.getMessage());
+            return point.proceed();
+        }
+        if (userId == null) {
+            return point.proceed();
+        }
+
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user == null) {
+            return point.proceed();
+        }
+
+        String sql = buildDataScopeSql(user, dataScope);
+        if (sql != null) {
+            injectParams(point.getArgs(), sql);
         }
         return point.proceed();
     }
@@ -72,12 +81,22 @@ public class DataScopeAspect {
             return null;
         }
 
+        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).toList();
+        List<SysRole> roles = sysRoleMapper.selectByIds(roleIds);
+        Map<Long, SysRole> roleMap = roles.stream()
+                .filter(r -> r != null && !Objects.equals(r.getStatus(), StatusEnum.DISABLED.getCode()))
+                .collect(Collectors.toMap(SysRole::getId, r -> r));
+
+        if (roleMap.isEmpty()) {
+            return null;
+        }
+
         StringJoiner sqlJoiner = new StringJoiner(" OR ");
         boolean hasFullAccess = false;
 
         for (SysUserRole ur : userRoles) {
-            SysRole role = sysRoleMapper.selectById(ur.getRoleId());
-            if (role == null || Objects.equals(role.getStatus(), 1)) {
+            SysRole role = roleMap.get(ur.getRoleId());
+            if (role == null) {
                 continue;
             }
 
@@ -87,27 +106,13 @@ public class DataScopeAspect {
                     hasFullAccess = true;
                 }
                 case CUSTOM -> {
-                    List<Long> deptIds = sysRoleDeptMapper.selectDeptIdsByRoleId(role.getId());
-                    if (!deptIds.isEmpty()) {
-                        String inClause = deptIds.stream()
-                                .map(String::valueOf)
-                                .collect(Collectors.joining(",", "(", ")"));
-                        sqlJoiner.add(dataScope.deptAlias() + ".id IN " + inClause);
-                    }
+                    appendCustomScope(sqlJoiner, role.getId(), dataScope);
                 }
                 case DEPT -> {
-                    if (user.getDeptId() != null) {
-                        sqlJoiner.add(dataScope.deptAlias() + ".id = " + user.getDeptId());
-                    }
+                    appendDeptScope(sqlJoiner, user.getDeptId(), dataScope);
                 }
                 case DEPT_AND_CHILD -> {
-                    if (user.getDeptId() != null) {
-                        SysDept dept = sysDeptMapper.selectById(user.getDeptId());
-                        String ancestorFilter = dept != null
-                                ? dept.getAncestors() + "," + user.getDeptId()
-                                : String.valueOf(user.getDeptId());
-                        sqlJoiner.add(dataScope.deptAlias() + ".id IN (SELECT id FROM sys_dept WHERE ancestors LIKE '%" + ancestorFilter + "%' OR id = " + user.getDeptId() + ")");
-                    }
+                    appendDeptAndChildScope(sqlJoiner, user.getDeptId(), dataScope);
                 }
                 case SELF -> {
                     sqlJoiner.add(dataScope.userAlias() + ".id = " + user.getId());
@@ -125,6 +130,44 @@ public class DataScopeAspect {
         }
 
         return " AND (" + scopeSql + ")";
+    }
+
+    private static final Pattern ANCESTORS_PATTERN = Pattern.compile("^[0-9,]*$");
+
+    private void appendCustomScope(StringJoiner sqlJoiner, Long roleId, DataScope dataScope) {
+        List<Long> deptIds = sysRoleDeptMapper.selectDeptIdsByRoleId(roleId);
+        if (deptIds.isEmpty()) {
+            return;
+        }
+        String inClause = deptIds.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(",", "(", ")"));
+        sqlJoiner.add(dataScope.deptAlias() + ".id IN " + inClause);
+    }
+
+    private void appendDeptScope(StringJoiner sqlJoiner, Long deptId, DataScope dataScope) {
+        if (deptId != null) {
+            sqlJoiner.add(dataScope.deptAlias() + ".id = " + deptId);
+        }
+    }
+
+    private void appendDeptAndChildScope(StringJoiner sqlJoiner, Long deptId, DataScope dataScope) {
+        if (deptId == null) {
+            return;
+        }
+        SysDept dept = sysDeptMapper.selectById(deptId);
+        String ancestors = dept != null ? dept.getAncestors() : null;
+        if (ancestors != null && !ANCESTORS_PATTERN.matcher(ancestors).matches()) {
+            log.warn("Invalid ancestors format for deptId={}, fallback to dept scope only", deptId);
+            ancestors = null;
+        }
+        if (ancestors != null && !ancestors.isEmpty()) {
+            sqlJoiner.add(dataScope.deptAlias()
+                    + ".id IN (SELECT id FROM sys_dept WHERE FIND_IN_SET(" + deptId + ", ancestors) > 0"
+                    + " OR id = " + deptId + ")");
+        } else {
+            sqlJoiner.add(dataScope.deptAlias() + ".id = " + deptId);
+        }
     }
 
     private void injectParams(Object[] args, String sql) {

@@ -7,6 +7,7 @@ import com.istream.common.event.OperLogEvent;
 import com.istream.common.model.R;
 import com.istream.common.util.IpUtils;
 import com.istream.framework.security.SecurityUtils;
+import com.istream.framework.util.IpRegionUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,7 @@ public class OperLogAspect {
             event.setRequestMethod(request.getMethod());
             event.setOperUrl(request.getRequestURI());
             event.setOperIp(IpUtils.getClientIp(request));
+            event.setOperLocation(IpRegionUtils.parseRegion(event.getOperIp()));
         }
 
         try {
@@ -67,7 +69,7 @@ public class OperLogAspect {
             result = joinPoint.proceed();
             event.setStatus(0);
             try {
-                event.setJsonResult(JSONUtil.toJsonStr(result));
+                event.setJsonResult(result != null ? JSONUtil.toJsonStr(result) : "{}");
             } catch (Exception e) {
                 event.setJsonResult("{}");
             }

@@ -1,5 +1,8 @@
 package com.istream.common.model;
 
+import com.alibaba.excel.annotation.ExcelIgnore;
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -10,39 +13,37 @@ import lombok.Data;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/**
- * 实体基类
- */
 @Data
 public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 主键ID（雪花算法） */
+    @ExcelProperty("ID")
     @TableId
     private Long id;
 
-    /** 创建者 */
+    @ExcelIgnore
     @TableField(fill = FieldFill.INSERT)
     private Long createBy;
 
-    /** 创建时间 */
+    @DateTimeFormat("yyyy-MM-dd HH:mm:ss")
+    @ExcelProperty("创建时间")
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    /** 更新者 */
+    @ExcelIgnore
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updateBy;
 
-    /** 更新时间 */
+    @ExcelIgnore
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    /** 删除标记（0=正常 1=删除） */
+    @ExcelIgnore
     @TableLogic
     private Integer delFlag;
 
-    /** 备注 */
+    @ExcelProperty("备注")
     @TableField(updateStrategy = FieldStrategy.NOT_NULL)
     private String remark;
 }

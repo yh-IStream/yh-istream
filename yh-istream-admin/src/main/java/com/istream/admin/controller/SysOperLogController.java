@@ -4,14 +4,19 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.istream.common.annotation.OperLog;
+import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
+import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.service.SysOperLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @Tag(name = "操作日志管理")
@@ -40,6 +45,7 @@ public class SysOperLogController {
         return R.ok(sysOperLogService.getById(id));
     }
 
+    @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除操作日志")
     @SaCheckPermission("system:oper-log:delete")
     @DeleteMapping("/{id}")
@@ -48,6 +54,7 @@ public class SysOperLogController {
         return R.ok();
     }
 
+    @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "批量删除操作日志")
     @SaCheckPermission("system:oper-log:delete")
     @DeleteMapping("/batch")
@@ -56,12 +63,21 @@ public class SysOperLogController {
         return R.ok();
     }
 
+    @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "清空操作日志")
     @SaCheckPermission("system:oper-log:clean")
     @DeleteMapping("/clear")
     public R<Void> clear() {
-        sysOperLogService.remove(new LambdaQueryWrapper<SysOperLog>()
-                .isNotNull(SysOperLog::getId));
+        sysOperLogService.truncate();
         return R.ok();
+    }
+
+    @Operation(summary = "导出操作日志")
+    @SaCheckPermission("system:oper-log:list")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) throws IOException {
+        List<SysOperLog> list = sysOperLogService.list(
+                new LambdaQueryWrapper<SysOperLog>().orderByDesc(SysOperLog::getOperTime));
+        ExcelExportUtil.export(response, "操作日志", "操作日志", SysOperLog.class, list);
     }
 }

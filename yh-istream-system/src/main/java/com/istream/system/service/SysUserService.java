@@ -24,4 +24,6 @@ public interface SysUserService extends IService<SysUser> {
     List<SysUser> getUsersByRoleId(Long roleId);
 
     void updateLoginInfo(Long userId, String ip);
+
+    void updateLoginFailCount(Long userId, int failCount);
 }

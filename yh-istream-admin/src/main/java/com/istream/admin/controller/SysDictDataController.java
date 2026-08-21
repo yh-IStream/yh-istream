@@ -4,11 +4,14 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.istream.common.annotation.OperLog;
+import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.service.SysDictDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +48,10 @@ public class SysDictDataController {
         return R.ok(page);
     }
 
+    /**
+     * 根据字典类型查询字典数据（公开接口，无需登录）
+     * <p>用于前端下拉框、单选框等组件动态获取字典选项</p>
+     */
     @Operation(summary = "根据字典类型查询字典数据")
     @GetMapping("/by-type/{dictType}")
     public R<List<SysDictData>> getByType(@PathVariable String dictType) {
@@ -69,23 +76,26 @@ public class SysDictDataController {
         return R.ok(sysDictDataService.getById(id));
     }
 
+    @OperLog(title = "字典数据管理", businessType = BusinessType.INSERT)
     @Operation(summary = "新增字典数据")
     @SaCheckPermission("system:dict:add")
     @PostMapping
-    public R<Void> add(@RequestBody SysDictData dictData) {
+    public R<Void> add(@Valid @RequestBody SysDictData dictData) {
         dictData.setId(null);
         sysDictDataService.save(dictData);
         return R.ok();
     }
 
+    @OperLog(title = "字典数据管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "修改字典数据")
     @SaCheckPermission("system:dict:edit")
     @PutMapping
-    public R<Void> update(@RequestBody SysDictData dictData) {
+    public R<Void> update(@Valid @RequestBody SysDictData dictData) {
         sysDictDataService.updateById(dictData);
         return R.ok();
     }
 
+    @OperLog(title = "字典数据管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除字典数据")
     @SaCheckPermission("system:dict:delete")
     @DeleteMapping("/{id}")
@@ -94,6 +104,7 @@ public class SysDictDataController {
         return R.ok();
     }
 
+    @OperLog(title = "字典数据管理", businessType = BusinessType.DELETE)
     @Operation(summary = "批量删除字典数据")
     @SaCheckPermission("system:dict:delete")
     @DeleteMapping("/batch")

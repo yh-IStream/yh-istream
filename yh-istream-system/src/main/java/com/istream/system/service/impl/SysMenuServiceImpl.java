@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.enums.MenuTypeEnum;
 import com.istream.system.entity.SysMenu;
+import com.istream.system.entity.SysRoleMenu;
 import com.istream.system.mapper.SysMenuMapper;
+import com.istream.system.mapper.SysRoleMenuMapper;
 import com.istream.system.service.SysMenuService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,7 +17,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
+
+    private final SysRoleMenuMapper sysRoleMenuMapper;
 
     @Override
     public List<String> getPermissionsByUserId(Long userId) {
@@ -42,6 +48,12 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     public boolean hasChildren(Long menuId) {
         return count(new LambdaQueryWrapper<SysMenu>()
                 .eq(SysMenu::getParentId, menuId)) > 0;
+    }
+
+    @Override
+    public boolean hasRoles(Long menuId) {
+        return sysRoleMenuMapper.selectCount(new LambdaQueryWrapper<SysRoleMenu>()
+                .eq(SysRoleMenu::getMenuId, menuId)) > 0;
     }
 
     private List<SysMenu> buildTree(List<SysMenu> allMenus) {

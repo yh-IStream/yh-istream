@@ -8,4 +8,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOperLog> implements SysOperLogService {
+
+    @Override
+    public void truncate() {
+        baseMapper.truncate();
+    }
 }

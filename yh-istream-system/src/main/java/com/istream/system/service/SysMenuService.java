@@ -14,4 +14,6 @@ public interface SysMenuService extends IService<SysMenu> {
     List<SysMenu> listAllMenuTree();
 
     boolean hasChildren(Long menuId);
+
+    boolean hasRoles(Long menuId);
 }

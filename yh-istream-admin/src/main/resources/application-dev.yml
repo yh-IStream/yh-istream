@@ -2,7 +2,7 @@ spring:
   datasource:
     # MySQL 9.7.2 LTS
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.20.155:3306/yh_istream?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://192.168.20.155:3306/yh_istream?connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=DISABLED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
     username: root
     password: 123456
     hikari:
@@ -11,6 +11,7 @@ spring:
       idle-timeout: 300000
       max-lifetime: 1200000
       connection-timeout: 30000
+      keepalive-time: 30000
       connection-test-query: SELECT 1
 
   # ==================== PostgreSQL 备选配置 ====================
@@ -54,7 +55,6 @@ redisson:
     singleServerConfig:
       address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
       database: ${spring.data.redis.database}
-      password: null
       timeout: 10000
       connectionPoolSize: 64
       connectionMinimumIdleSize: 10
@@ -66,6 +66,7 @@ sa-token:
 # XXL-Job 配置（开发环境可选启用）
 xxl:
   job:
+    enabled: false
     admin:
       addresses: http://localhost:8080/xxl-job-admin
     executor:

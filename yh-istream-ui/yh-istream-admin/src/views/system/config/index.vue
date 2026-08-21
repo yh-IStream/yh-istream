@@ -1,0 +1,143 @@
+<script setup lang="ts">
+import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
+import { getConfigList, addConfig, updateConfig, deleteConfig } from '@/api/modules/system'
+
+const message = useMessage()
+const loading = ref(false)
+const tableData = ref<any[]>([])
+const pagination = reactive({ page: 1, pageSize: 10, itemCount: 0, showSizePicker: true, pageSizes: [10, 20, 50] })
+const searchForm = reactive({ configName: '', configKey: '' })
+
+const dialogVisible = ref(false)
+const dialogTitle = ref('新增配置')
+const isEdit = ref(false)
+const submitLoading = ref(false)
+const formRef = ref()
+const formData = reactive({ id: null as number | null, configName: '', configKey: '', configValue: '', remark: '' })
+
+const rules = {
+  configName: [{ required: true, message: '请输入配置名称', trigger: 'blur' }],
+  configKey: [{ required: true, message: '请输入配置键', trigger: 'blur' }],
+  configValue: [{ required: true, message: '请输入配置值', trigger: 'blur' }],
+}
+
+const columns = [
+  { title: '配置名称', key: 'configName', width: 160 },
+  { title: '配置键', key: 'configKey', width: 200, ellipsis: { tooltip: true } },
+  { title: '配置值', key: 'configValue', width: 300, ellipsis: { tooltip: true } },
+  { title: '备注', key: 'remark', width: 160, ellipsis: { tooltip: true } },
+  { title: '创建时间', key: 'createTime', width: 170 },
+  {
+    title: '操作', key: 'actions', width: 150, fixed: 'right' as const,
+    render: (row: any) => h('div', { class: 'flex gap-4px' }, [
+      h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
+      h(NPopconfirm, { onPositiveClick: () => handleDelete(row.id) }, {
+        trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
+        default: () => '确认删除？',
+      }),
+    ]),
+  },
+]
+
+async function fetchData() {
+  loading.value = true
+  try {
+    const params: any = { pageNum: pagination.page, pageSize: pagination.pageSize }
+    if (searchForm.configName) params.configName = searchForm.configName
+    if (searchForm.configKey) params.configKey = searchForm.configKey
+    const res: any = await getConfigList(params)
+    tableData.value = res.data?.records ?? []
+    pagination.itemCount = res.data?.total ?? 0
+  } catch (e: any) { message.error(e.message || '查询失败') }
+  finally { loading.value = false }
+}
+
+function handleSearch() { pagination.page = 1; fetchData() }
+function handleReset() { searchForm.configName = ''; searchForm.configKey = ''; pagination.page = 1; fetchData() }
+function handlePageChange(page: number) { pagination.page = page; fetchData() }
+function handlePageSizeChange(size: number) { pagination.pageSize = size; pagination.page = 1; fetchData() }
+
+function handleAdd() {
+  isEdit.value = false; dialogTitle.value = '新增配置'
+  Object.assign(formData, { id: null, configName: '', configKey: '', configValue: '', remark: '' })
+  dialogVisible.value = true
+}
+
+function handleEdit(row: any) {
+  isEdit.value = true; dialogTitle.value = '编辑配置'
+  Object.assign(formData, { id: row.id, configName: row.configName, configKey: row.configKey, configValue: row.configValue, remark: row.remark ?? '' })
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
+  try { await formRef.value?.validate() } catch { return }
+  submitLoading.value = true
+  try {
+    const data: any = { configName: formData.configName, configKey: formData.configKey, configValue: formData.configValue, remark: formData.remark }
+    if (formData.id) { data.id = formData.id; await updateConfig(data); message.success('修改成功') }
+    else { await addConfig(data); message.success('新增成功') }
+    dialogVisible.value = false; fetchData()
+  } catch (e: any) { message.error(e.message || '操作失败') }
+  finally { submitLoading.value = false }
+}
+
+async function handleDelete(id: number) {
+  try { await deleteConfig(id); message.success('删除成功'); fetchData() }
+  catch (e: any) { message.error(e.message || '删除失败') }
+}
+
+onMounted(() => fetchData())
+</script>
+
+<template>
+  <div class="flex flex-col gap-12px">
+    <div class="card">
+      <n-form inline label-placement="left" :show-feedback="false">
+        <n-form-item label="配置名称">
+          <n-input v-model:value="searchForm.configName" placeholder="请输入" clearable style="width: 160px" />
+        </n-form-item>
+        <n-form-item label="配置键">
+          <n-input v-model:value="searchForm.configKey" placeholder="请输入" clearable style="width: 160px" />
+        </n-form-item>
+        <n-form-item>
+          <n-space>
+            <n-button type="primary" @click="handleSearch"><template #icon><n-icon :component="SearchOutline" /></template>搜索</n-button>
+            <n-button @click="handleReset"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
+          </n-space>
+        </n-form-item>
+      </n-form>
+    </div>
+
+    <div class="card">
+      <div class="mb-12px">
+        <n-button type="primary" @click="handleAdd"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+      </div>
+      <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
+        :row-key="(row: any) => row.id" striped size="small" remote
+        @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
+    </div>
+
+    <n-modal v-model:show="dialogVisible" :title="dialogTitle" preset="card" style="width: 560px" :mask-closable="false">
+      <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="80px">
+        <n-form-item label="配置名称" path="configName">
+          <n-input v-model:value="formData.configName" placeholder="请输入配置名称" />
+        </n-form-item>
+        <n-form-item label="配置键" path="configKey">
+          <n-input v-model:value="formData.configKey" placeholder="请输入配置键" :disabled="isEdit" />
+        </n-form-item>
+        <n-form-item label="配置值" path="configValue">
+          <n-input v-model:value="formData.configValue" type="textarea" placeholder="请输入配置值" :rows="4" />
+        </n-form-item>
+        <n-form-item label="备注">
+          <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <n-space justify="end">
+          <n-button @click="dialogVisible = false">取消</n-button>
+          <n-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+  </div>
+</template>

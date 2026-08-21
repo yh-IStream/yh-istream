@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.stream.Collectors;
 
@@ -110,6 +111,12 @@ public class GlobalExceptionHandler {
     }
 
     /* ==================== 请求异常 ==================== */
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        log.warn("文件上传大小超限: {}", e.getMessage());
+        return R.fail(ResultCode.BAD_REQUEST, "上传文件大小超过限制");
+    }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)

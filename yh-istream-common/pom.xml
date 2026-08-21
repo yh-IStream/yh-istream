@@ -48,6 +48,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- EasyExcel 注解（用于实体导出） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+        </dependency>
+
         <!-- Servlet API (用于部分通用工具) -->
         <dependency>
             <groupId>jakarta.servlet</groupId>

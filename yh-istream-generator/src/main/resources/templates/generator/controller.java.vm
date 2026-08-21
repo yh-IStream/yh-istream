@@ -1,0 +1,109 @@
+package ${controllerPackage};
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.istream.common.annotation.OperLog;
+import com.istream.common.annotation.RateLimit;
+import com.istream.common.enums.BusinessType;
+import com.istream.common.model.R;
+import com.istream.framework.util.ExcelExportUtil;
+import ${packageName}.entity.${className};
+import ${packageName}.service.${className}Service;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * ${tableComment} Controller
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+@Tag(name = "${tableComment}管理")
+@RestController
+@RequestMapping("/${moduleName}/${pathName}")
+@RequiredArgsConstructor
+public class ${className}Controller {
+
+    private final ${className}Service ${classVar}Service;
+
+    @Operation(summary = "分页查询${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:list")
+    @GetMapping("/list")
+    public R<IPage<${className}>> list(@RequestParam(defaultValue = "1") Long pageNum,
+                                       @RequestParam(defaultValue = "10") Long pageSize) {
+        Page<${className}> page = new Page<>(pageNum, pageSize);
+        ${classVar}Service.page(page, new LambdaQueryWrapper<${className}>()
+                .orderByAsc(${className}::getId));
+        return R.ok(page);
+    }
+
+    @Operation(summary = "根据ID查询${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:query")
+    @GetMapping("/{id}")
+    public R<${className}> getById(@PathVariable Long id) {
+        return R.ok(${classVar}Service.getById(id));
+    }
+
+    @OperLog(title = "${tableComment}管理", businessType = BusinessType.INSERT)
+    @Operation(summary = "新增${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:add")
+    @PostMapping
+    public R<Void> add(@Valid @RequestBody ${className} ${classVar}) {
+        ${classVar}.setId(null);
+        ${classVar}Service.save(${classVar});
+        return R.ok();
+    }
+
+    @OperLog(title = "${tableComment}管理", businessType = BusinessType.UPDATE)
+    @Operation(summary = "修改${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:edit")
+    @PutMapping
+    public R<Void> update(@Valid @RequestBody ${className} ${classVar}) {
+        ${classVar}Service.updateById(${classVar});
+        return R.ok();
+    }
+
+    @OperLog(title = "${tableComment}管理", businessType = BusinessType.DELETE)
+    @Operation(summary = "删除${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:delete")
+    @DeleteMapping("/{id}")
+    public R<Void> delete(@PathVariable Long id) {
+        ${classVar}Service.removeById(id);
+        return R.ok();
+    }
+
+    @OperLog(title = "${tableComment}管理", businessType = BusinessType.DELETE)
+    @Operation(summary = "批量删除${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:delete")
+    @DeleteMapping("/batch")
+    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+        ${classVar}Service.removeByIds(ids);
+        return R.ok();
+    }
+
+    @RateLimit(key = "${permissionPrefix}:export", rate = 5, timeout = 0)
+    @Operation(summary = "导出${tableComment}")
+    @SaCheckPermission("${permissionPrefix}:list")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) throws IOException {
+        List<${className}> list = ${classVar}Service.list();
+        ExcelExportUtil.export(response, "${tableComment}", "${tableComment}", ${className}.class, list);
+    }
+}

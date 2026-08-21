@@ -28,7 +28,7 @@ CREATE TABLE sys_dept
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='部门表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='部门表';
 
 -- ----------------------------
 -- 2. 用户表
@@ -61,7 +61,7 @@ CREATE TABLE sys_user
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='用户表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='用户表';
 
 -- ----------------------------
 -- 3. 角色表
@@ -85,7 +85,7 @@ CREATE TABLE sys_role
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='角色表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='角色表';
 
 -- ----------------------------
 -- 4. 菜单/权限表
@@ -114,7 +114,7 @@ CREATE TABLE sys_menu
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='菜单/权限表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='菜单/权限表';
 
 -- ----------------------------
 -- 5. 用户角色关联表
@@ -127,7 +127,7 @@ CREATE TABLE sys_user_role
     INDEX idx_role_id (role_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='用户角色关联表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='用户角色关联表';
 
 -- ----------------------------
 -- 6. 角色菜单关联表
@@ -140,7 +140,7 @@ CREATE TABLE sys_role_menu
     INDEX idx_menu_id (menu_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='角色菜单关联表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='角色菜单关联表';
 
 -- ----------------------------
 -- 7. 角色部门关联表（数据权限-自定义数据范围时使用）
@@ -153,7 +153,7 @@ CREATE TABLE sys_role_dept
     INDEX idx_dept_id (dept_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='角色部门关联表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='角色部门关联表';
 
 -- ----------------------------
 -- 8. 字典类型表
@@ -175,7 +175,7 @@ CREATE TABLE sys_dict_type
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='字典类型表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='字典类型表';
 
 -- ----------------------------
 -- 9. 字典数据表
@@ -202,7 +202,7 @@ CREATE TABLE sys_dict_data
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='字典数据表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='字典数据表';
 
 -- ----------------------------
 -- 10. 系统配置表
@@ -225,7 +225,7 @@ CREATE TABLE sys_config
     INDEX idx_del_flag (del_flag)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='系统配置表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='系统配置表';
 
 -- ----------------------------
 -- 11. 操作日志表
@@ -254,7 +254,7 @@ CREATE TABLE sys_oper_log
     INDEX idx_status (status)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='操作日志表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='操作日志表';
 
 -- ----------------------------
 -- 12. 登录日志表
@@ -276,7 +276,7 @@ CREATE TABLE sys_login_info
     INDEX idx_status (status)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci COMMENT ='登录日志表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='登录日志表';
 
 -- ============================================================
 -- 初始化数据

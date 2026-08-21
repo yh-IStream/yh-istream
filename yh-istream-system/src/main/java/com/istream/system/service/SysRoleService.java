@@ -16,4 +16,8 @@ public interface SysRoleService extends IService<SysRole> {
     List<Long> getMenuIdsByRoleId(Long roleId);
 
     void saveRoleMenu(Long roleId, List<Long> menuIds);
+
+    boolean hasUsers(Long roleId);
+
+    boolean hasUsersAny(List<Long> roleIds);
 }

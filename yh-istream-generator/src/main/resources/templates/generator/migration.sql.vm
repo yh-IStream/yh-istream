@@ -1,0 +1,51 @@
+-- ================================================================
+-- ${tableComment}表
+-- 注意：生产环境建议使用 Snowflake 算法生成分布式 ID
+-- 本地开发/测试可使用 REPLACE(UUID(), '-', '') 生成唯一 ID
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS `${tableName}` (
+    `id`                 BIGINT        NOT NULL COMMENT '主键ID',
+#foreach ($col in $columns)
+#if (!$col.isBaseField)
+    `${col.columnName}`  ${col.sqlType} #if ($col.isRequired) NOT NULL #else DEFAULT NULL #end COMMENT '${col.columnComment}',
+#end
+#end
+    `create_by`          BIGINT        DEFAULT NULL COMMENT '创建者',
+    `create_time`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`          BIGINT        DEFAULT NULL COMMENT '更新者',
+    `update_time`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `del_flag`           TINYINT       NOT NULL DEFAULT 0 COMMENT '删除标记（0=正常 1=删除）',
+    `remark`             VARCHAR(500)  DEFAULT NULL COMMENT '备注',
+    PRIMARY KEY (`id`),
+#foreach ($idx in $indexColumns)
+    INDEX `idx_${idx}` (`${idx}`),
+#end
+    INDEX `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='${tableComment}表';
+
+-- ${tableComment}菜单
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `path`, `component`, `perms`, `icon`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+VALUES
+(REPLACE(UUID(), '-', ''), 0, '${tableComment}管理', 'M', '${pathName}', '${moduleName}/${pathName}/index', '${permissionPrefix}:list', 'system', 1, 0, 0, NOW(), NOW(), NULL);
+
+-- 子菜单按钮
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `perms`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+SELECT REPLACE(UUID(), '-', ''), m.id, '${tableComment}查询', 'B', '${permissionPrefix}:query', 1, 0, 0, NOW(), NOW(), NULL
+FROM `sys_menu` m WHERE m.perms = '${permissionPrefix}:list' AND m.del_flag = 0;
+
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `perms`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+SELECT REPLACE(UUID(), '-', ''), m.id, '${tableComment}新增', 'B', '${permissionPrefix}:add', 2, 0, 0, NOW(), NOW(), NULL
+FROM `sys_menu` m WHERE m.perms = '${permissionPrefix}:list' AND m.del_flag = 0;
+
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `perms`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+SELECT REPLACE(UUID(), '-', ''), m.id, '${tableComment}修改', 'B', '${permissionPrefix}:edit', 3, 0, 0, NOW(), NOW(), NULL
+FROM `sys_menu` m WHERE m.perms = '${permissionPrefix}:list' AND m.del_flag = 0;
+
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `perms`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+SELECT REPLACE(UUID(), '-', ''), m.id, '${tableComment}删除', 'B', '${permissionPrefix}:delete', 4, 0, 0, NOW(), NOW(), NULL
+FROM `sys_menu` m WHERE m.perms = '${permissionPrefix}:list' AND m.del_flag = 0;
+
+INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_type`, `perms`, `order_num`, `status`, `del_flag`, `create_time`, `update_time`, `remark`)
+SELECT REPLACE(UUID(), '-', ''), m.id, '${tableComment}导出', 'B', '${permissionPrefix}:export', 5, 0, 0, NOW(), NOW(), NULL
+FROM `sys_menu` m WHERE m.perms = '${permissionPrefix}:list' AND m.del_flag = 0;

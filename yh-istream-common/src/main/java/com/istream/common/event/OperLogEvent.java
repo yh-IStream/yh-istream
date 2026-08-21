@@ -22,6 +22,8 @@ public class OperLogEvent implements Serializable {
 
     private String operIp;
 
+    private String operLocation;
+
     private String operParam;
 
     private String jsonResult;

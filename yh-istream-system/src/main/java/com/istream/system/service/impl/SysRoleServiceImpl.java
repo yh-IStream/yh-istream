@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.model.dto.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
+import com.istream.system.entity.SysUserRole;
 import com.istream.system.mapper.SysRoleMapper;
 import com.istream.system.mapper.SysRoleMenuMapper;
+import com.istream.system.mapper.SysUserRoleMapper;
 import com.istream.system.service.SysRoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
 
     private final SysRoleMenuMapper sysRoleMenuMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
 
     @Override
     public IPage<SysRole> page(SysRoleQuery query) {
@@ -58,5 +61,20 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 sysRoleMenuMapper.insert(rm);
             }
         }
+    }
+
+    @Override
+    public boolean hasUsers(Long roleId) {
+        return sysUserRoleMapper.selectCount(new LambdaQueryWrapper<SysUserRole>()
+                .eq(SysUserRole::getRoleId, roleId)) > 0;
+    }
+
+    @Override
+    public boolean hasUsersAny(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return false;
+        }
+        return sysUserRoleMapper.selectCount(new LambdaQueryWrapper<SysUserRole>()
+                .in(SysUserRole::getRoleId, roleIds)) > 0;
     }
 }

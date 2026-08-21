@@ -1,0 +1,18 @@
+package ${packageName}.service.impl;
+
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import ${packageName}.entity.${className};
+import ${packageName}.mapper.${className}Mapper;
+import ${packageName}.service.${className}Service;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * ${tableComment} Service 实现
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+@Service
+public class ${className}ServiceImpl extends ServiceImpl<${className}Mapper, ${className}> implements ${className}Service {
+}

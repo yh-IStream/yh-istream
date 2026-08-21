@@ -20,7 +20,7 @@
         <!-- 内部依赖 -->
         <dependency>
             <groupId>com.istream</groupId>
-            <artifactId>yh-istream-framework</artifactId>
+            <artifactId>yh-istream-system</artifactId>
         </dependency>
 
         <!-- XXL-Job -->

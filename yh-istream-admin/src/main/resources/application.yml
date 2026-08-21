@@ -1,3 +1,7 @@
+server:
+  servlet:
+    context-path: /api/v1
+
 spring:
   application:
     name: yh-istream
@@ -12,6 +16,11 @@ spring:
   web:
     resources:
       add-mappings: true
+  # 文件上传配置
+  servlet:
+    multipart:
+          max-file-size: 10MB
+          max-request-size: 50MB
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -20,6 +29,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
+    database-id: mysql
   global-config:
     db-config:
       id-type: ASSIGN_ID
@@ -27,6 +37,13 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
       update-strategy: NOT_NULL
+
+# OSS 存储配置
+oss:
+  type: local
+  local:
+    upload-path: ./uploads
+    url-prefix: /files
 
 # Sa-Token 配置
 sa-token:
@@ -45,13 +62,48 @@ knife4j:
   setting:
     language: zh_cn
 
+# SpringDoc 配置
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  group-configs:
+    - group: 系统管理
+      display-name: 系统管理
+      paths-to-match: /system/user/**,/system/role/**,/system/menu/**,/system/dept/**
+    - group: 字典管理
+      display-name: 字典管理
+      paths-to-match: /system/dict-type/**,/system/dict-data/**
+    - group: 系统配置
+      display-name: 系统配置
+      paths-to-match: /system/config/**
+    - group: 文件管理
+      display-name: 文件管理
+      paths-to-match: /system/file/**
+    - group: 日志管理
+      display-name: 日志管理
+      paths-to-match: /system/oper-log/**,/system/login-info/**
+    - group: 认证管理
+      display-name: 认证管理
+      paths-to-match: /auth/**
+    - group: 代码生成器
+      display-name: 代码生成器
+      paths-to-match: /generator/**
+
+# CORS 跨域配置（多个域名用逗号分隔，* 表示允许所有来源，仅开发环境使用）
+cors:
+  allowed-origins: "*"
+
 # 日志
 logging:
   level:
     root: INFO
     com.istream: DEBUG
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{tl_trace_id}] %-5level %logger{50} - %msg%n"
 
 # Actuator 监控
 management:
@@ -61,5 +113,17 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-#      show-details: when-authorized
-      show-details: always
+      show-details: when-authorized
+#      show-details: always
+
+# XXL-Job 分布式任务调度
+xxl:
+  job:
+    enabled: false
+    admin:
+      addresses: http://127.0.0.1:8080/xxl-job-admin
+    executor:
+      appname: yh-istream
+      port: 9999
+      logpath: ./logs/xxl-job
+      logretentiondays: 30

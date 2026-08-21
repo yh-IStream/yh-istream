@@ -8,4 +8,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class SysLoginInfoServiceImpl extends ServiceImpl<SysLoginInfoMapper, SysLoginInfo> implements SysLoginInfoService {
+
+    @Override
+    public void truncate() {
+        baseMapper.truncate();
+    }
 }

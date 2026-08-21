@@ -10,4 +10,6 @@ public interface SysDeptService extends IService<SysDept> {
     List<SysDept> listDeptTree();
 
     boolean hasChildren(Long deptId);
+
+    boolean hasUsers(Long deptId);
 }

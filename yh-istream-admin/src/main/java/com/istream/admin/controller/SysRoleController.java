@@ -3,9 +3,12 @@ package com.istream.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.istream.common.annotation.OperLog;
+import com.istream.common.enums.BusinessType;
 import com.istream.common.model.dto.SysRoleQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
+import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.entity.SysUser;
@@ -14,6 +17,8 @@ import com.istream.system.service.SysRoleService;
 import com.istream.system.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 @Tag(name = "角色管理")
@@ -60,10 +66,11 @@ public class SysRoleController {
         return R.ok(sysRoleService.getById(id));
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.INSERT)
     @Operation(summary = "新增角色")
     @SaCheckPermission("system:role:add")
     @PostMapping
-    public R<Void> add(@RequestBody SysRole role) {
+    public R<Void> add(@Valid @RequestBody SysRole role) {
         if (sysRoleService.count(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleKey, role.getRoleKey())) > 0) {
             return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
@@ -73,10 +80,11 @@ public class SysRoleController {
         return R.ok();
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "修改角色")
     @SaCheckPermission("system:role:edit")
     @PutMapping
-    public R<Void> update(@RequestBody SysRole role) {
+    public R<Void> update(@Valid @RequestBody SysRole role) {
         SysRole exist = sysRoleService.getOne(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleKey, role.getRoleKey()));
         if (exist != null && !exist.getId().equals(role.getId())) {
@@ -86,22 +94,31 @@ public class SysRoleController {
         return R.ok();
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除角色")
     @SaCheckPermission("system:role:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
+        if (sysRoleService.hasUsers(id)) {
+            return R.fail(ResultCode.HAS_USERS);
+        }
         sysRoleService.removeById(id);
         return R.ok();
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.DELETE)
     @Operation(summary = "批量删除角色")
     @SaCheckPermission("system:role:delete")
     @DeleteMapping("/batch")
     public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+        if (sysRoleService.hasUsersAny(ids)) {
+            return R.fail(ResultCode.HAS_USERS);
+        }
         sysRoleService.removeByIds(ids);
         return R.ok();
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "修改角色状态")
     @SaCheckPermission("system:role:edit")
     @PutMapping("/change-status")
@@ -117,6 +134,7 @@ public class SysRoleController {
         return R.ok(sysRoleService.getMenuIdsByRoleId(roleId));
     }
 
+    @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "保存角色菜单分配")
     @SaCheckPermission("system:role:edit")
     @PutMapping("/{roleId}/menu")
@@ -137,5 +155,13 @@ public class SysRoleController {
     @GetMapping("/menu-tree")
     public R<List<SysMenu>> menuTree() {
         return R.ok(sysMenuService.listMenuTree());
+    }
+
+    @Operation(summary = "导出角色列表")
+    @SaCheckPermission("system:role:list")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) throws IOException {
+        List<SysRole> list = sysRoleService.list();
+        ExcelExportUtil.export(response, "角色列表", "角色列表", SysRole.class, list);
     }
 }

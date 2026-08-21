@@ -1,0 +1,39 @@
+package ${packageName}.entity;
+
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.istream.common.model.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+#foreach ($import in $importPackages)
+import ${import};
+#end
+
+/**
+ * ${tableComment}
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("${tableName}")
+public class ${className} extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
+
+#foreach ($col in $columns)
+#if (!$col.isBaseField)
+    @ExcelProperty("${col.columnComment}")
+#if ($col.isRequired)
+    @TableField("${col.columnName}")
+#else
+    @TableField(value = "${col.columnName}", updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NOT_NULL)
+#end
+    private ${col.javaType} ${col.javaField};
+
+#end
+#end
+}

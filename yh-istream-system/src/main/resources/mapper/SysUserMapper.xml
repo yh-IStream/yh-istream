@@ -4,7 +4,7 @@
 
     <select id="selectUserPage" resultType="com.istream.system.entity.SysUser">
         SELECT u.id, u.dept_id, u.username, u.nickname, u.email, u.phone, u.gender,
-               u.avatar, u.status, u.login_ip, u.login_date, u.login_count, u.pwd_reset_time,
+               u.avatar, u.status, u.login_ip, u.login_date, u.login_count, u.login_fail_count, u.pwd_reset_time,
                u.create_by, u.create_time, u.update_by, u.update_time, u.del_flag, u.remark,
                d.dept_name AS "dept.deptName"
         FROM sys_user u

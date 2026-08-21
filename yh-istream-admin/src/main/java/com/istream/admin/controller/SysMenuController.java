@@ -1,12 +1,15 @@
 package com.istream.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.istream.common.annotation.OperLog;
+import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.service.SysMenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,19 +44,21 @@ public class SysMenuController {
         return R.ok(sysMenuService.getById(id));
     }
 
+    @OperLog(title = "菜单管理", businessType = BusinessType.INSERT)
     @Operation(summary = "新增菜单")
     @SaCheckPermission("system:menu:add")
     @PostMapping
-    public R<Void> add(@RequestBody SysMenu menu) {
+    public R<Void> add(@Valid @RequestBody SysMenu menu) {
         menu.setId(null);
         sysMenuService.save(menu);
         return R.ok();
     }
 
+    @OperLog(title = "菜单管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "修改菜单")
     @SaCheckPermission("system:menu:edit")
     @PutMapping
-    public R<Void> update(@RequestBody SysMenu menu) {
+    public R<Void> update(@Valid @RequestBody SysMenu menu) {
         if (menu.getId().equals(menu.getParentId())) {
             return R.fail(ResultCode.PARAM_VALID_ERROR, "上级菜单不能是自己");
         }
@@ -61,12 +66,16 @@ public class SysMenuController {
         return R.ok();
     }
 
+    @OperLog(title = "菜单管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除菜单")
     @SaCheckPermission("system:menu:delete")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         if (sysMenuService.hasChildren(id)) {
             return R.fail(ResultCode.HAS_CHILDREN);
+        }
+        if (sysMenuService.hasRoles(id)) {
+            return R.fail(ResultCode.HAS_ROLES);
         }
         sysMenuService.removeById(id);
         return R.ok();
