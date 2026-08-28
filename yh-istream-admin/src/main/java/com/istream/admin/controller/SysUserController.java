@@ -3,13 +3,16 @@ package com.istream.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.model.dto.SysUserDTO;
 import com.istream.common.model.dto.SysUserQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysUser;
+import com.istream.system.convert.SysUserConverter;
 import com.istream.system.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "用户管理")
 @RestController
@@ -36,24 +40,30 @@ import java.util.List;
 public class SysUserController {
 
     private final SysUserService sysUserService;
+    private final SysUserConverter sysUserConverter;
 
     @Operation(summary = "分页查询用户列表")
     @SaCheckPermission("system:user:list")
     @GetMapping("/list")
-    public R<IPage<SysUser>> list(SysUserQuery query) {
-        return R.ok(sysUserService.page(query));
+    public R<IPage<SysUserDTO>> list(SysUserQuery query) {
+        IPage<SysUser> page = sysUserService.page(query);
+        IPage<SysUserDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        dtoPage.setRecords(page.getRecords().stream()
+                .map(sysUserConverter::toDto)
+                .toList());
+        return R.ok(dtoPage);
     }
 
     @Operation(summary = "根据ID查询用户")
     @SaCheckPermission("system:user:query")
     @GetMapping("/{id}")
-    public R<SysUser> getById(@PathVariable Long id) {
+    public R<SysUserDTO> getById(@PathVariable Long id) {
         SysUser user = sysUserService.getById(id);
         if (user == null) {
             return R.fail(ResultCode.USER_NOT_EXIST);
         }
-        user.setPassword(null);
-        return R.ok(user);
+        user.setRoles(sysUserService.getRolesByUserId(id));
+        return R.ok(sysUserConverter.toDto(user));
     }
 
     @OperLog(title = "用户管理", businessType = BusinessType.INSERT)
@@ -74,6 +84,16 @@ public class SysUserController {
             return R.fail(ResultCode.PARAM_VALID_ERROR, "不允许通过此接口修改密码，请使用密码重置接口");
         }
         sysUserService.updateUser(user);
+        return R.ok();
+    }
+
+    @OperLog(title = "用户管理", businessType = BusinessType.UPDATE)
+    @Operation(summary = "分配用户角色")
+    @SaCheckPermission("system:user:edit")
+    @PutMapping("/{id}/roles")
+    public R<Void> assignRoles(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
+        List<Long> roleIds = body.getOrDefault("roleIds", List.of());
+        sysUserService.assignUserRoles(id, roleIds);
         return R.ok();
     }
 
@@ -100,15 +120,6 @@ public class SysUserController {
     @SaCheckPermission("system:user:reset-pwd")
     @PutMapping("/reset-pwd")
     public R<Void> resetPassword(@RequestParam Long userId, @RequestParam String password) {
-        sysUserService.resetPassword(userId, password);
-        return R.ok();
-    }
-
-    //postman测试用接口
-    @OperLog(title = "用户管理", businessType = BusinessType.UPDATE)
-    @Operation(summary = "重置密码2")
-    @PutMapping("/reset-pd")
-    public R<Void> reset(@RequestParam Long userId, @RequestParam String password) {
         sysUserService.resetPassword(userId, password);
         return R.ok();
     }

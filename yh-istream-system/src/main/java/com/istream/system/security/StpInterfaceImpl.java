@@ -28,7 +28,7 @@ public class StpInterfaceImpl implements StpInterface {
 
     private static final String PERMISSION_CACHE_PREFIX = "perm:cache:";
     private static final String ROLE_CACHE_PREFIX = "role:cache:";
-    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {

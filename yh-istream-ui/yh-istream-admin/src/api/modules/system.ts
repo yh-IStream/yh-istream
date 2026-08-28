@@ -20,14 +20,16 @@ export interface PageResult<T> {
 
 // ==================== 用户管理 ====================
 export interface SysUser {
-  id: number
+  id: string
   username: string
   nickname: string
-  deptId: number
+  deptId: string
   deptName: string
   email: string
   phone: string
   status: number
+  roleIds: string[]
+  remark: string
   createTime: string
 }
 
@@ -35,7 +37,7 @@ export function getUserList(params: PageParams) {
   return get<PageResult<SysUser>>('/system/user/list', params)
 }
 
-export function getUserById(id: number) {
+export function getUserById(id: string) {
   return get(`/system/user/${id}`)
 }
 
@@ -47,19 +49,23 @@ export function updateUser(data: Record<string, unknown>) {
   return put('/system/user', data)
 }
 
-export function deleteUser(id: number) {
+export function assignUserRoles(userId: string, roleIds: string[]) {
+  return put(`/system/user/${userId}/roles`, { roleIds })
+}
+
+export function deleteUser(id: string) {
   return del(`/system/user/${id}`)
 }
 
-export function batchDeleteUser(ids: number[]) {
+export function batchDeleteUser(ids: string[]) {
   return del('/system/user/batch', ids)
 }
 
-export function resetUserPwd(userId: number, password: string) {
+export function resetUserPwd(userId: string, password: string) {
   return put('/system/user/reset-pwd', null, { params: { userId, password } })
 }
 
-export function changeUserStatus(userId: number, status: number) {
+export function changeUserStatus(userId: string, status: number) {
   return put('/system/user/change-status', null, { params: { userId, status } })
 }
 
@@ -76,7 +82,7 @@ export function getAllRoles() {
   return get('/system/role/all')
 }
 
-export function getRoleById(id: number) {
+export function getRoleById(id: string) {
   return get(`/system/role/${id}`)
 }
 
@@ -88,16 +94,24 @@ export function updateRole(data: Record<string, unknown>) {
   return put('/system/role', data)
 }
 
-export function deleteRole(id: number) {
+export function deleteRole(id: string) {
   return del(`/system/role/${id}`)
 }
 
-export function getRoleMenuTree(roleId: number) {
+export function getRoleMenuTree(roleId: string) {
   return get(`/system/role/menu-tree/${roleId}`)
 }
 
-export function assignRoleMenu(roleId: number, menuIds: number[]) {
+export function assignRoleMenu(roleId: string, menuIds: string[]) {
   return put('/system/role/menu-assign', { roleId, menuIds })
+}
+
+export function getRoleUsers(roleId: string) {
+  return get(`/system/role/${roleId}/users`)
+}
+
+export function assignRoleUsers(roleId: string, userIds: string[]) {
+  return put(`/system/role/${roleId}/users`, userIds)
 }
 
 // ==================== 菜单管理 ====================
@@ -105,7 +119,11 @@ export function getMenuTree() {
   return get('/system/menu/tree')
 }
 
-export function getMenuById(id: number) {
+export function getUserMenuTree() {
+  return get('/system/menu/user-tree')
+}
+
+export function getMenuById(id: string) {
   return get(`/system/menu/${id}`)
 }
 
@@ -117,7 +135,7 @@ export function updateMenu(data: Record<string, unknown>) {
   return put('/system/menu', data)
 }
 
-export function deleteMenu(id: number) {
+export function deleteMenu(id: string) {
   return del(`/system/menu/${id}`)
 }
 
@@ -126,7 +144,7 @@ export function getDeptTree() {
   return get('/system/dept/tree')
 }
 
-export function getDeptById(id: number) {
+export function getDeptById(id: string) {
   return get(`/system/dept/${id}`)
 }
 
@@ -138,7 +156,7 @@ export function updateDept(data: Record<string, unknown>) {
   return put('/system/dept', data)
 }
 
-export function deleteDept(id: number) {
+export function deleteDept(id: string) {
   return del(`/system/dept/${id}`)
 }
 
@@ -147,7 +165,7 @@ export function getDictTypeList(params: PageParams) {
   return get<PageResult<Record<string, unknown>>>('/system/dict-type/list', params)
 }
 
-export function getDictTypeById(id: number) {
+export function getDictTypeById(id: string) {
   return get(`/system/dict-type/${id}`)
 }
 
@@ -159,7 +177,7 @@ export function updateDictType(data: Record<string, unknown>) {
   return put('/system/dict-type', data)
 }
 
-export function deleteDictType(id: number) {
+export function deleteDictType(id: string) {
   return del(`/system/dict-type/${id}`)
 }
 
@@ -183,7 +201,7 @@ export function updateDictData(data: Record<string, unknown>) {
   return put('/system/dict-data', data)
 }
 
-export function deleteDictData(id: number) {
+export function deleteDictData(id: string) {
   return del(`/system/dict-data/${id}`)
 }
 
@@ -204,7 +222,7 @@ export function updateConfig(data: Record<string, unknown>) {
   return put('/system/config', data)
 }
 
-export function deleteConfig(id: number) {
+export function deleteConfig(id: string) {
   return del(`/system/config/${id}`)
 }
 
@@ -217,11 +235,11 @@ export function uploadFile(formData: FormData, onProgress?: (percent: number) =>
   return upload('/system/file/upload', formData, onProgress)
 }
 
-export function downloadFile(id: number) {
+export function downloadFile(id: string) {
   return get(`/system/file/download/${id}`, undefined, { responseType: 'blob' })
 }
 
-export function deleteFile(id: number) {
+export function deleteFile(id: string) {
   return del(`/system/file/${id}`)
 }
 
@@ -230,7 +248,7 @@ export function getOperLogList(params: PageParams) {
   return get<PageResult<Record<string, unknown>>>('/monitor/oper-log/list', params)
 }
 
-export function deleteOperLog(id: number) {
+export function deleteOperLog(id: string) {
   return del(`/monitor/oper-log/${id}`)
 }
 
@@ -300,7 +318,7 @@ export function batchDownloadCode(data: GenRequest) {
   return post('/generator/batch-download', data, { responseType: 'blob' })
 }
 
-export function deleteLoginInfo(id: number) {
+export function deleteLoginInfo(id: string) {
   return del(`/monitor/login-info/${id}`)
 }
 

@@ -2,6 +2,7 @@
 import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
 import {
   getRoleList, addRole, updateRole, deleteRole, getRoleMenuTree, assignRoleMenu,
+  getRoleUsers, assignRoleUsers, getUserList,
 } from '@/api/modules/system'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
 
@@ -12,7 +13,7 @@ const { renderStatusTag } = useStatusRender()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
-const selectedIds = ref<number[]>([])
+const selectedIds = ref<string[]>([])
 
 const searchForm = reactive({ roleName: '', roleKey: '', status: null as number | null })
 
@@ -21,17 +22,23 @@ const dialogTitle = ref('新增角色')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as number | null, roleName: '', roleKey: '', roleSort: 0, status: 0, remark: '' })
+const formData = reactive({ id: null as string | null, roleName: '', roleKey: '', roleSort: 0, status: 0, remark: '' })
 
 const menuDialogVisible = ref(false)
-const menuRoleId = ref<number>()
+const menuRoleId = ref<string>()
 const menuTree = ref<any[]>([])
-const checkedMenuKeys = ref<number[]>([])
+const checkedMenuKeys = ref<string[]>([])
+
+const userDialogVisible = ref(false)
+const userRoleId = ref<string>()
+const allUserOptions = ref<any[]>([])
+const selectedUserIds = ref<string[]>([])
+const userSearchLoading = ref(false)
 
 const rules = {
   roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   roleKey: [{ required: true, message: '请输入角色标识', trigger: 'blur' }],
-  roleSort: [{ required: true, type: 'number', message: '请输入排序', trigger: 'blur' }],
+  roleSort: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
 }
 
 const columns = [
@@ -45,10 +52,11 @@ const columns = [
   },
   { title: '创建时间', key: 'createTime', width: 170 },
   {
-    title: '操作', key: 'actions', width: 260, fixed: 'right' as const,
+    title: '操作', key: 'actions', width: 340, fixed: 'right' as const,
     render: (row: any) => h('div', { class: 'flex gap-4px' }, [
       h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
       h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => handleMenuAssign(row) }, { default: () => '分配菜单' }),
+      h(NButton, { size: 'tiny', quaternary: true, type: 'success', onClick: () => handleUserAssign(row) }, { default: () => '分配用户' }),
       h(NPopconfirm, { onPositiveClick: () => handleDelete(row.id) }, {
         trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
         default: () => '确认删除该角色吗？',
@@ -101,7 +109,7 @@ async function handleSubmit() {
   finally { submitLoading.value = false }
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try { await deleteRole(id); message.success('删除成功'); fetchData() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
@@ -111,9 +119,28 @@ async function handleMenuAssign(row: any) {
   try {
     const res: any = await getRoleMenuTree(row.id)
     menuTree.value = res.data?.menus ?? []
-    checkedMenuKeys.value = res.data?.checkedKeys ?? []
+    checkedMenuKeys.value = (res.data?.checkedKeys ?? []).map((id: any) => String(id))
   } catch { menuTree.value = []; checkedMenuKeys.value = [] }
   menuDialogVisible.value = true
+}
+
+function getAllMenuKeys(tree: any[]): string[] {
+  const keys: string[] = []
+  for (const node of tree) {
+    keys.push(node.id)
+    if (node.children && node.children.length > 0) {
+      keys.push(...getAllMenuKeys(node.children))
+    }
+  }
+  return keys
+}
+
+function handleSelectAllMenus() {
+  checkedMenuKeys.value = getAllMenuKeys(menuTree.value)
+}
+
+function handleDeselectAllMenus() {
+  checkedMenuKeys.value = []
 }
 
 async function handleMenuSubmit() {
@@ -121,6 +148,70 @@ async function handleMenuSubmit() {
   try {
     await assignRoleMenu(menuRoleId.value, checkedMenuKeys.value)
     message.success('菜单分配成功'); menuDialogVisible.value = false
+  } catch (e: any) { message.error(e.message || '分配失败') }
+}
+
+async function handleUserAssign(row: any) {
+  userRoleId.value = row.id
+  selectedUserIds.value = []
+  allUserOptions.value = []
+  userDialogVisible.value = true
+
+  try {
+    const [allRes, roleRes] = await Promise.all([
+      getUserList({ pageNum: 1, pageSize: 200 }),
+      getRoleUsers(row.id),
+    ]) as any[]
+    const allUsers = (allRes.data?.records ?? []) as any[]
+    const assignedUsers = (roleRes.data ?? []) as any[]
+    const assignedIds = new Set(assignedUsers.map((u: any) => String(u.id)))
+
+    allUserOptions.value = allUsers.map((u: any) => ({
+      label: `${u.nickname} (${u.username})`,
+      value: String(u.id),
+    }))
+    for (const u of assignedUsers) {
+      const uid = String(u.id)
+      if (!allUserOptions.value.some((o: any) => o.value === uid)) {
+        allUserOptions.value.push({ label: `${u.nickname} (${u.username})`, value: uid })
+      }
+    }
+    selectedUserIds.value = Array.from(assignedIds)
+  } catch {
+    /* ignore */
+  }
+}
+
+async function handleUserSearch(query: string) {
+  if (!query.trim()) {
+    return
+  }
+  userSearchLoading.value = true
+  try {
+    const res: any = await getUserList({ pageNum: 1, pageSize: 50, username: query })
+    const records = (res.data?.records ?? []) as any[]
+    const newOptions = records.map((u: any) => ({
+      label: `${u.nickname} (${u.username})`,
+      value: u.id,
+    }))
+    const existingIds = new Set(allUserOptions.value.map((o: any) => o.value))
+    for (const opt of newOptions) {
+      if (!existingIds.has(opt.value)) {
+        allUserOptions.value.push(opt)
+      }
+    }
+  } catch {
+    /* ignore */
+  } finally {
+    userSearchLoading.value = false
+  }
+}
+
+async function handleUserSubmit() {
+  if (!userRoleId.value) return
+  try {
+    await assignRoleUsers(userRoleId.value, selectedUserIds.value)
+    message.success('用户分配成功'); userDialogVisible.value = false
   } catch (e: any) { message.error(e.message || '分配失败') }
 }
 
@@ -188,13 +279,17 @@ onMounted(() => fetchData())
     </n-modal>
 
     <n-modal v-model:show="menuDialogVisible" title="分配菜单权限" preset="card" style="width: 480px" :mask-closable="false">
+      <div class="mb-8px flex gap-8px">
+        <n-button size="tiny" @click="handleSelectAllMenus">全选</n-button>
+        <n-button size="tiny" @click="handleDeselectAllMenus">取消全选</n-button>
+      </div>
       <n-tree
         v-model:checked-keys="checkedMenuKeys"
         :data="menuTree"
         checkable
         cascade
         key-field="id"
-        label-field="label"
+        label-field="menuName"
         children-field="children"
         default-expand-all
       />
@@ -202,6 +297,26 @@ onMounted(() => fetchData())
         <n-space justify="end">
           <n-button @click="menuDialogVisible = false">取消</n-button>
           <n-button type="primary" @click="handleMenuSubmit">确定</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+
+    <n-modal v-model:show="userDialogVisible" title="分配用户" preset="card" style="width: 520px" :mask-closable="false">
+      <n-select
+        v-model:value="selectedUserIds"
+        :options="allUserOptions"
+        placeholder="请输入用户名搜索"
+        multiple
+        clearable
+        filterable
+        remote
+        :loading="userSearchLoading"
+        @search="handleUserSearch"
+      />
+      <template #footer>
+        <n-space justify="end">
+          <n-button @click="userDialogVisible = false">取消</n-button>
+          <n-button type="primary" @click="handleUserSubmit">确定</n-button>
         </n-space>
       </template>
     </n-modal>

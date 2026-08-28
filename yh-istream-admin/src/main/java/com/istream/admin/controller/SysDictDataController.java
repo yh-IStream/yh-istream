@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.model.dto.SysDictDataQuery;
 import com.istream.common.model.R;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.service.SysDictDataService;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -37,12 +37,11 @@ public class SysDictDataController {
     @Operation(summary = "分页查询字典数据")
     @SaCheckPermission("system:dict:list")
     @GetMapping("/list")
-    public R<IPage<SysDictData>> list(@RequestParam(defaultValue = "1") Long pageNum,
-                                      @RequestParam(defaultValue = "10") Long pageSize,
-                                      @RequestParam(required = false) String dictType) {
-        Page<SysDictData> page = new Page<>(pageNum, pageSize);
+    public R<IPage<SysDictData>> list(SysDictDataQuery query) {
+        Page<SysDictData> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<SysDictData> wrapper = new LambdaQueryWrapper<SysDictData>()
-                .eq(dictType != null && !dictType.isEmpty(), SysDictData::getDictType, dictType)
+                .eq(query.getDictType() != null && !query.getDictType().isEmpty(),
+                        SysDictData::getDictType, query.getDictType())
                 .orderByAsc(SysDictData::getOrderNum);
         sysDictDataService.page(page, wrapper);
         return R.ok(page);

@@ -239,7 +239,7 @@ class AuthControllerTest {
             SysUser user = createUser(1L, "admin", "encoded");
             when(sysUserService.getById(1L)).thenReturn(user);
             when(sysMenuService.getPermissionsByUserId(1L)).thenReturn(List.of("system:user:list"));
-            when(sysMenuService.listMenuTree()).thenReturn(List.of(new SysMenu()));
+            when(sysMenuService.getCurrentUserMenuTree()).thenReturn(List.of(new SysMenu()));
 
             mockMvc.perform(get("/auth/user-info"))
                     .andExpect(status().isOk())

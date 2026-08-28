@@ -5,16 +5,17 @@ import { STATUS, STATUS_LABEL } from '@/constants'
 
 const message = useMessage()
 const { renderStatusTag } = useStatusRender()
+const { pagination: typePagination, resetPage: resetTypePage, setPage: setTypePage, setPageSize: setTypePageSize } = usePagination()
+const { pagination: dataPagination, resetPage: resetDataPage, setPage: setDataPage, setPageSize: setDataPageSize } = usePagination()
 const activeTab = ref('type')
 
 // ====== 字典类型 ======
 const typeLoading = ref(false)
 const typeData = ref<any[]>([])
-const typePagination = reactive({ page: 1, pageSize: 10, itemCount: 0, showSizePicker: true, pageSizes: [10, 20, 50] })
 const typeDialogVisible = ref(false)
 const typeIsEdit = ref(false)
 const typeFormRef = ref()
-const typeForm = reactive({ id: null as number | null, dictName: '', dictType: '', status: 0, remark: '' })
+const typeForm = reactive({ id: null as string | null, dictName: '', dictType: '', status: 0, remark: '' })
 const typeRules = {
   dictName: [{ required: true, message: '请输入字典名称', trigger: 'blur' }],
   dictType: [{ required: true, message: '请输入字典类型', trigger: 'blur' }],
@@ -73,7 +74,7 @@ async function handleTypeSubmit() {
   } catch (e: any) { message.error(e.message || '操作失败') }
 }
 
-async function handleTypeDelete(id: number) {
+async function handleTypeDelete(id: string) {
   try { await deleteDictType(id); message.success('删除成功'); fetchTypeList() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
@@ -82,22 +83,21 @@ async function handleTypeDelete(id: number) {
 const selectedDictType = ref('')
 const dataLoading = ref(false)
 const dataList = ref<any[]>([])
-const dataPagination = reactive({ page: 1, pageSize: 10, itemCount: 0, showSizePicker: true, pageSizes: [10, 20, 50] })
-const dataSearchForm = reactive({ dictType: '', label: '' })
+const dataSearchForm = reactive({ dictType: '', dictLabel: '' })
 const dataDialogVisible = ref(false)
 const dataIsEdit = ref(false)
 const dataFormRef = ref()
-const dataForm = reactive({ id: null as number | null, dictType: '', label: '', value: '', sort: 0, cssClass: '', listClass: '', status: 0, remark: '' })
+const dataForm = reactive({ id: null as string | null, dictType: '', dictLabel: '', dictValue: '', orderNum: 0, cssClass: '', listClass: '', status: 0, remark: '' })
 const dataRules = {
-  label: [{ required: true, message: '请输入字典标签', trigger: 'blur' }],
-  value: [{ required: true, message: '请输入字典值', trigger: 'blur' }],
-  sort: [{ required: true, type: 'number', message: '请输入排序', trigger: 'blur' }],
+  dictLabel: [{ required: true, message: '请输入字典标签', trigger: 'blur' }],
+  dictValue: [{ required: true, message: '请输入字典值', trigger: 'blur' }],
+  orderNum: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
 }
 
 const dataColumns = [
-  { title: '字典标签', key: 'label', width: 140 },
-  { title: '字典值', key: 'value', width: 140 },
-  { title: '排序', key: 'sort', width: 60, align: 'center' as const },
+  { title: '字典标签', key: 'dictLabel', width: 140 },
+  { title: '字典值', key: 'dictValue', width: 140 },
+  { title: '排序', key: 'orderNum', width: 60, align: 'center' as const },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
     render: (row: any) => renderStatusTag(row.status),
@@ -128,13 +128,13 @@ async function fetchDataList() {
 
 function handleDataAdd() {
   dataIsEdit.value = false
-  Object.assign(dataForm, { id: null, dictType: selectedDictType.value, label: '', value: '', sort: 0, cssClass: '', listClass: '', status: STATUS.NORMAL, remark: '' })
+  Object.assign(dataForm, { id: null, dictType: selectedDictType.value, dictLabel: '', dictValue: '', orderNum: 0, cssClass: '', listClass: '', status: STATUS.NORMAL, remark: '' })
   dataDialogVisible.value = true
 }
 
 function handleDataEdit(row: any) {
   dataIsEdit.value = true
-  Object.assign(dataForm, { id: row.id, dictType: row.dictType, label: row.label, value: row.value, sort: row.sort, cssClass: row.cssClass ?? '', listClass: row.listClass ?? '', status: row.status, remark: row.remark ?? '' })
+  Object.assign(dataForm, { id: row.id, dictType: row.dictType, dictLabel: row.dictLabel, dictValue: row.dictValue, orderNum: row.orderNum, cssClass: row.cssClass ?? '', listClass: row.listClass ?? '', status: row.status, remark: row.remark ?? '' })
   dataDialogVisible.value = true
 }
 
@@ -148,7 +148,7 @@ async function handleDataSubmit() {
   } catch (e: any) { message.error(e.message || '操作失败') }
 }
 
-async function handleDataDelete(id: number) {
+async function handleDataDelete(id: string) {
   try { await deleteDictData(id); message.success('删除成功'); fetchDataList() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
@@ -170,8 +170,8 @@ onMounted(() => fetchTypeList())
         </div>
         <n-data-table :columns="typeColumns" :data="typeData" :loading="typeLoading" :pagination="typePagination"
           :row-key="(row: any) => row.id" striped size="small" remote
-          @update:page="(p: number) => { typePagination.page = p; fetchTypeList() }"
-          @update:page-size="(s: number) => { typePagination.pageSize = s; typePagination.page = 1; fetchTypeList() }" />
+          @update:page="(p: number) => { setTypePage(p); fetchTypeList() }"
+          @update:page-size="(s: number) => { setTypePageSize(s); fetchTypeList() }" />
       </n-tab-pane>
 
       <n-tab-pane name="data" tab="字典数据" :disabled="!selectedDictType">
@@ -183,8 +183,8 @@ onMounted(() => fetchTypeList())
         </div>
         <n-data-table :columns="dataColumns" :data="dataList" :loading="dataLoading" :pagination="dataPagination"
           :row-key="(row: any) => row.id" striped size="small" remote
-          @update:page="(p: number) => { dataPagination.page = p; fetchDataList() }"
-          @update:page-size="(s: number) => { dataPagination.pageSize = s; dataPagination.page = 1; fetchDataList() }" />
+          @update:page="(p: number) => { setDataPage(p); fetchDataList() }"
+          @update:page-size="(s: number) => { setDataPageSize(s); fetchDataList() }" />
       </n-tab-pane>
     </n-tabs>
 
@@ -217,14 +217,14 @@ onMounted(() => fetchTypeList())
     <!-- 字典数据弹窗 -->
     <n-modal v-model:show="dataDialogVisible" title="字典数据" preset="card" style="width: 560px" :mask-closable="false">
       <n-form ref="dataFormRef" :model="dataForm" :rules="dataRules" label-placement="left" label-width="80px">
-        <n-form-item label="字典标签" path="label">
-          <n-input v-model:value="dataForm.label" placeholder="请输入字典标签" />
+        <n-form-item label="字典标签" path="dictLabel">
+          <n-input v-model:value="dataForm.dictLabel" placeholder="请输入字典标签" />
         </n-form-item>
-        <n-form-item label="字典值" path="value">
-          <n-input v-model:value="dataForm.value" placeholder="请输入字典值" />
+        <n-form-item label="字典值" path="dictValue">
+          <n-input v-model:value="dataForm.dictValue" placeholder="请输入字典值" />
         </n-form-item>
-        <n-form-item label="排序" path="sort">
-          <n-input-number v-model:value="dataForm.sort" :min="0" style="width: 100%" />
+        <n-form-item label="排序" path="orderNum">
+          <n-input-number v-model:value="dataForm.orderNum" :min="0" style="width: 100%" />
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="dataForm.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">

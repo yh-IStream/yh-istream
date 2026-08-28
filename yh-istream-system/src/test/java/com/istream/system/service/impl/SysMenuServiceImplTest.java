@@ -16,8 +16,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,12 +43,19 @@ class SysMenuServiceImplTest {
     @Mock
     private SysRoleMenuMapper sysRoleMenuMapper;
 
+    @Mock
+    private RedissonClient redissonClient;
+
     private SysMenuServiceImpl sysMenuService;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
-        sysMenuService = new SysMenuServiceImpl(sysRoleMenuMapper);
+        sysMenuService = new SysMenuServiceImpl(sysRoleMenuMapper, redissonClient);
         ReflectionTestUtils.setField(sysMenuService, "baseMapper", sysMenuMapper);
+        RBucket<Object> mockBucket = (RBucket<Object>) org.mockito.Mockito.mock(RBucket.class);
+        when(mockBucket.get()).thenReturn(null);
+        when(redissonClient.getBucket(anyString())).thenReturn((RBucket) mockBucket);
         Configuration configuration = new Configuration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, SysMenu.class);

@@ -12,16 +12,16 @@ const dialogTitle = ref('新增菜单')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as number | null, parentId: 0, menuName: '', menuType: 1, path: '', component: '', perms: '', icon: '', sort: 0, status: 0, visible: 0 })
+const formData = reactive({ id: null as string | null, parentId: 0, menuName: '', menuType: 'M', path: '', component: '', permission: '', icon: '', orderNum: 0, status: 0, visible: 1 })
 
 const menuTypeOptions = [
-  { label: '目录', value: 1 }, { label: '菜单', value: 2 }, { label: '按钮', value: 3 },
+  { label: '目录', value: 'M' }, { label: '菜单', value: 'C' }, { label: '按钮', value: 'F' },
 ]
 
 const rules = {
   menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
-  menuType: [{ required: true, type: 'number', message: '请选择菜单类型', trigger: 'change' }],
-  sort: [{ required: true, type: 'number', message: '请输入排序', trigger: 'blur' }],
+  menuType: [{ required: true, message: '请选择菜单类型', trigger: 'change' }],
+  orderNum: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
 }
 
 const columns = [
@@ -29,15 +29,15 @@ const columns = [
   {
     title: '类型', key: 'menuType', width: 80, align: 'center' as const,
     render: (row: any) => {
-      const map: Record<number, { type: string; label: string }> = { 1: { type: 'info', label: '目录' }, 2: { type: 'primary', label: '菜单' }, 3: { type: 'warning', label: '按钮' } }
+      const map: Record<string, { type: 'default' | 'info' | 'primary' | 'warning'; label: string }> = { 'M': { type: 'info', label: '目录' }, 'C': { type: 'primary', label: '菜单' }, 'F': { type: 'warning', label: '按钮' } }
       const info = map[row.menuType] ?? { type: 'default', label: '未知' }
       return h(NTag, { type: info.type, size: 'small' }, { default: () => info.label })
     },
   },
   { title: '路由路径', key: 'path', width: 160, ellipsis: { tooltip: true } },
-  { title: '权限标识', key: 'perms', width: 180, ellipsis: { tooltip: true } },
+  { title: '权限标识', key: 'permission', width: 180, ellipsis: { tooltip: true } },
   { title: '图标', key: 'icon', width: 80 },
-  { title: '排序', key: 'sort', width: 60, align: 'center' as const },
+  { title: '排序', key: 'orderNum', width: 60, align: 'center' as const },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
     render: (row: any) => renderStatusTag(row.status),
@@ -67,13 +67,13 @@ async function fetchData() {
 function handleAdd(parent?: any) {
   isEdit.value = false; dialogTitle.value = '新增菜单'
   const parentId = parent ? parent.id : 0
-  Object.assign(formData, { id: null, parentId, menuName: '', menuType: parent ? 2 : 1, path: '', component: '', perms: '', icon: '', sort: 0, status: STATUS.NORMAL, visible: 0 })
+  Object.assign(formData, { id: null, parentId, menuName: '', menuType: parent ? 'C' : 'M', path: '', component: '', permission: '', icon: '', orderNum: 0, status: STATUS.NORMAL, visible: 1 })
   dialogVisible.value = true
 }
 
 function handleEdit(row: any) {
   isEdit.value = true; dialogTitle.value = '编辑菜单'
-  Object.assign(formData, { id: row.id, parentId: row.parentId ?? 0, menuName: row.menuName, menuType: row.menuType, path: row.path ?? '', component: row.component ?? '', perms: row.perms ?? '', icon: row.icon ?? '', sort: row.sort ?? 0, status: row.status ?? 0, visible: row.visible ?? 0 })
+  Object.assign(formData, { id: row.id, parentId: row.parentId ?? 0, menuName: row.menuName, menuType: row.menuType, path: row.path ?? '', component: row.component ?? '', permission: row.permission ?? '', icon: row.icon ?? '', orderNum: row.orderNum ?? 0, status: row.status ?? 0, visible: row.visible ?? 1 })
   dialogVisible.value = true
 }
 
@@ -89,7 +89,7 @@ async function handleSubmit() {
   finally { submitLoading.value = false }
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try { await deleteMenu(id); message.success('删除成功'); fetchData() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
@@ -117,24 +117,29 @@ onMounted(() => fetchData())
         <n-form-item label="菜单名称" path="menuName">
           <n-input v-model:value="formData.menuName" placeholder="请输入菜单名称" />
         </n-form-item>
-        <n-form-item v-if="formData.menuType !== 3" label="路由路径" path="path">
+        <n-form-item v-if="formData.menuType !== 'F'" label="路由路径" path="path">
           <n-input v-model:value="formData.path" placeholder="请输入路由路径" />
         </n-form-item>
-        <n-form-item v-if="formData.menuType === 2" label="组件路径" path="component">
+        <n-form-item v-if="formData.menuType === 'C'" label="组件路径" path="component">
           <n-input v-model:value="formData.component" placeholder="请输入组件路径" />
         </n-form-item>
-        <n-form-item label="权限标识" path="perms">
-          <n-input v-model:value="formData.perms" placeholder="请输入权限标识" />
+        <n-form-item label="权限标识" path="permission">
+          <n-input v-model:value="formData.permission" placeholder="请输入权限标识" />
         </n-form-item>
         <n-form-item label="图标" path="icon">
           <n-input v-model:value="formData.icon" placeholder="请输入图标名称" />
         </n-form-item>
-        <n-form-item label="排序" path="sort">
-          <n-input-number v-model:value="formData.sort" :min="0" style="width: 100%" />
+        <n-form-item label="排序" path="orderNum">
+          <n-input-number v-model:value="formData.orderNum" :min="0" style="width: 100%" />
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="formData.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">
             <template #checked>{{ STATUS_LABEL[STATUS.NORMAL] }}</template><template #unchecked>{{ STATUS_LABEL[STATUS.DISABLED] }}</template>
+          </n-switch>
+        </n-form-item>
+        <n-form-item label="可见">
+          <n-switch v-model:value="formData.visible" :checked-value="1" :unchecked-value="0">
+            <template #checked>显示</template><template #unchecked>隐藏</template>
           </n-switch>
         </n-form-item>
       </n-form>

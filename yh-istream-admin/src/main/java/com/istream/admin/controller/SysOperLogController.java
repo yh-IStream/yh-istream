@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
+import com.istream.common.model.dto.SysOperLogQuery;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.service.SysOperLogService;
@@ -21,7 +22,7 @@ import java.util.List;
 
 @Tag(name = "操作日志管理")
 @RestController
-@RequestMapping("/system/oper-log")
+@RequestMapping("/monitor/oper-log")
 @RequiredArgsConstructor
 public class SysOperLogController {
 
@@ -30,11 +31,15 @@ public class SysOperLogController {
     @Operation(summary = "分页查询操作日志")
     @SaCheckPermission("system:oper-log:list")
     @GetMapping("/list")
-    public R<IPage<SysOperLog>> list(@RequestParam(defaultValue = "1") Long pageNum,
-                                     @RequestParam(defaultValue = "10") Long pageSize) {
-        Page<SysOperLog> page = new Page<>(pageNum, pageSize);
-        sysOperLogService.page(page, new LambdaQueryWrapper<SysOperLog>()
-                .orderByDesc(SysOperLog::getOperTime));
+    public R<IPage<SysOperLog>> list(SysOperLogQuery query) {
+        Page<SysOperLog> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<SysOperLog> wrapper = new LambdaQueryWrapper<SysOperLog>()
+                .eq(query.getTitle() != null && !query.getTitle().isEmpty(),
+                        SysOperLog::getTitle, query.getTitle())
+                .eq(query.getBusinessType() != null, SysOperLog::getBusinessType, query.getBusinessType())
+                .eq(query.getStatus() != null, SysOperLog::getStatus, query.getStatus())
+                .orderByDesc(SysOperLog::getOperTime);
+        sysOperLogService.page(page, wrapper);
         return R.ok(page);
     }
 

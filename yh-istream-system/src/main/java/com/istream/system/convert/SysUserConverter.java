@@ -1,4 +1,4 @@
-package com.istream.system.mapper.convert;
+package com.istream.system.convert;
 
 import com.istream.common.model.dto.SysUserDTO;
 import com.istream.common.model.mapper.BaseConverter;
@@ -24,6 +24,7 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
     @Override
     @Mapping(source = "dept.deptName", target = "deptName")
     @Mapping(source = "roles", target = "roleNames", qualifiedByName = "mapRoleNames")
+    @Mapping(source = "roles", target = "roleIds", qualifiedByName = "mapRoleIds")
     SysUserDTO toDto(SysUser entity);
 
     @Override
@@ -44,6 +45,16 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
         }
         return roles.stream()
                 .map(SysRole::getRoleName)
+                .collect(Collectors.toList());
+    }
+
+    @Named("mapRoleIds")
+    default List<Long> mapRoleIds(List<SysRole> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roles.stream()
+                .map(SysRole::getId)
                 .collect(Collectors.toList());
     }
 }

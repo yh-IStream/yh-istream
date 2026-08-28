@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.model.dto.SysRoleQuery;
+import com.istream.system.entity.SysMenu;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
 import com.istream.system.entity.SysUserRole;
 import com.istream.system.mapper.SysRoleMapper;
 import com.istream.system.mapper.SysRoleMenuMapper;
+import com.istream.system.mapper.SysMenuMapper;
 import com.istream.system.mapper.SysUserRoleMapper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.apache.ibatis.session.Configuration;
@@ -21,6 +23,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
@@ -31,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,14 +54,25 @@ class SysRoleServiceImplTest {
     private SysRoleMenuMapper sysRoleMenuMapper;
 
     @Mock
+    private SysMenuMapper sysMenuMapper;
+
+    @Mock
     private SysUserRoleMapper sysUserRoleMapper;
+
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Mock
+    private RBucket<Object> rBucket;
 
     private SysRoleServiceImpl sysRoleService;
 
     @BeforeEach
     void setUp() {
-        sysRoleService = new SysRoleServiceImpl(sysRoleMenuMapper, sysUserRoleMapper);
+        sysRoleService = new SysRoleServiceImpl(sysRoleMenuMapper, sysUserRoleMapper, sysMenuMapper, redissonClient);
         ReflectionTestUtils.setField(sysRoleService, "baseMapper", sysRoleMapper);
+        when(redissonClient.getBucket(anyString())).thenReturn(rBucket);
+        when(rBucket.delete()).thenReturn(true);
         Configuration configuration = new Configuration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, SysRole.class);
@@ -101,6 +117,8 @@ class SysRoleServiceImplTest {
     @DisplayName("保存角色菜单 — 正常分配")
     void saveRoleMenu_WithMenuIds() {
         List<Long> menuIds = List.of(10L, 20L, 30L);
+        when(sysMenuMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(Collections.emptyList());
 
         sysRoleService.saveRoleMenu(1L, menuIds);
 
@@ -109,17 +127,18 @@ class SysRoleServiceImplTest {
         verify(sysRoleMenuMapper, times(3)).insert(captor.capture());
 
         List<SysRoleMenu> inserted = captor.getAllValues();
-        assertEquals(1L, inserted.get(0).getRoleId());
-        assertEquals(10L, inserted.get(0).getMenuId());
-        assertEquals(1L, inserted.get(1).getRoleId());
-        assertEquals(20L, inserted.get(1).getMenuId());
-        assertEquals(1L, inserted.get(2).getRoleId());
-        assertEquals(30L, inserted.get(2).getMenuId());
+        assertEquals(3, inserted.size());
+        List<Long> insertedIds = inserted.stream().map(SysRoleMenu::getMenuId).sorted().toList();
+        assertEquals(List.of(10L, 20L, 30L), insertedIds);
+        inserted.forEach(rm -> assertEquals(1L, rm.getRoleId()));
     }
 
     @Test
     @DisplayName("保存角色菜单 — 清空菜单（menuIds=null）")
     void saveRoleMenu_NullMenuIds() {
+        when(sysMenuMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(Collections.emptyList());
+
         sysRoleService.saveRoleMenu(1L, null);
 
         verify(sysRoleMenuMapper).delete(any(LambdaQueryWrapper.class));
@@ -129,6 +148,9 @@ class SysRoleServiceImplTest {
     @Test
     @DisplayName("保存角色菜单 — 清空菜单（menuIds=空列表）")
     void saveRoleMenu_EmptyMenuIds() {
+        when(sysMenuMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(Collections.emptyList());
+
         sysRoleService.saveRoleMenu(1L, Collections.emptyList());
 
         verify(sysRoleMenuMapper).delete(any(LambdaQueryWrapper.class));

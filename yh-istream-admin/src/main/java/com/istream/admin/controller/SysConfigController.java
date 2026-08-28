@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.model.BaseQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.system.entity.SysConfig;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -37,9 +37,8 @@ public class SysConfigController {
     @Operation(summary = "分页查询配置")
     @SaCheckPermission("system:config:list")
     @GetMapping("/list")
-    public R<IPage<SysConfig>> list(@RequestParam(defaultValue = "1") Long pageNum,
-                                    @RequestParam(defaultValue = "10") Long pageSize) {
-        Page<SysConfig> page = new Page<>(pageNum, pageSize);
+    public R<IPage<SysConfig>> list(BaseQuery query) {
+        Page<SysConfig> page = new Page<>(query.getPageNum(), query.getPageSize());
         sysConfigService.page(page, new LambdaQueryWrapper<SysConfig>()
                 .orderByAsc(SysConfig::getId));
         return R.ok(page);

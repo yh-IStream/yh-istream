@@ -239,7 +239,7 @@ onMounted(() => fetchTables())
         <div v-else>
           <n-tabs v-model:value="batchActiveTab" type="card" size="small">
             <n-tab-pane v-for="(files, tableName) in batchPreviewData" :key="tableName" :name="tableName" :tab="tableName">
-              <n-tabs v-if="Object.keys(files).length > 0" type="segment" size="tiny">
+              <n-tabs v-if="Object.keys(files).length > 0" type="segment" size="small">
                 <n-tab-pane v-for="(code, fileName) in files" :key="fileName" :name="fileName" :tab="fileName">
                   <n-code
                     :code="code"

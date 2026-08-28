@@ -5,6 +5,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.istream.common.model.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,6 +27,7 @@ public class SysUser extends BaseEntity {
     private String username;
 
     @ExcelIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @ExcelProperty("昵称")
@@ -69,4 +71,8 @@ public class SysUser extends BaseEntity {
     @ExcelIgnore
     @TableField(exist = false)
     private java.util.List<SysRole> roles;
+
+    @ExcelIgnore
+    @TableField(exist = false)
+    private java.util.List<Long> roleIds;
 }

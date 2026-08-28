@@ -25,11 +25,12 @@ export interface UserInfoResult {
   }
   permissions: string[]
   roles: string[]
+  menus: any[]
 }
 
 export interface CaptchaResult {
-  captchaKey: string
-  captchaImage: string
+  uuid: string
+  image: string
 }
 
 /** 登录 */

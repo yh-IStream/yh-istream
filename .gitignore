@@ -1,9 +1,17 @@
+﻿# ==================== Maven / Java ====================
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
 
-
-### STS ###
+# ==================== STS (Spring Tool Suite) ====================
 .apt_generated
 .classpath
 .factorypath
@@ -12,13 +20,15 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
+# ==================== IntelliJ IDEA ====================
 .idea
 *.iws
 *.iml
 *.ipr
+*.github
+*.trae
 
-### NetBeans ###
+# ==================== NetBeans ====================
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -26,11 +36,30 @@ target/
 /.nb-gradle/
 build/
 
-
-### VS Code ###
+# ==================== VS Code ====================
 .vscode/
 
-### Logs & Temp ###
+# ==================== Node.js / Vue ====================
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+
+# 包管理器锁定文件（建议提交，视团队规范决定）
+ pnpm-lock.yaml
+ yarn.lock
+ package-lock.json
+
+# 前端构建缓存
+.eslintcache
+*.tsbuildinfo
+.nuxt
+.output
+.cache
+
+# ==================== 日志与临时文件 ====================
 logs/
 *.log
 *.pid
@@ -39,4 +68,14 @@ logs/
 *.swp
 *.swo
 *~
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+uploads/
+data/
+
+# ==================== Docker ====================
+# docker-compose.override.yml

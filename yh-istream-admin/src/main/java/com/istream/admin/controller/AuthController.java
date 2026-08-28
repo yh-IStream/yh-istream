@@ -20,6 +20,7 @@ import com.istream.framework.util.IpRegionUtils;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.system.entity.SysLoginInfo;
 import com.istream.system.entity.SysMenu;
+import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import com.istream.system.service.SysLoginInfoService;
 import com.istream.system.service.SysMenuService;
@@ -73,7 +74,7 @@ public class AuthController {
             if (cachedCode == null) {
                 return R.fail(ResultCode.PARAM_VALID_ERROR, "验证码已过期");
             }
-            if (!cachedCode.equalsIgnoreCase(loginDTO.getCaptcha())) {
+            if (!cachedCode.equalsIgnoreCase(loginDTO.getCaptchaCode())) {
                 return R.fail(ResultCode.PARAM_VALID_ERROR, "验证码错误");
             }
         }
@@ -188,13 +189,18 @@ public class AuthController {
         if (user == null) {
             return R.fail(ResultCode.USER_NOT_EXIST);
         }
+        user.setPassword(null);
 
         List<String> permissions = sysMenuService.getPermissionsByUserId(userId);
-        List<SysMenu> menus = sysMenuService.listMenuTree();
+        List<String> roles = sysUserService.getRolesByUserId(userId).stream()
+                .map(SysRole::getRoleKey)
+                .toList();
+        List<SysMenu> menus = sysMenuService.getCurrentUserMenuTree();
 
         Map<String, Object> userInfo = new HashMap<>();
         userInfo.put("user", user);
         userInfo.put("permissions", permissions);
+        userInfo.put("roles", roles);
         userInfo.put("menus", menus);
         return R.ok(userInfo);
     }

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.istream.common.exception.BusinessException;
 import com.istream.system.entity.SysUser;
 import com.istream.system.entity.SysUserRole;
+import com.istream.system.mapper.SysRoleMapper;
 import com.istream.system.mapper.SysUserMapper;
 import com.istream.system.mapper.SysUserRoleMapper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -20,6 +21,8 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -48,12 +51,23 @@ class SysUserServiceImplTest {
     @Mock
     private SysUserRoleMapper sysUserRoleMapper;
 
+    @Mock
+    private SysRoleMapper sysRoleMapper;
+
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Mock
+    private RBucket<Object> rBucket;
+
     private SysUserServiceImpl sysUserService;
 
     @BeforeEach
     void setUp() {
-        sysUserService = new SysUserServiceImpl(sysUserRoleMapper);
+        sysUserService = new SysUserServiceImpl(sysUserRoleMapper, sysRoleMapper, redissonClient);
         ReflectionTestUtils.setField(sysUserService, "baseMapper", sysUserMapper);
+        when(redissonClient.getBucket(anyString())).thenReturn(rBucket);
+        when(rBucket.delete()).thenReturn(true);
         Configuration configuration = new Configuration();
         MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
         TableInfoHelper.initTableInfo(assistant, SysUser.class);

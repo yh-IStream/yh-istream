@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { SearchOutline, AddOutline, TrashOutline, DownloadOutline, RefreshOutline } from '@vicons/ionicons5'
 import {
-  getUserList, addUser, updateUser, deleteUser, batchDeleteUser,
-  resetUserPwd, changeUserStatus, exportUser, type SysUser,
+  getUserList, getUserById, addUser, updateUser, assignUserRoles, deleteUser, batchDeleteUser,
+  resetUserPwd, changeUserStatus, exportUser, getDeptTree, getAllRoles, type SysUser,
 } from '@/api/modules/system'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
 
@@ -14,13 +14,13 @@ const { renderStatusTag } = useStatusRender()
 // ==================== State ====================
 const loading = ref(false)
 const tableData = ref<SysUser[]>([])
-const selectedIds = ref<number[]>([])
+const selectedIds = ref<string[]>([])
 
 const searchForm = reactive({
   username: '',
   phone: '',
   status: null as number | null,
-  deptId: null as number | null,
+  deptId: null as string | null,
   beginTime: null as string | null,
   endTime: null as string | null,
 })
@@ -32,43 +32,51 @@ const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
 const formData = reactive({
-  id: null as number | null,
+  id: null as string | null,
   username: '',
   nickname: '',
   password: '',
-  deptId: null as number | null,
+  deptId: null as string | null,
   email: '',
   phone: '',
   gender: 0,
   status: STATUS.NORMAL,
-  roleIds: [] as number[],
+  remark: '',
 })
 
 const deptOptions = ref<any[]>([])
 
+const roleOptions = ref<any[]>([])
+
 // 重置密码对话框
 const pwdDialogVisible = ref(false)
-const pwdUserId = ref<number>()
+const pwdUserId = ref<string>()
 const pwdFormRef = ref()
 const pwdForm = reactive({ password: '', confirmPassword: '' })
+
+const roleDialogVisible = ref(false)
+const roleUserId = ref<string>()
+const roleFormRef = ref()
+const roleForm = reactive({ roleIds: [] as string[] })
 
 // 表格列
 const columns = [
   { type: 'selection' as const },
   { title: '用户名', key: 'username', width: 120, ellipsis: { tooltip: true } },
   { title: '昵称', key: 'nickname', width: 120, ellipsis: { tooltip: true } },
-  { title: '部门', key: 'dept', width: 140, render: (row: any) => row.dept?.deptName ?? '-' },
+  { title: '部门', key: 'dept', width: 140, render: (row: any) => row.deptName ?? '-' },
   { title: '手机号', key: 'phone', width: 130 },
   { title: '邮箱', key: 'email', width: 180, ellipsis: { tooltip: true } },
   {
-    title: '状态', key: 'status', width: 80, align: 'center',
+    title: '状态', key: 'status', width: 80, align: 'center' as const,
     render: (row: SysUser) => renderStatusTag(row.status),
   },
   { title: '创建时间', key: 'createTime', width: 170 },
   {
-    title: '操作', key: 'actions', width: 260, fixed: 'right' as const,
+    title: '操作', key: 'actions', width: 320, fixed: 'right' as const,
     render: (row: SysUser) => h('div', { class: 'flex gap-4px' }, [
       h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
+      h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => handleRoleAssign(row) }, { default: () => '分配角色' }),
       h(NButton, { size: 'tiny', quaternary: true, type: 'warning', onClick: () => handleResetPwd(row) }, { default: () => '重置密码' }),
       h(
         NPopconfirm,
@@ -89,8 +97,8 @@ const rules = {
   password: isEdit.value
     ? []
     : [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
-  deptId: [{ required: true, message: '请选择部门', trigger: 'change', type: 'number' }],
-  email: [{ type: 'email', message: '请输入正确的邮箱', trigger: 'blur' }],
+  deptId: [{ required: true, message: '请选择部门', trigger: 'change', type: 'string' as const }],
+  email: [{ type: 'email' as const, message: '请输入正确的邮箱', trigger: 'blur' }],
   phone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
 }
 
@@ -134,6 +142,13 @@ async function fetchDeptTree() {
   } catch { /* ignore */ }
 }
 
+async function fetchRoles() {
+  try {
+    const res: any = await getAllRoles()
+    roleOptions.value = (res.data ?? []).map((r: any) => ({ label: r.roleName, value: String(r.id) }))
+  } catch { /* ignore */ }
+}
+
 function handleSearch() {
   resetPage()
   fetchData()
@@ -161,7 +176,7 @@ function handlePageSizeChange(pageSize: number) {
 }
 
 function handleSelectionChange(keys: any[]) {
-  selectedIds.value = keys as number[]
+  selectedIds.value = keys as string[]
 }
 
 function handleAdd() {
@@ -171,7 +186,7 @@ function handleAdd() {
   dialogVisible.value = true
 }
 
-function handleEdit(row: SysUser) {
+async function handleEdit(row: SysUser) {
   isEdit.value = true
   dialogTitle.value = '编辑用户'
   Object.assign(formData, {
@@ -184,7 +199,7 @@ function handleEdit(row: SysUser) {
     phone: row.phone ?? '',
     gender: 0,
     status: row.status,
-    roleIds: [],
+    remark: row.remark ?? '',
   })
   dialogVisible.value = true
 }
@@ -199,7 +214,7 @@ function resetForm() {
   formData.phone = ''
   formData.gender = 0
   formData.status = STATUS.NORMAL
-  formData.roleIds = []
+  formData.remark = ''
 }
 
 async function handleSubmit() {
@@ -218,6 +233,7 @@ async function handleSubmit() {
       phone: formData.phone || undefined,
       gender: formData.gender,
       status: formData.status,
+      remark: formData.remark || undefined,
     }
     if (formData.id) {
       data.id = formData.id
@@ -237,7 +253,33 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(id: number) {
+async function handleRoleAssign(row: SysUser) {
+  roleUserId.value = row.id
+  roleForm.roleIds = []
+  try {
+    const res: any = await getUserById(row.id)
+    if (res.data?.roleIds) {
+      roleForm.roleIds = (res.data.roleIds as any[]).map((id: any) => String(id))
+    }
+  } catch { /* ignore */ }
+  roleDialogVisible.value = true
+}
+
+async function handleRoleSubmit() {
+  if (roleUserId.value == null) {
+    return
+  }
+  try {
+    await assignUserRoles(roleUserId.value, roleForm.roleIds)
+    message.success('角色分配成功')
+    roleDialogVisible.value = false
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '角色分配失败')
+  }
+}
+
+async function handleDelete(id: string) {
   try {
     await deleteUser(id)
     message.success('删除成功')
@@ -322,6 +364,7 @@ async function handleExport() {
 onMounted(() => {
   fetchData()
   fetchDeptTree()
+  fetchRoles()
 })
 </script>
 
@@ -429,6 +472,9 @@ onMounted(() => {
         <n-form-item label="邮箱" path="email">
           <n-input v-model:value="formData.email" placeholder="请输入邮箱" />
         </n-form-item>
+        <n-form-item label="备注">
+          <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />
+        </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="formData.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">
             <template #checked>{{ STATUS_LABEL[STATUS.NORMAL] }}</template>
@@ -440,6 +486,27 @@ onMounted(() => {
         <n-space justify="end">
           <n-button @click="dialogVisible = false">取消</n-button>
           <n-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</n-button>
+        </n-space>
+      </template>
+    </n-modal>
+
+    <!-- 分配角色对话框 -->
+    <n-modal v-model:show="roleDialogVisible" title="分配角色" preset="card" style="width: 480px" :mask-closable="false">
+      <n-form ref="roleFormRef" :model="roleForm" label-placement="left" label-width="80px">
+        <n-form-item label="角色">
+          <n-select
+            v-model:value="roleForm.roleIds"
+            :options="roleOptions"
+            placeholder="请选择角色"
+            multiple
+            clearable
+          />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <n-space justify="end">
+          <n-button @click="roleDialogVisible = false">取消</n-button>
+          <n-button type="primary" @click="handleRoleSubmit">确定</n-button>
         </n-space>
       </template>
     </n-modal>

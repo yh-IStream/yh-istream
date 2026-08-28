@@ -1,23 +1,22 @@
 <script setup lang="ts">
 import { SearchOutline, RefreshOutline, TrashOutline } from '@vicons/ionicons5'
 import { getOperLogList, clearOperLog } from '@/api/modules/system'
+import { SUCCESS_OPTIONS } from '@/constants'
 
 const message = useMessage()
+const { pagination, resetPage, setPage, setPageSize } = usePagination()
+const { renderSuccessTag } = useStatusRender()
+
 const loading = ref(false)
 const tableData = ref<any[]>([])
-const pagination = reactive({ page: 1, pageSize: 10, itemCount: 0, showSizePicker: true, pageSizes: [10, 20, 50] })
 const searchForm = reactive({ title: '', businessType: null as number | null, status: null as number | null })
 
-const businessTypeOptions = [
+const businessTypeOptions: any = [
   { label: '全部', value: null }, { label: '新增', value: 1 }, { label: '修改', value: 2 }, { label: '删除', value: 3 },
   { label: '授权', value: 4 }, { label: '导出', value: 5 }, { label: '导入', value: 6 }, { label: '其它', value: 0 },
 ]
 
-const statusOptions = [
-  { label: '全部', value: null }, { label: '成功', value: 0 }, { label: '失败', value: 1 },
-]
-
-const businessTypeMap: Record<number, { type: string; label: string }> = {
+const businessTypeMap: Record<number, { type: 'default' | 'info' | 'primary' | 'error' | 'warning' | 'success'; label: string }> = {
   0: { type: 'default', label: '其它' }, 1: { type: 'info', label: '新增' }, 2: { type: 'primary', label: '修改' },
   3: { type: 'error', label: '删除' }, 4: { type: 'warning', label: '授权' }, 5: { type: 'success', label: '导出' }, 6: { type: 'info', label: '导入' },
 }
@@ -32,13 +31,13 @@ const columns = [
     },
   },
   { title: '请求方法', key: 'requestMethod', width: 100 },
-  { title: '请求URL', key: 'requestUrl', width: 200, ellipsis: { tooltip: true } },
+  { title: '请求URL', key: 'operUrl', width: 200, ellipsis: { tooltip: true } },
   { title: '操作人', key: 'operName', width: 120 },
   { title: '操作IP', key: 'operIp', width: 140 },
   { title: '操作地点', key: 'operLocation', width: 140 },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => h(NTag, { type: row.status === 0 ? 'success' : 'error', size: 'small' }, { default: () => row.status === 0 ? '成功' : '失败' }),
+    render: (row: any) => renderSuccessTag(row.status),
   },
   { title: '操作时间', key: 'operTime', width: 170 },
   {
@@ -61,10 +60,10 @@ async function fetchData() {
   finally { loading.value = false }
 }
 
-function handleSearch() { pagination.page = 1; fetchData() }
-function handleReset() { searchForm.title = ''; searchForm.businessType = null; searchForm.status = null; pagination.page = 1; fetchData() }
-function handlePageChange(page: number) { pagination.page = page; fetchData() }
-function handlePageSizeChange(size: number) { pagination.pageSize = size; pagination.page = 1; fetchData() }
+function handleSearch() { resetPage(); fetchData() }
+function handleReset() { searchForm.title = ''; searchForm.businessType = null; searchForm.status = null; resetPage(); fetchData() }
+function handlePageChange(page: number) { setPage(page); fetchData() }
+function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
 
 async function handleClear() {
   try { await clearOperLog(); message.success('清空成功'); fetchData() }
@@ -89,7 +88,7 @@ onMounted(() => fetchData())
           <n-select v-model:value="searchForm.businessType" :options="businessTypeOptions" placeholder="请选择" clearable style="width: 120px" />
         </n-form-item>
         <n-form-item label="状态">
-          <n-select v-model:value="searchForm.status" :options="statusOptions" placeholder="请选择" clearable style="width: 120px" />
+          <n-select v-model:value="searchForm.status" :options="SUCCESS_OPTIONS" placeholder="请选择" clearable style="width: 120px" />
         </n-form-item>
         <n-form-item>
           <n-space>

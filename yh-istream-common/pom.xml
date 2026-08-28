@@ -54,6 +54,12 @@
             <artifactId>easyexcel</artifactId>
         </dependency>
 
+        <!-- Jackson 注解（用于 JSON 序列化配置） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
         <!-- Servlet API (用于部分通用工具) -->
         <dependency>
             <groupId>jakarta.servlet</groupId>

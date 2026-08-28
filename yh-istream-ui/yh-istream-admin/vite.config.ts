@@ -15,20 +15,13 @@ export default defineConfig({
     VueRouter({
       routesFolder: 'src/views',
       dts: 'src/typed-router.d.ts',
-      extendRoute(route) {
-        if (route.path !== '/login') {
-          route.meta = { ...route.meta, layout: 'default' }
-        }
-      },
     }),
     vue(),
     UnoCSS(),
     AutoImport({
       imports: [
         'vue',
-        {
-          'vue-router/auto': ['useRoute', 'useRouter'],
-        },
+        'vue-router',
         'pinia',
         {
           'naive-ui': [

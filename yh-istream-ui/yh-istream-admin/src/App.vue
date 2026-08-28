@@ -4,6 +4,8 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 const appStore = useAppStore()
 const route = useRoute()
+
+const FULLSCREEN_ROUTES = new Set(['/', '/login/', '/[...all]', '/error/404'])
 </script>
 
 <template>
@@ -18,7 +20,7 @@ const route = useRoute()
       <NDialogProvider>
         <NNotificationProvider>
           <NLoadingBarProvider>
-            <DefaultLayout v-if="route.meta.layout === 'default'">
+            <DefaultLayout v-if="!FULLSCREEN_ROUTES.has(String(route.name))">
               <RouterView />
             </DefaultLayout>
             <RouterView v-else />

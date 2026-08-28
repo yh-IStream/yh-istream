@@ -30,7 +30,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "角色管理")
 @RestController
@@ -127,18 +129,29 @@ public class SysRoleController {
         return R.ok();
     }
 
-    @Operation(summary = "查询角色已分配的菜单ID列表")
+    @Operation(summary = "查询角色菜单树及已选菜单ID")
     @SaCheckPermission("system:role:edit")
-    @GetMapping("/{roleId}/menu-ids")
-    public R<List<Long>> getMenuIds(@PathVariable Long roleId) {
-        return R.ok(sysRoleService.getMenuIdsByRoleId(roleId));
+    @GetMapping("/menu-tree/{roleId}")
+    public R<Map<String, Object>> menuTree(@PathVariable Long roleId) {
+        List<SysMenu> menus = sysMenuService.listMenuTree();
+        List<Long> checkedKeys = sysRoleService.getMenuIdsByRoleId(roleId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("menus", menus);
+        result.put("checkedKeys", checkedKeys);
+        return R.ok(result);
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "保存角色菜单分配")
     @SaCheckPermission("system:role:edit")
-    @PutMapping("/{roleId}/menu")
-    public R<Void> saveRoleMenu(@PathVariable Long roleId, @RequestBody List<Long> menuIds) {
+    @PutMapping("/menu-assign")
+    public R<Void> saveRoleMenu(@RequestBody Map<String, Object> params) {
+        Long roleId = Long.valueOf(params.get("roleId").toString());
+        @SuppressWarnings("unchecked")
+        List<Object> rawIds = (List<Object>) params.get("menuIds");
+        List<Long> menuIds = rawIds.stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
         sysRoleService.saveRoleMenu(roleId, menuIds);
         return R.ok();
     }
@@ -147,14 +160,18 @@ public class SysRoleController {
     @SaCheckPermission("system:role:edit")
     @GetMapping("/{roleId}/users")
     public R<List<SysUser>> getUsers(@PathVariable Long roleId) {
-        return R.ok(sysUserService.getUsersByRoleId(roleId));
+        List<SysUser> users = sysUserService.getUsersByRoleId(roleId);
+        users.forEach(user -> user.setPassword(null));
+        return R.ok(users);
     }
 
-    @Operation(summary = "查询菜单树")
-    @SaCheckPermission("system:role:list")
-    @GetMapping("/menu-tree")
-    public R<List<SysMenu>> menuTree() {
-        return R.ok(sysMenuService.listMenuTree());
+    @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
+    @Operation(summary = "分配角色用户")
+    @SaCheckPermission("system:role:edit")
+    @PutMapping("/{roleId}/users")
+    public R<Void> assignUsers(@PathVariable Long roleId, @RequestBody List<Long> userIds) {
+        sysRoleService.assignUsersToRole(roleId, userIds);
+        return R.ok();
     }
 
     @Operation(summary = "导出角色列表")

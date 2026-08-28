@@ -67,7 +67,7 @@ class SysLoginInfoControllerTest {
         @Test
         @DisplayName("正常查询")
         void list_Success() throws Exception {
-            mockMvc.perform(get("/system/login-info/list"))
+            mockMvc.perform(get("/monitor/login-info/list"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data").exists());
@@ -84,7 +84,7 @@ class SysLoginInfoControllerTest {
             SysLoginInfo info = createLoginInfo(1L, "admin", 0);
             when(sysLoginInfoService.getById(1L)).thenReturn(info);
 
-            mockMvc.perform(get("/system/login-info/1"))
+            mockMvc.perform(get("/monitor/login-info/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data.username").value("admin"));
@@ -95,7 +95,7 @@ class SysLoginInfoControllerTest {
         void getById_NotFound() throws Exception {
             when(sysLoginInfoService.getById(999L)).thenReturn(null);
 
-            mockMvc.perform(get("/system/login-info/999"))
+            mockMvc.perform(get("/monitor/login-info/999"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data").isEmpty());
@@ -111,7 +111,7 @@ class SysLoginInfoControllerTest {
         void delete_Success() throws Exception {
             when(sysLoginInfoService.removeById(1L)).thenReturn(true);
 
-            mockMvc.perform(delete("/system/login-info/1"))
+            mockMvc.perform(delete("/monitor/login-info/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200));
         }
@@ -121,7 +121,7 @@ class SysLoginInfoControllerTest {
         void deleteBatch_Success() throws Exception {
             when(sysLoginInfoService.removeByIds(anyList())).thenReturn(true);
 
-            mockMvc.perform(delete("/system/login-info/batch")
+            mockMvc.perform(delete("/monitor/login-info/batch")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(List.of(1L, 2L, 3L))))
                     .andExpect(status().isOk())
@@ -136,7 +136,7 @@ class SysLoginInfoControllerTest {
         @Test
         @DisplayName("正常清空")
         void clear_Success() throws Exception {
-            mockMvc.perform(delete("/system/login-info/clear"))
+            mockMvc.perform(delete("/monitor/login-info/clear"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200));
         }

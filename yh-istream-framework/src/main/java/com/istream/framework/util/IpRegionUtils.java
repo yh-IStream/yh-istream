@@ -46,6 +46,9 @@ public final class IpRegionUtils {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             return UNKNOWN;
         }
+        if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+            return "本地";
+        }
         ensureInitialized();
         if (searcher == null) {
             return UNKNOWN;

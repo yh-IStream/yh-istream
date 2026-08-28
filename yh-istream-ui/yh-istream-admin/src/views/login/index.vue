@@ -4,6 +4,7 @@ import { LockClosedOutline, PersonOutline, ShieldCheckmarkOutline } from '@vicon
 
 const router = useRouter()
 const authStore = useAuthStore()
+const message = useMessage()
 
 const formRef = ref()
 const loading = ref(false)
@@ -26,21 +27,32 @@ const rules = {
 async function refreshCaptcha() {
   try {
     const res = await getCaptcha()
-    captchaImage.value = (res as any).data.captchaImage
-    captchaKey.value = (res as any).data.captchaKey
+    const data = (res as any).data
+    let img = data.image
+    if (img && !img.startsWith('data:')) {
+      img = 'data:image/png;base64,' + img
+    }
+    captchaImage.value = img
+    captchaKey.value = data.uuid
   } catch {
     // ignore
   }
 }
 
 async function handleLogin() {
-  await formRef.value?.validate()
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
+
   loading.value = true
   try {
     await authStore.login(formData.username, formData.password, captchaKey.value, formData.captchaCode)
+    message.success('登录成功')
     router.push('/dashboard')
   } catch (e: any) {
-    window.$message?.error(e.message || '登录失败')
+    message.error(e.message || '登录失败')
     refreshCaptcha()
   } finally {
     loading.value = false

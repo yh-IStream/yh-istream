@@ -37,6 +37,12 @@ public class SysMenuController {
         return R.ok(sysMenuService.listAllMenuTree());
     }
 
+    @Operation(summary = "查询当前用户菜单树（侧边栏用）")
+    @GetMapping("/user-tree")
+    public R<List<SysMenu>> userTree() {
+        return R.ok(sysMenuService.getCurrentUserMenuTree());
+    }
+
     @Operation(summary = "根据ID查询菜单")
     @SaCheckPermission("system:menu:query")
     @GetMapping("/{id}")

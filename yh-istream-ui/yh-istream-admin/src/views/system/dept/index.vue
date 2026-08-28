@@ -12,11 +12,11 @@ const dialogTitle = ref('新增部门')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as number | null, parentId: 0, deptName: '', leader: '', phone: '', email: '', sort: 0, status: 0 })
+const formData = reactive({ id: null as string | null, parentId: 0, deptName: '', leader: '', phone: '', email: '', sort: 0, status: 0 })
 
 const rules = {
   deptName: [{ required: true, message: '请输入部门名称', trigger: 'blur' }],
-  sort: [{ required: true, type: 'number', message: '请输入排序', trigger: 'blur' }],
+  sort: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
 }
 
 const columns = [
@@ -75,7 +75,7 @@ async function handleSubmit() {
   finally { submitLoading.value = false }
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try { await deleteDept(id); message.success('删除成功'); fetchData() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
  * @since 2026-08-17
  */
 @Slf4j
-@Configuration
+//@Configuration
 public class XxlJobConfig {
 
     @Value("${xxl.job.admin.addresses}")

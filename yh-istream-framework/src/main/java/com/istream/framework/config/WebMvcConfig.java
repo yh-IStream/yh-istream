@@ -47,7 +47,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                     "/knife4j/**",
                                     "/favicon.ico",
                                     "/error",
-                                    "/files/**"
+                                    "/files/**",
+                                    "/system/user/rp"
                             )
                             .check(r -> StpUtil.checkLogin());
                 }))

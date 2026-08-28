@@ -70,7 +70,7 @@ class SysOperLogControllerTest {
         @Test
         @DisplayName("正常查询")
         void list_Success() throws Exception {
-            mockMvc.perform(get("/system/oper-log/list"))
+            mockMvc.perform(get("/monitor/oper-log/list"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data").exists());
@@ -87,7 +87,7 @@ class SysOperLogControllerTest {
             SysOperLog log = createOperLog(1L, "用户管理", 0);
             when(sysOperLogService.getById(1L)).thenReturn(log);
 
-            mockMvc.perform(get("/system/oper-log/1"))
+            mockMvc.perform(get("/monitor/oper-log/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data.title").value("用户管理"));
@@ -98,7 +98,7 @@ class SysOperLogControllerTest {
         void getById_NotFound() throws Exception {
             when(sysOperLogService.getById(999L)).thenReturn(null);
 
-            mockMvc.perform(get("/system/oper-log/999"))
+            mockMvc.perform(get("/monitor/oper-log/999"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data").isEmpty());
@@ -114,7 +114,7 @@ class SysOperLogControllerTest {
         void delete_Success() throws Exception {
             when(sysOperLogService.removeById(1L)).thenReturn(true);
 
-            mockMvc.perform(delete("/system/oper-log/1"))
+            mockMvc.perform(delete("/monitor/oper-log/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200));
         }
@@ -124,7 +124,7 @@ class SysOperLogControllerTest {
         void deleteBatch_Success() throws Exception {
             when(sysOperLogService.removeByIds(anyList())).thenReturn(true);
 
-            mockMvc.perform(delete("/system/oper-log/batch")
+            mockMvc.perform(delete("/monitor/oper-log/batch")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(List.of(1L, 2L, 3L))))
                     .andExpect(status().isOk())
@@ -139,7 +139,7 @@ class SysOperLogControllerTest {
         @Test
         @DisplayName("正常清空")
         void clear_Success() throws Exception {
-            mockMvc.perform(delete("/system/oper-log/clear"))
+            mockMvc.perform(delete("/monitor/oper-log/clear"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200));
         }

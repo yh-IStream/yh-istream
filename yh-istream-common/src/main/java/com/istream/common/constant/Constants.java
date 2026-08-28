@@ -11,6 +11,9 @@ public final class Constants {
     /** 超级管理员角色标识 */
     public static final String SUPER_ADMIN_ROLE = "admin";
 
+    /** 默认普通用户角色标识 */
+    public static final String DEFAULT_ROLE_KEY = "user";
+
     /** 默认密码 */
     public static final String DEFAULT_PASSWORD = "123456";
 

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
+import com.istream.common.model.dto.SysLoginInfoQuery;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysLoginInfo;
 import com.istream.system.service.SysLoginInfoService;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.util.List;
 
 @Tag(name = "登录日志管理")
 @RestController
-@RequestMapping("/system/login-info")
+@RequestMapping("/monitor/login-info")
 @RequiredArgsConstructor
 public class SysLoginInfoController {
 
@@ -36,11 +36,16 @@ public class SysLoginInfoController {
     @Operation(summary = "分页查询登录日志")
     @SaCheckPermission("system:login-info:list")
     @GetMapping("/list")
-    public R<IPage<SysLoginInfo>> list(@RequestParam(defaultValue = "1") Long pageNum,
-                                       @RequestParam(defaultValue = "10") Long pageSize) {
-        Page<SysLoginInfo> page = new Page<>(pageNum, pageSize);
-        sysLoginInfoService.page(page, new LambdaQueryWrapper<SysLoginInfo>()
-                .orderByDesc(SysLoginInfo::getLoginTime));
+    public R<IPage<SysLoginInfo>> list(SysLoginInfoQuery query) {
+        Page<SysLoginInfo> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<SysLoginInfo> wrapper = new LambdaQueryWrapper<SysLoginInfo>()
+                .eq(query.getUsername() != null && !query.getUsername().isEmpty(),
+                        SysLoginInfo::getUsername, query.getUsername())
+                .eq(query.getIpAddress() != null && !query.getIpAddress().isEmpty(),
+                        SysLoginInfo::getIpAddress, query.getIpAddress())
+                .eq(query.getStatus() != null, SysLoginInfo::getStatus, query.getStatus())
+                .orderByDesc(SysLoginInfo::getLoginTime);
+        sysLoginInfoService.page(page, wrapper);
         return R.ok(page);
     }
 

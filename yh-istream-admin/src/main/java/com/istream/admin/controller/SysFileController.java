@@ -170,9 +170,17 @@ public class SysFileController {
     @SaCheckPermission("system:file:list")
     @GetMapping("/list")
     public R<IPage<SysFile>> list(@RequestParam(defaultValue = "1") Long pageNum,
-                                  @RequestParam(defaultValue = "10") Long pageSize) {
+                                  @RequestParam(defaultValue = "10") Long pageSize,
+                                  @RequestParam(required = false) String originalName,
+                                  @RequestParam(required = false) String fileExt) {
         Page<SysFile> page = new Page<>(pageNum, pageSize);
-        sysFileService.page(page, new LambdaQueryWrapper<SysFile>().orderByDesc(SysFile::getCreateTime));
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .like(originalName != null && !originalName.isEmpty(),
+                        SysFile::getOriginalName, originalName)
+                .eq(fileExt != null && !fileExt.isEmpty(),
+                        SysFile::getFileExt, fileExt)
+                .orderByDesc(SysFile::getCreateTime);
+        sysFileService.page(page, wrapper);
         return R.ok(page);
     }
 

@@ -3,9 +3,9 @@ import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
 import { getConfigList, addConfig, updateConfig, deleteConfig } from '@/api/modules/system'
 
 const message = useMessage()
+const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const loading = ref(false)
 const tableData = ref<any[]>([])
-const pagination = reactive({ page: 1, pageSize: 10, itemCount: 0, showSizePicker: true, pageSizes: [10, 20, 50] })
 const searchForm = reactive({ configName: '', configKey: '' })
 
 const dialogVisible = ref(false)
@@ -13,7 +13,7 @@ const dialogTitle = ref('新增配置')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as number | null, configName: '', configKey: '', configValue: '', remark: '' })
+const formData = reactive({ id: null as string | null, configName: '', configKey: '', configValue: '', remark: '' })
 
 const rules = {
   configName: [{ required: true, message: '请输入配置名称', trigger: 'blur' }],
@@ -52,10 +52,10 @@ async function fetchData() {
   finally { loading.value = false }
 }
 
-function handleSearch() { pagination.page = 1; fetchData() }
-function handleReset() { searchForm.configName = ''; searchForm.configKey = ''; pagination.page = 1; fetchData() }
-function handlePageChange(page: number) { pagination.page = page; fetchData() }
-function handlePageSizeChange(size: number) { pagination.pageSize = size; pagination.page = 1; fetchData() }
+function handleSearch() { resetPage(); fetchData() }
+function handleReset() { searchForm.configName = ''; searchForm.configKey = ''; resetPage(); fetchData() }
+function handlePageChange(page: number) { setPage(page); fetchData() }
+function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
 
 function handleAdd() {
   isEdit.value = false; dialogTitle.value = '新增配置'
@@ -81,7 +81,7 @@ async function handleSubmit() {
   finally { submitLoading.value = false }
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try { await deleteConfig(id); message.success('删除成功'); fetchData() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }

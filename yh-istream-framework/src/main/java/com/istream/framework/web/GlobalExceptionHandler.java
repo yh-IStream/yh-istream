@@ -1,4 +1,4 @@
-package com.istream.framework.security;
+package com.istream.framework.web;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;

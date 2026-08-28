@@ -24,19 +24,17 @@ instance.interceptors.request.use(
 // 响应拦截器
 instance.interceptors.response.use(
   (response) => {
-    const { code, message } = response.data
-
-    // 文件下载等特殊请求直接返回
     if (response.config.responseType === 'blob') {
       return response
     }
+
+    const { code, message } = response.data ?? {}
 
     if (code === 200) {
       return response.data
     }
 
-    // Token 过期
-    if (code === 401) {
+    if (code === 401 && !response.config.url?.includes('/auth/logout')) {
       const authStore = useAuthStore()
       authStore.logout()
       return Promise.reject(new Error('登录已过期'))
@@ -45,7 +43,7 @@ instance.interceptors.response.use(
     return Promise.reject(new Error(message || '请求失败'))
   },
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/logout')) {
       const authStore = useAuthStore()
       authStore.logout()
     }
@@ -65,8 +63,8 @@ export function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequ
   return instance.put<T, T>(url, data, config)
 }
 
-export function del<T = unknown>(url: string, params?: Record<string, unknown>, config?: AxiosRequestConfig) {
-  return instance.delete<T, T>(url, { params, ...config })
+export function del<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+  return instance.delete<T, T>(url, { data, ...config })
 }
 
 export function upload<T = unknown>(url: string, formData: FormData, onProgress?: (percent: number) => void) {

@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
  * @since 2026-08-17
  */
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class LogCleanupJob {
 

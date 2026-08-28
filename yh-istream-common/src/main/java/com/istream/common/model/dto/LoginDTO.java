@@ -19,8 +19,8 @@ public class LoginDTO implements Serializable {
     @NotBlank(message = "密码不能为空")
     private String password;
 
-    /** 验证码（暂未启用） */
-    private String captcha;
+    /** 验证码 */
+    private String captchaCode;
 
     /** 验证码唯一标识 */
     private String captchaKey;
