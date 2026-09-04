@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +62,16 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     public boolean removeById(Serializable id) {
         boolean result = super.removeById(id);
         clearConfigCache();
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByIds(Collection<?> list) {
+        boolean result = super.removeByIds(list);
+        if (result) {
+            clearConfigCache();
+        }
         return result;
     }
 

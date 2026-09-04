@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { SearchOutline, RefreshOutline, DownloadOutline } from '@vicons/ionicons5'
-import { getFileList, deleteFile, downloadFile } from '@/api/modules/system'
+import { SearchOutline, RefreshOutline, DownloadOutline, CloudUploadOutline } from '@vicons/ionicons5'
+import { getFileList, deleteFile, downloadFile, uploadFile } from '@/api/modules/system'
 
 const message = useMessage()
 const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const searchForm = reactive({ originalName: '', fileExt: '' })
+const uploadRef = ref()
+const uploadLoading = ref(false)
 
 const columns = [
   { title: '文件名', key: 'originalName', width: 240, ellipsis: { tooltip: true } },
@@ -75,6 +77,21 @@ async function handleDelete(id: string) {
   catch (e: any) { message.error(e.message || '删除失败') }
 }
 
+async function handleUpload(options: { file: File }) {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  uploadLoading.value = true
+  try {
+    await uploadFile(formData)
+    message.success('上传成功')
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '上传失败')
+  } finally {
+    uploadLoading.value = false
+  }
+}
+
 onMounted(() => fetchData())
 </script>
 
@@ -98,6 +115,14 @@ onMounted(() => fetchData())
     </div>
 
     <div class="card">
+      <div class="mb-12px">
+        <n-upload v-permission="'system:file:upload'" :show-file-list="false" :custom-request="handleUpload as any" :disabled="uploadLoading">
+          <n-button type="primary" :loading="uploadLoading">
+            <template #icon><n-icon :component="CloudUploadOutline" /></template>
+            上传文件
+          </n-button>
+        </n-upload>
+      </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
         :row-key="(row: any) => row.id" striped size="small" remote
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />

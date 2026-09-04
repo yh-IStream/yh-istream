@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { SearchOutline, AddOutline, TrashOutline, DownloadOutline, RefreshOutline } from '@vicons/ionicons5'
 import {
-  getUserList, getUserById, addUser, updateUser, assignUserRoles, deleteUser, batchDeleteUser,
+  getUserList, getUserById, addUser, updateUser, assignUserRoles, deleteUser,
   resetUserPwd, changeUserStatus, exportUser, getDeptTree, getAllRoles, type SysUser,
 } from '@/api/modules/system'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
+import { useDict } from '@/composables/useDict'
 
 const message = useMessage()
 const dialog = useDialog()
 const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderStatusTag } = useStatusRender()
+const { loadDict, useDictTag } = useDict()
+const { render: renderGenderTag } = useDictTag('sys_user_sex')
 
 // ==================== State ====================
 const loading = ref(false)
+const genderOptions = ref<{ label: string; value: string }[]>([])
 const tableData = ref<SysUser[]>([])
 const selectedIds = ref<string[]>([])
 
@@ -68,8 +72,17 @@ const columns = [
   { title: '手机号', key: 'phone', width: 130 },
   { title: '邮箱', key: 'email', width: 180, ellipsis: { tooltip: true } },
   {
+    title: '性别', key: 'gender', width: 80, align: 'center' as const,
+    render: (row: SysUser) => renderGenderTag(row.gender),
+  },
+  {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: SysUser) => renderStatusTag(row.status),
+    render: (row: SysUser) => h(NSwitch, {
+      value: row.status === STATUS.NORMAL,
+      checkedValue: true,
+      uncheckedValue: false,
+      onUpdateValue: (val: boolean) => handleStatusChange(row, val),
+    }),
   },
   { title: '创建时间', key: 'createTime', width: 170 },
   {
@@ -91,7 +104,7 @@ const columns = [
 ]
 
 // 表单验证规则
-const rules = {
+const rules = computed(() => ({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   password: isEdit.value
@@ -100,7 +113,7 @@ const rules = {
   deptId: [{ required: true, message: '请选择部门', trigger: 'change', type: 'string' as const }],
   email: [{ type: 'email' as const, message: '请输入正确的邮箱', trigger: 'blur' }],
   phone: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }],
-}
+}))
 
 const pwdRules = {
   password: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
@@ -197,7 +210,7 @@ async function handleEdit(row: SysUser) {
     deptId: row.deptId,
     email: row.email ?? '',
     phone: row.phone ?? '',
-    gender: 0,
+    gender: row.gender ?? 0,
     status: row.status,
     remark: row.remark ?? '',
   })
@@ -301,7 +314,7 @@ async function handleBatchDelete() {
     negativeText: '取消',
     onPositiveClick: async () => {
       try {
-        await batchDeleteUser(selectedIds.value)
+        await deleteUser(selectedIds.value)
         message.success('批量删除成功')
         selectedIds.value = []
         fetchData()
@@ -361,10 +374,11 @@ async function handleExport() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchData()
   fetchDeptTree()
   fetchRoles()
+  genderOptions.value = await loadDict('sys_user_sex')
 })
 </script>
 
@@ -417,12 +431,12 @@ onMounted(() => {
             <template #icon><n-icon :component="AddOutline" /></template>
             新增
           </n-button>
-          <n-button type="error" ghost @click="handleBatchDelete" :disabled="selectedIds.length === 0">
+          <n-button type="error" ghost @click="handleBatchDelete" :disabled="selectedIds.length === 0" v-permission="'system:user:delete'">
             <template #icon><n-icon :component="TrashOutline" /></template>
             批量删除
           </n-button>
         </n-space>
-        <n-button @click="handleExport">
+        <n-button @click="handleExport" v-permission="'system:user:export'">
           <template #icon><n-icon :component="DownloadOutline" /></template>
           导出
         </n-button>
@@ -471,6 +485,11 @@ onMounted(() => {
         </n-form-item>
         <n-form-item label="邮箱" path="email">
           <n-input v-model:value="formData.email" placeholder="请输入邮箱" />
+        </n-form-item>
+        <n-form-item label="性别" path="gender">
+          <n-radio-group v-model:value="formData.gender">
+            <n-radio v-for="item in genderOptions" :key="item.value" :value="Number(item.value)">{{ item.label }}</n-radio>
+          </n-radio-group>
         </n-form-item>
         <n-form-item label="备注">
           <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />

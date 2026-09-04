@@ -3,6 +3,7 @@ package com.istream.system.entity;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,6 +16,7 @@ public class SysLoginInfo implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ExcelProperty("ID")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @ExcelProperty("用户名")

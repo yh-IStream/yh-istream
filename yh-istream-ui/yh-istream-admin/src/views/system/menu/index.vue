@@ -2,9 +2,12 @@
 import { AddOutline, RefreshOutline } from '@vicons/ionicons5'
 import { getMenuTree, addMenu, updateMenu, deleteMenu } from '@/api/modules/system'
 import { STATUS, STATUS_LABEL } from '@/constants'
+import { useDict } from '@/composables/useDict'
 
 const message = useMessage()
 const { renderStatusTag } = useStatusRender()
+const { useDictTag, loadDict } = useDict()
+const { render: renderMenuTypeTag } = useDictTag('sys_menu_type', '未知')
 const loading = ref(false)
 const treeData = ref<any[]>([])
 const dialogVisible = ref(false)
@@ -12,11 +15,27 @@ const dialogTitle = ref('新增菜单')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as string | null, parentId: 0, menuName: '', menuType: 'M', path: '', component: '', permission: '', icon: '', orderNum: 0, status: 0, visible: 1 })
+const formData = reactive({ id: null as string | null, parentId: '0' as string, menuName: '', menuType: 'M', path: '', component: '', permission: '', icon: '', orderNum: 0, status: 0, visible: 1 })
 
-const menuTypeOptions = [
-  { label: '目录', value: 'M' }, { label: '菜单', value: 'C' }, { label: '按钮', value: 'F' },
-]
+const menuTreeSelectData = computed(() => {
+  const filterTree = (list: any[]): any[] =>
+    list
+      .filter(item => String(item.id) !== String(formData.id))
+      .map(item => ({
+        key: String(item.id),
+        label: item.menuName,
+        children: item.children && item.children.length ? filterTree(item.children) : undefined,
+      }))
+  return [{ key: '0', label: '主类目', children: filterTree(treeData.value) }]
+})
+
+const menuTypeOptions = ref<{ label: string; value: string }[]>([])
+
+onMounted(async () => {
+  const list = await loadDict('sys_menu_type')
+  menuTypeOptions.value = list.map(item => ({ label: item.label, value: item.value }))
+  fetchData()
+})
 
 const rules = {
   menuName: [{ required: true, message: '请输入菜单名称', trigger: 'blur' }],
@@ -28,11 +47,7 @@ const columns = [
   { title: '菜单名称', key: 'menuName', tree: true, width: 200 },
   {
     title: '类型', key: 'menuType', width: 80, align: 'center' as const,
-    render: (row: any) => {
-      const map: Record<string, { type: 'default' | 'info' | 'primary' | 'warning'; label: string }> = { 'M': { type: 'info', label: '目录' }, 'C': { type: 'primary', label: '菜单' }, 'F': { type: 'warning', label: '按钮' } }
-      const info = map[row.menuType] ?? { type: 'default', label: '未知' }
-      return h(NTag, { type: info.type, size: 'small' }, { default: () => info.label })
-    },
+    render: (row: any) => renderMenuTypeTag(row.menuType),
   },
   { title: '路由路径', key: 'path', width: 160, ellipsis: { tooltip: true } },
   { title: '权限标识', key: 'permission', width: 180, ellipsis: { tooltip: true } },
@@ -49,7 +64,7 @@ const columns = [
       h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
       h(NPopconfirm, { onPositiveClick: () => handleDelete(row.id) }, {
         trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
-        default: () => '确认删除？',
+        default: () => '确认删除？子菜单将一并删除，不可恢复！',
       }),
     ]),
   },
@@ -66,14 +81,14 @@ async function fetchData() {
 
 function handleAdd(parent?: any) {
   isEdit.value = false; dialogTitle.value = '新增菜单'
-  const parentId = parent ? parent.id : 0
+  const parentId = parent ? String(parent.id) : '0'
   Object.assign(formData, { id: null, parentId, menuName: '', menuType: parent ? 'C' : 'M', path: '', component: '', permission: '', icon: '', orderNum: 0, status: STATUS.NORMAL, visible: 1 })
   dialogVisible.value = true
 }
 
 function handleEdit(row: any) {
   isEdit.value = true; dialogTitle.value = '编辑菜单'
-  Object.assign(formData, { id: row.id, parentId: row.parentId ?? 0, menuName: row.menuName, menuType: row.menuType, path: row.path ?? '', component: row.component ?? '', permission: row.permission ?? '', icon: row.icon ?? '', orderNum: row.orderNum ?? 0, status: row.status ?? 0, visible: row.visible ?? 1 })
+  Object.assign(formData, { id: row.id, parentId: row.parentId != null ? String(row.parentId) : '0', menuName: row.menuName, menuType: row.menuType, path: row.path ?? '', component: row.component ?? '', permission: row.permission ?? '', icon: row.icon ?? '', orderNum: row.orderNum ?? 0, status: row.status ?? 0, visible: row.visible ?? 1 })
   dialogVisible.value = true
 }
 
@@ -81,7 +96,7 @@ async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { ...formData, parentId: formData.parentId || 0 }
+    const data: any = { ...formData, parentId: Number(formData.parentId) || 0 }
     if (formData.id) { data.id = formData.id; await updateMenu(data); message.success('修改成功') }
     else { await addMenu(data); message.success('新增成功') }
     dialogVisible.value = false; fetchData()
@@ -94,14 +109,14 @@ async function handleDelete(id: string) {
   catch (e: any) { message.error(e.message || '删除失败') }
 }
 
-onMounted(() => fetchData())
+
 </script>
 
 <template>
   <div class="flex flex-col gap-12px">
     <div class="card">
       <div class="flex items-center justify-between mb-12px">
-        <n-button type="primary" @click="handleAdd()"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+        <n-button type="primary" @click="handleAdd()" v-permission="'system:menu:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
         <n-button @click="fetchData"><template #icon><n-icon :component="RefreshOutline" /></template>刷新</n-button>
       </div>
       <n-data-table :columns="columns" :data="treeData" :loading="loading" :row-key="(row: any) => row.id" striped size="small" default-expand-all />
@@ -109,6 +124,9 @@ onMounted(() => fetchData())
 
     <n-modal v-model:show="dialogVisible" :title="dialogTitle" preset="card" style="width: 600px" :mask-closable="false">
       <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="80px">
+        <n-form-item label="上级菜单" path="parentId">
+          <n-tree-select v-model:value="formData.parentId" :options="menuTreeSelectData" :default-expand-all="false" placeholder="请选择上级菜单" />
+        </n-form-item>
         <n-form-item label="菜单类型" path="menuType">
           <n-radio-group v-model:value="formData.menuType">
             <n-radio v-for="opt in menuTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</n-radio>

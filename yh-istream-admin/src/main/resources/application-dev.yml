@@ -1,8 +1,8 @@
-spring:
+﻿spring:
   datasource:
     # MySQL 9.7.2 LTS
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/yh_istream?connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=DISABLED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
+    url: jdbc:mysql://localhost:3307/yh_istream?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=DISABLED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
     username: root
     password: 123321
     hikari:
@@ -23,7 +23,7 @@ spring:
   #   password: postgres
 
   # Flyway 数据库迁移
-  flyway:
+  yh_istream:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1

@@ -7,12 +7,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.dto.SysUserDTO;
-import com.istream.common.model.dto.SysUserQuery;
+import com.istream.common.model.query.SysUserQuery;
+import com.istream.common.model.dto.UserRoleAssignDTO;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysUser;
-import com.istream.system.convert.SysUserConverter;
+import com.istream.system.converter.SysUserConverter;
 import com.istream.system.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @Tag(name = "用户管理")
 @RestController
@@ -91,26 +91,16 @@ public class SysUserController {
     @Operation(summary = "分配用户角色")
     @SaCheckPermission("system:user:edit")
     @PutMapping("/{id}/roles")
-    public R<Void> assignRoles(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
-        List<Long> roleIds = body.getOrDefault("roleIds", List.of());
-        sysUserService.assignUserRoles(id, roleIds);
+    public R<Void> assignRoles(@PathVariable Long id, @Valid @RequestBody UserRoleAssignDTO dto) {
+        sysUserService.assignUserRoles(id, dto.getRoleIds() != null ? dto.getRoleIds() : List.of());
         return R.ok();
     }
 
     @OperLog(title = "用户管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除用户")
     @SaCheckPermission("system:user:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysUserService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "用户管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除用户")
-    @SaCheckPermission("system:user:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysUserService.removeByIds(ids);
         return R.ok();
     }
@@ -134,7 +124,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "导出用户列表")
-    @SaCheckPermission("system:user:list")
+    @SaCheckPermission("system:user:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
         List<SysUser> list = sysUserService.list();

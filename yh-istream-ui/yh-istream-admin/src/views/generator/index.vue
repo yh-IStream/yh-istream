@@ -5,7 +5,7 @@ import {
 import {
   getTableList, previewCode, downloadCode, batchPreviewCode, batchDownloadCode,
   type TableInfo, type GenRequest,
-} from '@/api/modules/system'
+} from '@/api/modules/generator'
 
 const message = useMessage()
 

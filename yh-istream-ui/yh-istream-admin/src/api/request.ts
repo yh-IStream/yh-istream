@@ -28,7 +28,7 @@ instance.interceptors.response.use(
       return response
     }
 
-    const { code, message } = response.data ?? {}
+    const { code, msg } = response.data ?? {}
 
     if (code === 200) {
       return response.data
@@ -40,7 +40,7 @@ instance.interceptors.response.use(
       return Promise.reject(new Error('登录已过期'))
     }
 
-    return Promise.reject(new Error(message || '请求失败'))
+    return Promise.reject(new Error(msg || '请求失败'))
   },
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.includes('/auth/logout')) {

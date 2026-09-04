@@ -8,6 +8,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/**
+ * EasyExcel Web 导出工具类
+ *
+ * <p>将数据列表以 Excel 格式写入 HttpServletResponse，触发浏览器下载。
+ * 实体类字段使用 {@code @ExcelProperty("列名")} 标注即可自动映射。</p>
+ */
 public final class ExcelExportUtil {
 
     private ExcelExportUtil() {

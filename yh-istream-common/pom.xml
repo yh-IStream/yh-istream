@@ -60,11 +60,5 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
-        <!-- Servlet API (用于部分通用工具) -->
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 </project>

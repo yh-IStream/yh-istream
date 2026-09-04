@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.istream.common.annotation.DataScope;
 import com.istream.common.enums.DataScopeEnum;
 import com.istream.common.enums.StatusEnum;
-import com.istream.common.model.BaseQuery;
+import com.istream.common.model.query.BaseQuery;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.system.entity.SysDept;
 import com.istream.system.entity.SysRole;

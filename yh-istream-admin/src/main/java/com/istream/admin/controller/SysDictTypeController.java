@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.model.BaseQuery;
+import com.istream.common.model.query.SysDictTypeQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.system.entity.SysDictType;
@@ -37,10 +37,14 @@ public class SysDictTypeController {
     @Operation(summary = "分页查询字典类型")
     @SaCheckPermission("system:dict:list")
     @GetMapping("/list")
-    public R<IPage<SysDictType>> list(BaseQuery query) {
+    public R<IPage<SysDictType>> list(SysDictTypeQuery query) {
         Page<SysDictType> page = new Page<>(query.getPageNum(), query.getPageSize());
         sysDictTypeService.page(page, new LambdaQueryWrapper<SysDictType>()
-                .orderByAsc(SysDictType::getId));
+                .like(query.getDictName() != null && !query.getDictName().isEmpty(),
+                        SysDictType::getDictName, query.getDictName())
+                .like(query.getDictType() != null && !query.getDictType().isEmpty(),
+                        SysDictType::getDictType, query.getDictType())
+                .orderByDesc(SysDictType::getCreateTime));
         return R.ok(page);
     }
 
@@ -82,23 +86,8 @@ public class SysDictTypeController {
     @OperLog(title = "字典类型管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除字典类型")
     @SaCheckPermission("system:dict:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        if (sysDictTypeService.hasDictData(id)) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "该字典类型下存在字典数据，无法删除");
-        }
-        sysDictTypeService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "字典类型管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除字典类型")
-    @SaCheckPermission("system:dict:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
-        if (sysDictTypeService.hasDictDataAny(ids)) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "所选字典类型下存在字典数据，无法删除");
-        }
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysDictTypeService.removeByIds(ids);
         return R.ok();
     }

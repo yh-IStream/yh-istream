@@ -18,18 +18,11 @@ function hasPermission(binding: DirectiveBinding): boolean {
 export const vPermission: Directive<HTMLElement, string | string[]> = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     if (!hasPermission(binding)) {
-      el.parentNode?.removeChild(el)
+      el.style.display = 'none'
     }
   },
   updated(el: HTMLElement, binding: DirectiveBinding) {
-    const oldVisible = binding.oldValue !== undefined && hasPermission({ ...binding, value: binding.oldValue } as DirectiveBinding)
     const newVisible = hasPermission(binding)
-    if (oldVisible !== newVisible) {
-      if (newVisible) {
-        el.style.display = ''
-      } else {
-        el.style.display = 'none'
-      }
-    }
+    el.style.display = newVisible ? '' : 'none'
   },
 }

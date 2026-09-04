@@ -1,22 +1,23 @@
-import type { GlobalTheme } from 'naive-ui'
+import { darkTheme, type GlobalTheme } from 'naive-ui'
 
 export const useAppStore = defineStore('app', () => {
-  /** 暗色模式 */
   const darkMode = ref(false)
-  /** 侧边栏折叠 */
   const collapsed = ref(false)
-  /** 是否移动端 */
   const isMobile = ref(false)
 
-  const theme = computed<GlobalTheme | null>(() => (darkMode.value ? null : null))
+  const theme = computed<GlobalTheme | null>(() => (darkMode.value ? darkTheme : null))
 
   const themeOverrides = computed(() => ({
     common: {
-      primaryColor: '#18a058',
-      primaryColorHover: '#36ad6a',
-      primaryColorPressed: '#0c7a43',
-      primaryColorSuppl: '#36ad6a',
-      borderRadius: '6px',
+      primaryColor: '#14b8a6',
+      primaryColorHover: '#2dd4bf',
+      primaryColorPressed: '#0d9488',
+      primaryColorSuppl: '#2dd4bf',
+      borderRadius: '8px',
+      borderRadiusSmall: '6px',
+      inputColor: darkMode.value ? 'rgba(30,41,59,0.6)' : 'rgba(255,255,255,0.8)',
+      cardColor: darkMode.value ? 'rgba(30,41,59,0.6)' : 'rgba(255,255,255,0.8)',
+      modalColor: darkMode.value ? 'rgba(30,41,59,0.85)' : 'rgba(255,255,255,0.9)',
     },
   }))
 

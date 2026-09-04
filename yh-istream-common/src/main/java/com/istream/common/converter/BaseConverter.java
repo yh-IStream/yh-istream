@@ -1,4 +1,4 @@
-package com.istream.common.model.mapper;
+package com.istream.common.converter;
 
 import java.util.List;
 
@@ -11,7 +11,7 @@ import java.util.List;
  *
  * @param <E> Entity 类型
  * @param <D> DTO 类型
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 public interface BaseConverter<E, D> {

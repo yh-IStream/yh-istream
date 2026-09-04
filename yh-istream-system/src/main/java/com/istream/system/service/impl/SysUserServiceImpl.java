@@ -10,7 +10,7 @@ import com.istream.common.annotation.DataScope;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
-import com.istream.common.model.dto.SysUserQuery;
+import com.istream.common.model.query.SysUserQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import com.istream.system.entity.SysUserRole;
@@ -23,12 +23,16 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
+import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
 @Service
 @RequiredArgsConstructor
@@ -37,9 +41,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysRoleMapper sysRoleMapper;
     private final RedissonClient redissonClient;
-
-    private static final String PERM_CACHE_PREFIX = "perm:cache:";
-    private static final String ROLE_CACHE_PREFIX = "role:cache:";
 
     @Override
     public SysUser getByUsername(String username) {
@@ -119,8 +120,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "存在无效的角色ID");
             }
             assignRoles(userId, roleIds);
-        } else {
-            assignDefaultRole(userId);
         }
         clearUserCache(userId);
     }
@@ -139,8 +138,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     return ur;
                 })
                 .toList();
-        for (SysUserRole ur : userRoles) {
-            sysUserRoleMapper.insert(ur);
+        if (!userRoles.isEmpty()) {
+            sysUserRoleMapper.insertBatch(userRoles);
         }
     }
 
@@ -211,6 +210,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean removeById(Long id) {
+        checkSuperAdmin(id);
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, id));
         clearUserCache(id);
@@ -220,13 +220,28 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean removeByIds(Collection<?> list) {
+        @SuppressWarnings("unchecked")
+        List<SysUser> users = listByIds((Collection<? extends Serializable>) list);
+        for (SysUser user : users) {
+            if (Constants.SUPER_ADMIN_ROLE.equals(user.getUsername())) {
+                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
+                        ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+            }
+        }
+        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
+                .in(SysUserRole::getUserId, list));
         for (Object id : list) {
-            Long userId = (Long) id;
-            sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                    .eq(SysUserRole::getUserId, userId));
-            clearUserCache(userId);
+            clearUserCache((Long) id);
         }
         return super.removeByIds(list);
+    }
+
+    private void checkSuperAdmin(Long userId) {
+        SysUser user = getById(userId);
+        if (user != null && Constants.SUPER_ADMIN_ROLE.equals(user.getUsername())) {
+            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
+                    ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+        }
     }
 
     @Override

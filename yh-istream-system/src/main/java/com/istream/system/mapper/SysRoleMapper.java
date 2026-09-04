@@ -3,7 +3,7 @@ package com.istream.system.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.istream.common.model.dto.SysRoleQuery;
+import com.istream.common.model.query.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

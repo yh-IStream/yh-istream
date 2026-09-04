@@ -3,6 +3,8 @@ package com.istream.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.enums.MenuTypeEnum;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
 import com.istream.common.model.BaseEntity;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.framework.util.TreeUtils;
@@ -15,10 +17,14 @@ import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +33,6 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     private final SysRoleMenuMapper sysRoleMenuMapper;
     private final RedissonClient redissonClient;
 
-    private static final String PERM_CACHE_PREFIX = "perm:cache:";
     private static final Duration PERM_CACHE_TTL = Duration.ofMinutes(30);
 
     @Override
@@ -109,19 +114,12 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
 
         userMenus.sort(Comparator.comparingInt((SysMenu a) -> a.getOrderNum() != null ? a.getOrderNum() : 0).thenComparingLong(BaseEntity::getId));
 
-//        userMenus.sort((a, b) -> {
-//            int cmp = Integer.compare(
-//                    a.getOrderNum() != null ? a.getOrderNum() : 0,
-//                    b.getOrderNum() != null ? b.getOrderNum() : 0);
-//            if (cmp != 0) return cmp;
-//            return Long.compare(a.getId(), b.getId());
-//        });
-
         return TreeUtils.build(userMenus, SysMenu::getId, SysMenu::getParentId,
                 SysMenu::setChildren);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean save(SysMenu entity) {
         boolean result = super.save(entity);
         if (result) {
@@ -131,8 +129,14 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateById(SysMenu entity) {
         SysMenu old = getById(entity.getId());
+        if (old != null && entity.getParentId() != null
+                && !entity.getParentId().equals(old.getParentId())
+                && !entity.getParentId().equals(0L)) {
+            checkMenuCycleReference(entity.getId(), entity.getParentId());
+        }
         boolean result = super.updateById(entity);
         if (result && (old == null || !Objects.equals(old.getPermission(), entity.getPermission())
                 || !Objects.equals(old.getStatus(), entity.getStatus())
@@ -143,19 +147,93 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean removeById(Serializable id) {
-        SysMenu menu = getById(id);
-        boolean result = super.removeById(id);
-        if (result && menu != null && menu.getPermission() != null && !menu.getPermission().isEmpty()) {
+        List<Long> allIds = collectDescendantIds((Long) id);
+        allIds.add((Long) id);
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                .in(SysRoleMenu::getMenuId, allIds));
+        boolean result = super.removeByIds(allIds);
+        if (result) {
             clearAllPermissionCache();
         }
         return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByIds(Collection<?> list) {
+        List<Long> allIds = new ArrayList<>();
+        for (Object id : list) {
+            allIds.add((Long) id);
+            allIds.addAll(collectDescendantIds((Long) id));
+        }
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                .in(SysRoleMenu::getMenuId, allIds));
+        boolean result = super.removeByIds(allIds);
+        if (result) {
+            clearAllPermissionCache();
+        }
+        return result;
+    }
+
+    private List<Long> collectDescendantIds(Long parentId) {
+        List<SysMenu> allMenus = list(new LambdaQueryWrapper<SysMenu>()
+                .select(SysMenu::getId, SysMenu::getParentId));
+        Map<Long, List<Long>> parentChildMap = allMenus.stream()
+                .collect(Collectors.groupingBy(SysMenu::getParentId,
+                        Collectors.mapping(SysMenu::getId, Collectors.toList())));
+        List<Long> result = new ArrayList<>();
+        collectChildren(parentChildMap, parentId, result);
+        return result;
+    }
+
+    private void collectChildren(Map<Long, List<Long>> parentChildMap, Long parentId, List<Long> result) {
+        List<Long> children = parentChildMap.get(parentId);
+        if (children != null) {
+            for (Long childId : children) {
+                result.add(childId);
+                collectChildren(parentChildMap, childId, result);
+            }
+        }
     }
 
     private void clearAllPermissionCache() {
         Iterable<String> keys = redissonClient.getKeys().getKeysByPattern(PERM_CACHE_PREFIX + "*");
         for (String key : keys) {
             redissonClient.getBucket(key).delete();
+        }
+    }
+
+    /**
+     * 校验菜单循环引用：新父菜单不能是当前菜单自身或其子菜单
+     *
+     * @param menuId   当前菜单ID
+     * @param parentId 新的父菜单ID
+     */
+    private void checkMenuCycleReference(Long menuId, Long parentId) {
+        if (menuId.equals(parentId)) {
+            throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE.getCode(),
+                    ResultCode.MENU_CYCLE_REFERENCE.getMsg());
+        }
+        List<SysMenu> allMenus = list(new LambdaQueryWrapper<SysMenu>()
+                .select(SysMenu::getId, SysMenu::getParentId));
+        Map<Long, List<Long>> parentChildMap = allMenus.stream()
+                .collect(Collectors.groupingBy(SysMenu::getParentId,
+                        Collectors.mapping(SysMenu::getId, Collectors.toList())));
+        checkMenuCycleInMemory(parentChildMap, menuId, parentId);
+    }
+
+    private void checkMenuCycleInMemory(Map<Long, List<Long>> parentChildMap, Long menuId, Long parentId) {
+        List<Long> children = parentChildMap.get(menuId);
+        if (children != null) {
+            for (Long childId : children) {
+                if (childId.equals(parentId)) {
+                    throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE.getCode(),
+                            ResultCode.MENU_CYCLE_REFERENCE.getMsg());
+                }
+                checkMenuCycleInMemory(parentChildMap, childId, parentId);
+            }
         }
     }
 

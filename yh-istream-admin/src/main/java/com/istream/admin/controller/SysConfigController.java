@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.model.BaseQuery;
+import com.istream.common.model.query.SysConfigQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.system.entity.SysConfig;
@@ -37,10 +37,14 @@ public class SysConfigController {
     @Operation(summary = "分页查询配置")
     @SaCheckPermission("system:config:list")
     @GetMapping("/list")
-    public R<IPage<SysConfig>> list(BaseQuery query) {
+    public R<IPage<SysConfig>> list(SysConfigQuery query) {
         Page<SysConfig> page = new Page<>(query.getPageNum(), query.getPageSize());
         sysConfigService.page(page, new LambdaQueryWrapper<SysConfig>()
-                .orderByAsc(SysConfig::getId));
+                .like(query.getConfigName() != null && !query.getConfigName().isEmpty(),
+                        SysConfig::getConfigName, query.getConfigName())
+                .like(query.getConfigKey() != null && !query.getConfigKey().isEmpty(),
+                        SysConfig::getConfigKey, query.getConfigKey())
+                .orderByDesc(SysConfig::getCreateTime));
         return R.ok(page);
     }
 
@@ -92,17 +96,8 @@ public class SysConfigController {
     @OperLog(title = "系统配置管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除配置")
     @SaCheckPermission("system:config:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysConfigService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "系统配置管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除配置")
-    @SaCheckPermission("system:config:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysConfigService.removeByIds(ids);
         return R.ok();
     }

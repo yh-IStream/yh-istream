@@ -13,9 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.istream.common.constant.Constants.DICT_MAP_KEY;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +26,6 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
 
     private final RedissonClient redissonClient;
 
-    private static final String DICT_MAP_KEY = "dict:map";
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
 
     @Override
@@ -62,6 +64,16 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
     public boolean removeById(Serializable id) {
         boolean result = super.removeById(id);
         clearDictCache();
+        return result;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByIds(Collection<?> list) {
+        boolean result = super.removeByIds(list);
+        if (result) {
+            clearDictCache();
+        }
         return result;
     }
 

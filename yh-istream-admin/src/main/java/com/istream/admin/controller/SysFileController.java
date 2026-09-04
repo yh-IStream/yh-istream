@@ -21,13 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.util.unit.DataSize;
@@ -36,6 +30,7 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -132,6 +127,7 @@ public class SysFileController {
     }
 
     @Operation(summary = "预览文件（图片等）")
+    @SaCheckPermission("system:file:download")
     @GetMapping("/preview/{id}")
     public void preview(@PathVariable Long id, HttpServletResponse response) {
         SysFile sysFile = sysFileService.getById(id);
@@ -160,9 +156,9 @@ public class SysFileController {
     @OperLog(title = "文件管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除文件")
     @SaCheckPermission("system:file:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysFileService.deleteFile(id);
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
+        sysFileService.removeByIds(ids);
         return R.ok();
     }
 

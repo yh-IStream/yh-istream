@@ -16,7 +16,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>yh-istream</name>
-    <description>企业级快速开发框架 — 多模块 RBAC 权限管理系统</description>
+    <description>企业级智能流式快速开发框架RBAC权限管理系统</description>
 
     <modules>
         <module>yh-istream-common</module>

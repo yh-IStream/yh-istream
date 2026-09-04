@@ -1,8 +1,8 @@
 package com.istream.generator.service;
 
-import com.istream.generator.model.ColumnInfo;
-import com.istream.generator.model.GenRequest;
-import com.istream.generator.model.TableInfo;
+import com.istream.generator.vo.ColumnInfo;
+import com.istream.generator.dto.GenRequest;
+import com.istream.generator.vo.TableInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

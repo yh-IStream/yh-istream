@@ -14,7 +14,7 @@ export interface LoginResult {
 
 export interface UserInfoResult {
   user: {
-    id: number
+    id: string
     username: string
     nickname: string
     avatar: string
@@ -35,7 +35,7 @@ export interface CaptchaResult {
 
 /** 登录 */
 export function login(data: LoginParams) {
-  return post<{ code: number; data: LoginResult; message: string }>('/auth/login', data)
+  return post<{ code: number; data: LoginResult; msg: string }>('/auth/login', data)
 }
 
 /** 登出 */
@@ -45,10 +45,10 @@ export function logout() {
 
 /** 获取用户信息 */
 export function getUserInfo() {
-  return get<{ code: number; data: UserInfoResult; message: string }>('/auth/user-info')
+  return get<{ code: number; data: UserInfoResult; msg: string }>('/auth/user-info')
 }
 
 /** 获取验证码 */
 export function getCaptcha() {
-  return get<{ code: number; data: CaptchaResult; message: string }>('/auth/captcha')
+  return get<{ code: number; data: CaptchaResult; msg: string }>('/auth/captcha')
 }

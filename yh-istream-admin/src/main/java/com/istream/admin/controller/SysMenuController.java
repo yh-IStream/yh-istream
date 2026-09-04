@@ -3,8 +3,8 @@ package com.istream.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
+import com.istream.common.model.R;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.service.SysMenuService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,15 +75,9 @@ public class SysMenuController {
     @OperLog(title = "菜单管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除菜单")
     @SaCheckPermission("system:menu:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        if (sysMenuService.hasChildren(id)) {
-            return R.fail(ResultCode.HAS_CHILDREN);
-        }
-        if (sysMenuService.hasRoles(id)) {
-            return R.fail(ResultCode.HAS_ROLES);
-        }
-        sysMenuService.removeById(id);
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
+        sysMenuService.removeByIds(ids);
         return R.ok();
     }
 }

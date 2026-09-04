@@ -18,11 +18,6 @@ export const SUCCESS_LABEL: Record<number, string> = {
   [STATUS.DISABLED]: '失败',
 }
 
-export const STATUS_TAG_TYPE: Record<number, 'success' | 'error'> = {
-  [STATUS.NORMAL]: 'success',
-  [STATUS.DISABLED]: 'error',
-}
-
 export const STATUS_OPTIONS = [
   { label: '全部', value: null, type: 'option' as const },
   { label: '正常', value: STATUS.NORMAL, type: 'option' as const },
@@ -45,4 +40,48 @@ export const PAGINATION_DEFAULTS = {
     `共 ${info.itemCount ?? 0} 条`,
 }
 
-export const PAGE_SIZES = [10, 20, 50] as number[]
+/**
+ * 数据权限范围（与后端 DataScopeEnum 保持一致）
+ */
+export const DATA_SCOPE = {
+  /** 全部数据 */
+  ALL: 1,
+  /** 自定义数据 */
+  CUSTOM: 2,
+  /** 本部门数据 */
+  DEPT: 3,
+  /** 本部门及以下数据 */
+  DEPT_AND_CHILD: 4,
+  /** 仅本人数据 */
+  SELF: 5,
+} as const
+
+export const DATA_SCOPE_LABEL: Record<number, string> = {
+  [DATA_SCOPE.ALL]: '全部数据',
+  [DATA_SCOPE.CUSTOM]: '自定义数据',
+  [DATA_SCOPE.DEPT]: '本部门数据',
+  [DATA_SCOPE.DEPT_AND_CHILD]: '本部门及以下',
+  [DATA_SCOPE.SELF]: '仅本人数据',
+}
+
+export const DATA_SCOPE_OPTIONS = [
+  { label: '全部数据', value: DATA_SCOPE.ALL },
+  { label: '自定义数据', value: DATA_SCOPE.CUSTOM },
+  { label: '本部门数据', value: DATA_SCOPE.DEPT },
+  { label: '本部门及以下', value: DATA_SCOPE.DEPT_AND_CHILD },
+  { label: '仅本人数据', value: DATA_SCOPE.SELF },
+] as const
+
+/**
+ * 字典标签回显样式预设主题（对应 Naive UI NTag 的 type 属性）
+ * 用于字典数据的 listClass 字段，控制消费端标签颜色
+ * 除预设主题外，listClass 也支持填入任意 hex 色值（如 '#ff6b6b'），渲染时自动识别
+ */
+export const LIST_CLASS_OPTIONS = [
+  { label: '默认', value: 'default' },
+  { label: '主要', value: 'primary' },
+  { label: '信息', value: 'info' },
+  { label: '成功', value: 'success' },
+  { label: '警告', value: 'warning' },
+  { label: '错误', value: 'error' },
+] as const

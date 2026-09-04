@@ -1,4 +1,4 @@
-package com.istream.generator.model;
+package com.istream.generator.dto;
 
 import lombok.Data;
 

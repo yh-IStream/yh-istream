@@ -1,6 +1,5 @@
-package com.istream.common.model.dto;
+package com.istream.common.model.query;
 
-import com.istream.common.model.BaseQuery;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,4 +12,6 @@ public class SysDictDataQuery extends BaseQuery implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String dictType;
+
+    private String dictLabel;
 }

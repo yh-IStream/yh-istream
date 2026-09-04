@@ -1,6 +1,5 @@
-package com.istream.common.model.dto;
+package com.istream.common.model.query;
 
-import com.istream.common.model.BaseQuery;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

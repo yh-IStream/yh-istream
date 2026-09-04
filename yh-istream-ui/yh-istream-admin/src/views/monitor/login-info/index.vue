@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { SearchOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getLoginInfoList } from '@/api/modules/system'
+import { SearchOutline, RefreshOutline, TrashOutline, DownloadOutline } from '@vicons/ionicons5'
+import { getLoginInfoList, clearLoginInfo, exportLoginInfo } from '@/api/modules/monitor'
 import { SUCCESS_OPTIONS } from '@/constants'
 
 const message = useMessage()
+const dialog = useDialog()
 const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderSuccessTag } = useStatusRender()
 
@@ -44,6 +45,40 @@ function handleReset() { searchForm.username = ''; searchForm.ipAddress = ''; se
 function handlePageChange(page: number) { setPage(page); fetchData() }
 function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
 
+function handleClear() {
+  dialog.warning({
+    title: '确认清空',
+    content: '清空所有登录日志后不可恢复，确认继续？',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await clearLoginInfo()
+        message.success('清空成功')
+        fetchData()
+      } catch (e: any) {
+        message.error(e.message || '清空失败')
+      }
+    },
+  })
+}
+
+async function handleExport() {
+  try {
+    const res: any = await exportLoginInfo()
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '登录日志.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+    message.success('导出成功')
+  } catch (e: any) {
+    message.error(e.message || '导出失败')
+  }
+}
+
 onMounted(() => fetchData())
 </script>
 
@@ -70,6 +105,14 @@ onMounted(() => fetchData())
     </div>
 
     <div class="card">
+      <div class="flex justify-end gap-8px mb-12px">
+        <n-button v-permission="'monitor:login-info:clean'" type="warning" @click="handleClear">
+          <template #icon><n-icon :component="TrashOutline" /></template>清空
+        </n-button>
+        <n-button v-permission="'monitor:login-info:export'" @click="handleExport">
+          <template #icon><n-icon :component="DownloadOutline" /></template>导出
+        </n-button>
+      </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
         :row-key="(row: any) => row.id" striped size="small" remote
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />

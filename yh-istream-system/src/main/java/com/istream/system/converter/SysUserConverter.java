@@ -1,7 +1,7 @@
-package com.istream.system.convert;
+package com.istream.system.converter;
 
 import com.istream.common.model.dto.SysUserDTO;
-import com.istream.common.model.mapper.BaseConverter;
+import com.istream.common.converter.BaseConverter;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import org.mapstruct.Mapper;
@@ -49,12 +49,12 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
     }
 
     @Named("mapRoleIds")
-    default List<Long> mapRoleIds(List<SysRole> roles) {
+    default List<String> mapRoleIds(List<SysRole> roles) {
         if (roles == null || roles.isEmpty()) {
             return Collections.emptyList();
         }
         return roles.stream()
-                .map(SysRole::getId)
+                .map(role -> String.valueOf(role.getId()))
                 .collect(Collectors.toList());
     }
 }

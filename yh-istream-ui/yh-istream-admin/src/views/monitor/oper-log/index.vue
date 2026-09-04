@@ -1,34 +1,36 @@
 <script setup lang="ts">
-import { SearchOutline, RefreshOutline, TrashOutline } from '@vicons/ionicons5'
-import { getOperLogList, clearOperLog } from '@/api/modules/system'
+import { SearchOutline, RefreshOutline, TrashOutline, DownloadOutline } from '@vicons/ionicons5'
+import { getOperLogList, clearOperLog, exportOperLog } from '@/api/modules/monitor'
 import { SUCCESS_OPTIONS } from '@/constants'
+import { useDict } from '@/composables/useDict'
 
 const message = useMessage()
 const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderSuccessTag } = useStatusRender()
+const { useDictTag } = useDict()
+const { render: renderBusinessTypeTag } = useDictTag('sys_oper_type', '未知')
+const { loadDict } = useDict()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const searchForm = reactive({ title: '', businessType: null as number | null, status: null as number | null })
 
-const businessTypeOptions: any = [
-  { label: '全部', value: null }, { label: '新增', value: 1 }, { label: '修改', value: 2 }, { label: '删除', value: 3 },
-  { label: '授权', value: 4 }, { label: '导出', value: 5 }, { label: '导入', value: 6 }, { label: '其它', value: 0 },
-]
+const businessTypeOptions = ref<{ label: string; value: any }[]>([{ label: '全部', value: null }])
 
-const businessTypeMap: Record<number, { type: 'default' | 'info' | 'primary' | 'error' | 'warning' | 'success'; label: string }> = {
-  0: { type: 'default', label: '其它' }, 1: { type: 'info', label: '新增' }, 2: { type: 'primary', label: '修改' },
-  3: { type: 'error', label: '删除' }, 4: { type: 'warning', label: '授权' }, 5: { type: 'success', label: '导出' }, 6: { type: 'info', label: '导入' },
-}
+onMounted(async () => {
+  const list = await loadDict('sys_oper_type')
+  businessTypeOptions.value = [
+    { label: '全部', value: null },
+    ...list.map(item => ({ label: item.label, value: Number(item.value) })),
+  ]
+  fetchData()
+})
 
 const columns = [
   { title: '操作标题', key: 'title', width: 160 },
   {
     title: '业务类型', key: 'businessType', width: 100, align: 'center' as const,
-    render: (row: any) => {
-      const info = businessTypeMap[row.businessType] ?? { type: 'default', label: '未知' }
-      return h(NTag, { type: info.type, size: 'small' }, { default: () => info.label })
-    },
+    render: (row: any) => renderBusinessTypeTag(row.businessType),
   },
   { title: '请求方法', key: 'requestMethod', width: 100 },
   { title: '请求URL', key: 'operUrl', width: 200, ellipsis: { tooltip: true } },
@@ -70,11 +72,31 @@ async function handleClear() {
   catch (e: any) { message.error(e.message || '清空失败') }
 }
 
-function showDetail(row: any) {
-  message.info(`请求参数：${row.operParam ?? '无'}`)
+async function handleExport() {
+  try {
+    const res: any = await exportOperLog()
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '操作日志.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+    message.success('导出成功')
+  } catch (e: any) {
+    message.error(e.message || '导出失败')
+  }
 }
 
-onMounted(() => fetchData())
+const detailVisible = ref(false)
+const detailData = ref<any>({})
+
+function showDetail(row: any) {
+  detailData.value = row
+  detailVisible.value = true
+}
+
+
 </script>
 
 <template>
@@ -100,15 +122,36 @@ onMounted(() => fetchData())
     </div>
 
     <div class="card">
-      <div class="mb-12px">
-        <n-button type="error" ghost @click="handleClear">
+      <div class="mb-12px flex gap-8px">
+        <n-button type="error" ghost @click="handleClear" v-permission="'monitor:oper-log:clean'">
           <template #icon><n-icon :component="TrashOutline" /></template>
           清空日志
+        </n-button>
+        <n-button @click="handleExport" v-permission="'monitor:oper-log:export'">
+          <template #icon><n-icon :component="DownloadOutline" /></template>
+          导出
         </n-button>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
         :row-key="(row: any) => row.id" striped size="small" remote
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
+
+    <n-modal v-model:show="detailVisible" preset="card" title="操作日志详情" style="width: 600px">
+      <n-descriptions label-placement="left" bordered :column="1">
+        <n-descriptions-item label="操作标题">{{ detailData.title }}</n-descriptions-item>
+        <n-descriptions-item label="业务类型">{{ renderBusinessTypeTag(detailData.businessType) }}</n-descriptions-item>
+        <n-descriptions-item label="请求方法">{{ detailData.requestMethod }}</n-descriptions-item>
+        <n-descriptions-item label="请求URL">{{ detailData.operUrl }}</n-descriptions-item>
+        <n-descriptions-item label="操作人">{{ detailData.operName }}</n-descriptions-item>
+        <n-descriptions-item label="操作IP">{{ detailData.operIp }}</n-descriptions-item>
+        <n-descriptions-item label="操作地点">{{ detailData.operLocation }}</n-descriptions-item>
+        <n-descriptions-item label="请求参数">{{ detailData.operParam ?? '无' }}</n-descriptions-item>
+        <n-descriptions-item label="返回参数">{{ detailData.jsonResult ?? '无' }}</n-descriptions-item>
+        <n-descriptions-item label="状态">{{ renderSuccessTag(detailData.status) }}</n-descriptions-item>
+        <n-descriptions-item label="错误信息">{{ detailData.errorMsg ?? '无' }}</n-descriptions-item>
+        <n-descriptions-item label="操作时间">{{ detailData.operTime }}</n-descriptions-item>
+      </n-descriptions>
+    </n-modal>
   </div>
 </template>

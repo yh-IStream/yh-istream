@@ -2,7 +2,7 @@ import { login as loginApi, logout as logoutApi, getUserInfo } from '@/api/modul
 import router from '@/router'
 
 export interface UserInfo {
-  id: number
+  id: string
   username: string
   nickname: string
   avatar: string

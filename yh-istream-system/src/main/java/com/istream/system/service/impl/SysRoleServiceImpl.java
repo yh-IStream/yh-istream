@@ -4,13 +4,18 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.istream.common.model.dto.SysRoleQuery;
+import com.istream.common.constant.Constants;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
+import com.istream.common.model.query.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
+import com.istream.system.entity.SysRoleDept;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.entity.SysUserRole;
 import com.istream.system.mapper.SysRoleMapper;
 import com.istream.system.mapper.SysRoleMenuMapper;
+import com.istream.system.mapper.SysRoleDeptMapper;
 import com.istream.system.mapper.SysMenuMapper;
 import com.istream.system.mapper.SysUserRoleMapper;
 import com.istream.system.service.SysRoleService;
@@ -26,17 +31,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
+import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
+
 @Service
 @RequiredArgsConstructor
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
 
     private final SysRoleMenuMapper sysRoleMenuMapper;
+    private final SysRoleDeptMapper sysRoleDeptMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysMenuMapper sysMenuMapper;
     private final RedissonClient redissonClient;
-
-    private static final String PERM_CACHE_PREFIX = "perm:cache:";
-    private static final String ROLE_CACHE_PREFIX = "role:cache:";
 
     @Override
     public IPage<SysRole> page(SysRoleQuery query) {
@@ -67,21 +73,20 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         if (menuIds != null && !menuIds.isEmpty()) {
             Set<Long> expandedIds = expandMenuIds(menuIds);
-            for (Long menuId : expandedIds) {
-                SysRoleMenu rm = new SysRoleMenu();
-                rm.setRoleId(roleId);
-                rm.setMenuId(menuId);
-                sysRoleMenuMapper.insert(rm);
+            List<SysRoleMenu> roleMenus = expandedIds.stream()
+                    .map(menuId -> {
+                        SysRoleMenu rm = new SysRoleMenu();
+                        rm.setRoleId(roleId);
+                        rm.setMenuId(menuId);
+                        return rm;
+                    })
+                    .toList();
+            if (!roleMenus.isEmpty()) {
+                sysRoleMenuMapper.insertBatch(roleMenus);
             }
         }
-        List<Long> userIds = sysUserRoleMapper.selectList(
-                new LambdaQueryWrapper<SysUserRole>()
-                        .eq(SysUserRole::getRoleId, roleId))
-                .stream().map(SysUserRole::getUserId).collect(Collectors.toList());
-        for (Long userId : userIds) {
-            redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
-            redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
-        }
+        List<Long> userIds = getAffectedUserIds(roleId);
+        clearCacheBatch(userIds);
     }
 
     private Set<Long> expandMenuIds(List<Long> menuIds) {
@@ -108,9 +113,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean removeById(Serializable id) {
+        checkSuperAdminRole((Long) id);
         List<Long> userIds = getAffectedUserIds((Long) id);
         sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
                 .eq(SysRoleMenu::getRoleId, (Long) id));
+        sysRoleDeptMapper.delete(new LambdaQueryWrapper<SysRoleDept>()
+                .eq(SysRoleDept::getRoleId, (Long) id));
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getRoleId, (Long) id));
         boolean result = super.removeById(id);
@@ -123,14 +131,24 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean removeByIds(Collection<?> list) {
-        Set<Long> allUserIds = new HashSet<>();
-        for (Object id : list) {
-            allUserIds.addAll(getAffectedUserIds((Long) id));
-            sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
-                    .eq(SysRoleMenu::getRoleId, (Long) id));
-            sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                    .eq(SysUserRole::getRoleId, (Long) id));
+        @SuppressWarnings("unchecked")
+        List<SysRole> roles = listByIds((Collection<? extends Serializable>) list);
+        for (SysRole role : roles) {
+            if (Constants.SUPER_ADMIN_ROLE.equals(role.getRoleKey())) {
+                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
+                        ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+            }
         }
+        List<Long> allUserIds = sysUserRoleMapper.selectList(
+                new LambdaQueryWrapper<SysUserRole>()
+                        .in(SysUserRole::getRoleId, list))
+                .stream().map(SysUserRole::getUserId).collect(Collectors.toList());
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                .in(SysRoleMenu::getRoleId, list));
+        sysRoleDeptMapper.delete(new LambdaQueryWrapper<SysRoleDept>()
+                .in(SysRoleDept::getRoleId, list));
+        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
+                .in(SysUserRole::getRoleId, list));
         boolean result = super.removeByIds(list);
         if (result) {
             clearCacheBatch(allUserIds);
@@ -139,6 +157,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateById(SysRole entity) {
         boolean result = super.updateById(entity);
         if (result) {
@@ -159,6 +178,17 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         for (Long userId : userIds) {
             redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
             redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
+        }
+    }
+
+    /**
+     * 校验是否为超级管理员角色，防止误删除
+     */
+    private void checkSuperAdminRole(Long roleId) {
+        SysRole role = getById(roleId);
+        if (role != null && Constants.SUPER_ADMIN_ROLE.equals(role.getRoleKey())) {
+            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
+                    ResultCode.SUPER_ADMIN_PROTECT.getMsg());
         }
     }
 
@@ -191,16 +221,19 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         toRemove.removeAll(toAdd);
         toAdd.removeAll(existingUserIds);
 
-        for (Long userId : toRemove) {
+        if (!toRemove.isEmpty()) {
             sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                     .eq(SysUserRole::getRoleId, roleId)
-                    .eq(SysUserRole::getUserId, userId));
+                    .in(SysUserRole::getUserId, toRemove));
         }
-        for (Long userId : toAdd) {
-            SysUserRole ur = new SysUserRole();
-            ur.setRoleId(roleId);
-            ur.setUserId(userId);
-            sysUserRoleMapper.insert(ur);
+        if (!toAdd.isEmpty()) {
+            List<SysUserRole> addList = toAdd.stream().map(userId -> {
+                SysUserRole ur = new SysUserRole();
+                ur.setRoleId(roleId);
+                ur.setUserId(userId);
+                return ur;
+            }).toList();
+            sysUserRoleMapper.insertBatch(addList);
         }
 
         Set<Long> affected = new HashSet<>();
@@ -210,5 +243,30 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
             redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
         }
+    }
+
+    @Override
+    public List<Long> getDeptIdsByRoleId(Long roleId) {
+        return sysRoleDeptMapper.selectDeptIdsByRoleId(roleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveRoleDept(Long roleId, List<Long> deptIds) {
+        sysRoleDeptMapper.delete(new LambdaQueryWrapper<SysRoleDept>()
+                .eq(SysRoleDept::getRoleId, roleId));
+        if (deptIds != null && !deptIds.isEmpty()) {
+            List<SysRoleDept> roleDepts = deptIds.stream().map(deptId -> {
+                SysRoleDept rd = new SysRoleDept();
+                rd.setRoleId(roleId);
+                rd.setDeptId(deptId);
+                return rd;
+            }).toList();
+            if (!roleDepts.isEmpty()) {
+                sysRoleDeptMapper.insertBatch(roleDepts);
+            }
+        }
+        List<Long> userIds = getAffectedUserIds(roleId);
+        clearCacheBatch(userIds);
     }
 }

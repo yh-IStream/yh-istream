@@ -15,7 +15,7 @@ export interface PageResult<T> {
     current: number
     size: number
   }
-  message: string
+  msg: string
 }
 
 // ==================== 用户管理 ====================
@@ -27,6 +27,7 @@ export interface SysUser {
   deptName: string
   email: string
   phone: string
+  gender: number
   status: number
   roleIds: string[]
   remark: string
@@ -53,12 +54,8 @@ export function assignUserRoles(userId: string, roleIds: string[]) {
   return put(`/system/user/${userId}/roles`, { roleIds })
 }
 
-export function deleteUser(id: string) {
-  return del(`/system/user/${id}`)
-}
-
-export function batchDeleteUser(ids: string[]) {
-  return del('/system/user/batch', ids)
+export function deleteUser(ids: string | string[]) {
+  return del('/system/user', Array.isArray(ids) ? ids : [ids])
 }
 
 export function resetUserPwd(userId: string, password: string) {
@@ -87,15 +84,19 @@ export function getRoleById(id: string) {
 }
 
 export function addRole(data: Record<string, unknown>) {
-  return post('/system/role', data)
+  return post<{ data: string }>('/system/role', data)
 }
 
 export function updateRole(data: Record<string, unknown>) {
   return put('/system/role', data)
 }
 
-export function deleteRole(id: string) {
-  return del(`/system/role/${id}`)
+export function deleteRole(ids: string | string[]) {
+  return del('/system/role', Array.isArray(ids) ? ids : [ids])
+}
+
+export function changeRoleStatus(roleId: string, status: number) {
+  return put('/system/role/change-status', null, { params: { roleId, status } })
 }
 
 export function getRoleMenuTree(roleId: string) {
@@ -112,6 +113,18 @@ export function getRoleUsers(roleId: string) {
 
 export function assignRoleUsers(roleId: string, userIds: string[]) {
   return put(`/system/role/${roleId}/users`, userIds)
+}
+
+export function getRoleDeptIds(roleId: string) {
+  return get<{ data: string[] }>(`/system/role/${roleId}/depts`)
+}
+
+export function assignRoleDept(roleId: string, deptIds: string[]) {
+  return put('/system/role/dept-assign', { roleId, deptIds })
+}
+
+export function exportRole() {
+  return get('/system/role/export', undefined, { responseType: 'blob' })
 }
 
 // ==================== 菜单管理 ====================
@@ -135,13 +148,13 @@ export function updateMenu(data: Record<string, unknown>) {
   return put('/system/menu', data)
 }
 
-export function deleteMenu(id: string) {
-  return del(`/system/menu/${id}`)
+export function deleteMenu(ids: string | string[]) {
+  return del('/system/menu', Array.isArray(ids) ? ids : [ids])
 }
 
 // ==================== 部门管理 ====================
 export function getDeptTree() {
-  return get('/system/dept/tree')
+  return get<{ data: any[] }>('/system/dept/tree')
 }
 
 export function getDeptById(id: string) {
@@ -156,8 +169,8 @@ export function updateDept(data: Record<string, unknown>) {
   return put('/system/dept', data)
 }
 
-export function deleteDept(id: string) {
-  return del(`/system/dept/${id}`)
+export function deleteDept(ids: string | string[]) {
+  return del('/system/dept', Array.isArray(ids) ? ids : [ids])
 }
 
 // ==================== 字典管理 ====================
@@ -177,8 +190,8 @@ export function updateDictType(data: Record<string, unknown>) {
   return put('/system/dict-type', data)
 }
 
-export function deleteDictType(id: string) {
-  return del(`/system/dict-type/${id}`)
+export function deleteDictType(ids: string | string[]) {
+  return del('/system/dict-type', Array.isArray(ids) ? ids : [ids])
 }
 
 export function getDictDataList(params: PageParams) {
@@ -201,8 +214,8 @@ export function updateDictData(data: Record<string, unknown>) {
   return put('/system/dict-data', data)
 }
 
-export function deleteDictData(id: string) {
-  return del(`/system/dict-data/${id}`)
+export function deleteDictData(ids: string | string[]) {
+  return del('/system/dict-data', Array.isArray(ids) ? ids : [ids])
 }
 
 // ==================== 系统配置 ====================
@@ -222,8 +235,8 @@ export function updateConfig(data: Record<string, unknown>) {
   return put('/system/config', data)
 }
 
-export function deleteConfig(id: string) {
-  return del(`/system/config/${id}`)
+export function deleteConfig(ids: string | string[]) {
+  return del('/system/config', Array.isArray(ids) ? ids : [ids])
 }
 
 // ==================== 文件管理 ====================
@@ -239,89 +252,6 @@ export function downloadFile(id: string) {
   return get(`/system/file/download/${id}`, undefined, { responseType: 'blob' })
 }
 
-export function deleteFile(id: string) {
-  return del(`/system/file/${id}`)
-}
-
-// ==================== 操作日志 ====================
-export function getOperLogList(params: PageParams) {
-  return get<PageResult<Record<string, unknown>>>('/monitor/oper-log/list', params)
-}
-
-export function deleteOperLog(id: string) {
-  return del(`/monitor/oper-log/${id}`)
-}
-
-export function clearOperLog() {
-  return del('/monitor/oper-log/clear')
-}
-
-// ==================== 登录日志 ====================
-export function getLoginInfoList(params: PageParams) {
-  return get<PageResult<Record<string, unknown>>>('/monitor/login-info/list', params)
-}
-
-// ==================== 代码生成器 ====================
-export interface TableInfo {
-  tableName: string
-  tableComment: string
-  className: string
-  createTime: string
-}
-
-export interface ColumnInfo {
-  columnName: string
-  columnComment: string
-  columnType: string
-  javaType: string
-  javaField: string
-  isPk: boolean
-  isRequired: boolean
-  isInsert: boolean
-  isEdit: boolean
-  isList: boolean
-  isQuery: boolean
-  htmlType: string
-  dictType: string
-}
-
-export interface GenRequest {
-  tableNames?: string[]
-  author?: string
-  moduleName?: string
-  packageName?: string
-  controllerPackage?: string
-  genMigration?: boolean
-}
-
-export function getTableList() {
-  return get<TableInfo[]>('/generator/tables')
-}
-
-export function getTableColumns(tableName: string) {
-  return get<ColumnInfo[]>(`/generator/columns/${tableName}`)
-}
-
-export function previewCode(tableName: string, data: GenRequest) {
-  return post<Record<string, string>>(`/generator/preview/${tableName}`, data)
-}
-
-export function batchPreviewCode(data: GenRequest) {
-  return post<Record<string, Record<string, string>>>('/generator/batch-preview', data)
-}
-
-export function downloadCode(tableName: string, data: GenRequest) {
-  return post(`/generator/download/${tableName}`, data, { responseType: 'blob' })
-}
-
-export function batchDownloadCode(data: GenRequest) {
-  return post('/generator/batch-download', data, { responseType: 'blob' })
-}
-
-export function deleteLoginInfo(id: string) {
-  return del(`/monitor/login-info/${id}`)
-}
-
-export function clearLoginInfo() {
-  return del('/monitor/login-info/clear')
+export function deleteFile(ids: string | string[]) {
+  return del('/system/file', Array.isArray(ids) ? ids : [ids])
 }

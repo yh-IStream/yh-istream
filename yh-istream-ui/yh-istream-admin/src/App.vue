@@ -5,7 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 const appStore = useAppStore()
 const route = useRoute()
 
-const FULLSCREEN_ROUTES = new Set(['/', '/login/', '/[...all]', '/error/404'])
+const FULLSCREEN_ROUTES = new Set(['/', '/login/', '/error/404', '/error/403'])
 </script>
 
 <template>
@@ -38,5 +38,13 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  background: #f8fafc;
+}
+
+html.dark body {
+  background: #0f172a;
 }
 </style>

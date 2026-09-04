@@ -28,4 +28,22 @@ public final class Constants {
 
     /** 登录锁定时间（秒） */
     public static final long LOGIN_LOCK_SECONDS = 600;
+
+    /** 权限缓存前缀 */
+    public static final String PERM_CACHE_PREFIX = "perm:cache:";
+
+    /** 角色缓存前缀 */
+    public static final String ROLE_CACHE_PREFIX = "role:cache:";
+
+    /** 字典缓存键 */
+    public static final String DICT_MAP_KEY = "dict:map";
+
+    /** Session中用户名的Key */
+    public static final String SESSION_USERNAME_KEY = "username";
+
+    /** 验证码缓存前缀 */
+    public static final String CAPTCHA_CACHE_PREFIX = "captcha:";
+
+    /** 登录失败计数缓存前缀 */
+    public static final String LOGIN_FAIL_PREFIX = "login:fail:";
 }

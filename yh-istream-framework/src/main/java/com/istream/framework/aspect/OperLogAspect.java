@@ -3,12 +3,14 @@ package com.istream.framework.aspect;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.json.JSONUtil;
 import com.istream.common.annotation.OperLog;
+import com.istream.common.constant.Constants;
 import com.istream.common.event.OperLogEvent;
 import com.istream.common.model.R;
-import com.istream.common.util.IpUtils;
+import com.istream.framework.util.IpUtils;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.framework.util.IpRegionUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -18,6 +20,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -31,6 +34,9 @@ import org.springframework.core.annotation.Order;
 public class OperLogAspect {
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private static final int MAX_PARAM_LENGTH = 2000;
+    private static final int MAX_ERROR_MSG_LENGTH = 2000;
 
     @Around("@annotation(operLog)")
     public Object around(ProceedingJoinPoint joinPoint, OperLog operLog) throws Throwable {
@@ -54,12 +60,14 @@ public class OperLogAspect {
 
         try {
             event.setOperBy(SecurityUtils.getLoginUserId());
-            event.setOperName((String) StpUtil.getSession().get("username"));
+            event.setOperName((String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY));
         } catch (Exception ignored) {
         }
 
         try {
-            event.setOperParam(JSONUtil.toJsonStr(joinPoint.getArgs()));
+            String paramJson = JSONUtil.toJsonStr(filterSerializableArgs(joinPoint.getArgs()));
+            event.setOperParam(paramJson.length() > MAX_PARAM_LENGTH
+                    ? paramJson.substring(0, MAX_PARAM_LENGTH) + "..." : paramJson);
         } catch (Exception e) {
             event.setOperParam("[]");
         }
@@ -69,15 +77,19 @@ public class OperLogAspect {
             result = joinPoint.proceed();
             event.setStatus(0);
             try {
-                event.setJsonResult(result != null ? JSONUtil.toJsonStr(result) : "{}");
+                String resultJson = result != null ? JSONUtil.toJsonStr(result) : "{}";
+                event.setJsonResult(resultJson.length() > MAX_PARAM_LENGTH
+                        ? resultJson.substring(0, MAX_PARAM_LENGTH) + "..." : resultJson);
             } catch (Exception e) {
                 event.setJsonResult("{}");
             }
         } catch (Exception e) {
             event.setStatus(1);
-            event.setErrorMsg(e.getMessage());
+            String errorMsg = e.getMessage();
+            event.setErrorMsg(errorMsg != null && errorMsg.length() > MAX_ERROR_MSG_LENGTH
+                    ? errorMsg.substring(0, MAX_ERROR_MSG_LENGTH) + "..." : errorMsg);
             try {
-                event.setJsonResult(JSONUtil.toJsonStr(R.fail(500, e.getMessage())));
+                event.setJsonResult(JSONUtil.toJsonStr(R.fail(500, event.getErrorMsg())));
             } catch (Exception ex) {
                 event.setJsonResult("{}");
             }
@@ -88,6 +100,23 @@ public class OperLogAspect {
         }
 
         return result;
+    }
+
+    private Object[] filterSerializableArgs(Object[] args) {
+        if (args == null) {
+            return new Object[0];
+        }
+        Object[] filtered = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            if (arg instanceof HttpServletRequest || arg instanceof HttpServletResponse
+                    || arg instanceof MultipartFile || arg instanceof MultipartFile[]) {
+                filtered[i] = null;
+            } else {
+                filtered[i] = arg;
+            }
+        }
+        return filtered;
     }
 
 }

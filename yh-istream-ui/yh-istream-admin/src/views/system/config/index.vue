@@ -6,6 +6,7 @@ const message = useMessage()
 const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const loading = ref(false)
 const tableData = ref<any[]>([])
+const selectedIds = ref<string[]>([])
 const searchForm = reactive({ configName: '', configKey: '' })
 
 const dialogVisible = ref(false)
@@ -22,6 +23,7 @@ const rules = {
 }
 
 const columns = [
+  { type: 'selection' as const },
   { title: '配置名称', key: 'configName', width: 160 },
   { title: '配置键', key: 'configKey', width: 200, ellipsis: { tooltip: true } },
   { title: '配置值', key: 'configValue', width: 300, ellipsis: { tooltip: true } },
@@ -86,6 +88,21 @@ async function handleDelete(id: string) {
   catch (e: any) { message.error(e.message || '删除失败') }
 }
 
+async function handleBatchDelete() {
+  if (selectedIds.value.length === 0) {
+    message.warning('请选择要删除的配置')
+    return
+  }
+  try {
+    await deleteConfig(selectedIds.value)
+    message.success('批量删除成功')
+    selectedIds.value = []
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '批量删除失败')
+  }
+}
+
 onMounted(() => fetchData())
 </script>
 
@@ -109,11 +126,20 @@ onMounted(() => fetchData())
     </div>
 
     <div class="card">
-      <div class="mb-12px">
-        <n-button type="primary" @click="handleAdd"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+      <div class="mb-12px flex items-center justify-between">
+        <n-space>
+          <n-button type="primary" @click="handleAdd" v-permission="'system:config:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+          <n-popconfirm @positive-click="handleBatchDelete">
+            <template #trigger>
+              <n-button type="error" :disabled="selectedIds.length === 0" v-permission="'system:config:delete'">批量删除</n-button>
+            </template>
+            确认删除选中的 {{ selectedIds.length }} 条配置吗？
+          </n-popconfirm>
+        </n-space>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
-        :row-key="(row: any) => row.id" striped size="small" remote
+        :row-key="(row: any) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
+        @update:checked-row-keys="(keys: any[]) => selectedIds = keys"
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
 

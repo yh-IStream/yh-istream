@@ -13,7 +13,7 @@ import com.istream.common.model.dto.LoginDTO;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
-import com.istream.common.util.IpUtils;
+import com.istream.framework.util.IpUtils;
 import com.istream.framework.sse.SseService;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.framework.util.IpRegionUtils;
@@ -59,8 +59,6 @@ public class AuthController {
     private final RedissonClient redissonClient;
     private final SseService sseService;
 
-    private static final String CAPTCHA_PREFIX = "captcha:";
-    private static final String LOGIN_FAIL_PREFIX = "login:fail:";
     private static final Duration CAPTCHA_TTL = Duration.ofMinutes(2);
 
     @OperLog(title = "用户登录", businessType = BusinessType.LOGIN)
@@ -69,7 +67,7 @@ public class AuthController {
     @PostMapping("/login")
     public R<Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
         if (StrUtil.isNotBlank(loginDTO.getCaptchaKey())) {
-            String redisKey = CAPTCHA_PREFIX + loginDTO.getCaptchaKey();
+            String redisKey = Constants.CAPTCHA_CACHE_PREFIX + loginDTO.getCaptchaKey();
             String cachedCode = redissonClient.<String>getBucket(redisKey).getAndDelete();
             if (cachedCode == null) {
                 return R.fail(ResultCode.PARAM_VALID_ERROR, "验证码已过期");
@@ -79,7 +77,7 @@ public class AuthController {
             }
         }
 
-        String failKey = LOGIN_FAIL_PREFIX + loginDTO.getUsername();
+        String failKey = Constants.LOGIN_FAIL_PREFIX + loginDTO.getUsername();
         RAtomicLong failCount = redissonClient.getAtomicLong(failKey);
         long redisFailCount = failCount.get();
         if (redisFailCount >= Constants.MAX_LOGIN_FAIL_COUNT) {
@@ -144,7 +142,7 @@ public class AuthController {
         sysUserService.updateLoginFailCount(user.getId(), 0);
 
         StpUtil.login(user.getId());
-        StpUtil.getSession().set("username", user.getUsername());
+        StpUtil.getSession().set(Constants.SESSION_USERNAME_KEY, user.getUsername());
 
         sysUserService.updateLoginInfo(user.getId(), IpUtils.getClientIp(request));
 
@@ -173,7 +171,7 @@ public class AuthController {
         LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(120, 40, 4, 20);
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
-        redissonClient.getBucket(CAPTCHA_PREFIX + uuid).set(lineCaptcha.getCode(), CAPTCHA_TTL);
+        redissonClient.getBucket(Constants.CAPTCHA_CACHE_PREFIX + uuid).set(lineCaptcha.getCode(), CAPTCHA_TTL);
 
         Map<String, Object> result = new HashMap<>();
         result.put("uuid", uuid);

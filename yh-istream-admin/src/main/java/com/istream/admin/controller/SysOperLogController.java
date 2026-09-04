@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
-import com.istream.common.model.dto.SysOperLogQuery;
+import com.istream.common.model.query.SysOperLogQuery;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.service.SysOperLogService;
@@ -29,12 +29,12 @@ public class SysOperLogController {
     private final SysOperLogService sysOperLogService;
 
     @Operation(summary = "分页查询操作日志")
-    @SaCheckPermission("system:oper-log:list")
+    @SaCheckPermission("monitor:oper-log:list")
     @GetMapping("/list")
     public R<IPage<SysOperLog>> list(SysOperLogQuery query) {
         Page<SysOperLog> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<SysOperLog> wrapper = new LambdaQueryWrapper<SysOperLog>()
-                .eq(query.getTitle() != null && !query.getTitle().isEmpty(),
+                .like(query.getTitle() != null && !query.getTitle().isEmpty(),
                         SysOperLog::getTitle, query.getTitle())
                 .eq(query.getBusinessType() != null, SysOperLog::getBusinessType, query.getBusinessType())
                 .eq(query.getStatus() != null, SysOperLog::getStatus, query.getStatus())
@@ -44,7 +44,7 @@ public class SysOperLogController {
     }
 
     @Operation(summary = "根据ID查询操作日志")
-    @SaCheckPermission("system:oper-log:query")
+    @SaCheckPermission("monitor:oper-log:query")
     @GetMapping("/{id}")
     public R<SysOperLog> getById(@PathVariable Long id) {
         return R.ok(sysOperLogService.getById(id));
@@ -52,25 +52,16 @@ public class SysOperLogController {
 
     @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除操作日志")
-    @SaCheckPermission("system:oper-log:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysOperLogService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除操作日志")
-    @SaCheckPermission("system:oper-log:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @SaCheckPermission("monitor:oper-log:delete")
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysOperLogService.removeByIds(ids);
         return R.ok();
     }
 
     @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "清空操作日志")
-    @SaCheckPermission("system:oper-log:clean")
+    @SaCheckPermission("monitor:oper-log:clean")
     @DeleteMapping("/clear")
     public R<Void> clear() {
         sysOperLogService.truncate();
@@ -78,7 +69,7 @@ public class SysOperLogController {
     }
 
     @Operation(summary = "导出操作日志")
-    @SaCheckPermission("system:oper-log:list")
+    @SaCheckPermission("monitor:oper-log:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
         List<SysOperLog> list = sysOperLogService.list(

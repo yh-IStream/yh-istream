@@ -2,7 +2,7 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.common.model.dto.SysUserQuery;
+import com.istream.common.model.query.SysUserQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 

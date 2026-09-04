@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.model.dto.SysDictDataQuery;
+import com.istream.common.model.query.SysDictDataQuery;
 import com.istream.common.model.R;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.service.SysDictDataService;
@@ -42,6 +42,8 @@ public class SysDictDataController {
         LambdaQueryWrapper<SysDictData> wrapper = new LambdaQueryWrapper<SysDictData>()
                 .eq(query.getDictType() != null && !query.getDictType().isEmpty(),
                         SysDictData::getDictType, query.getDictType())
+                .like(query.getDictLabel() != null && !query.getDictLabel().isEmpty(),
+                        SysDictData::getDictLabel, query.getDictLabel())
                 .orderByAsc(SysDictData::getOrderNum);
         sysDictDataService.page(page, wrapper);
         return R.ok(page);
@@ -97,17 +99,8 @@ public class SysDictDataController {
     @OperLog(title = "字典数据管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除字典数据")
     @SaCheckPermission("system:dict:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysDictDataService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "字典数据管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除字典数据")
-    @SaCheckPermission("system:dict:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysDictDataService.removeByIds(ids);
         return R.ok();
     }

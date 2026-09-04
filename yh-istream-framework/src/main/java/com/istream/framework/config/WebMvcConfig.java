@@ -38,8 +38,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                     SaRouter.match("/**")
                             .notMatch(
                                     "/auth/login",
-                                    "/auth/register",
                                     "/auth/captcha",
+                                    "/system/config/key/**",
                                     "/sse/**",
                                     "/doc.html",
                                     "/webjars/**",
@@ -47,8 +47,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                     "/knife4j/**",
                                     "/favicon.ico",
                                     "/error",
-                                    "/files/**",
-                                    "/system/user/rp"
+                                    "/files/**"
                             )
                             .check(r -> StpUtil.checkLogin());
                 }))

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { AddOutline } from '@vicons/ionicons5'
 import { getDictTypeList, addDictType, updateDictType, deleteDictType, getDictDataList, addDictData, updateDictData, deleteDictData } from '@/api/modules/system'
-import { STATUS, STATUS_LABEL } from '@/constants'
+import { STATUS, STATUS_LABEL, LIST_CLASS_OPTIONS } from '@/constants'
+import { useDict, renderDictTag } from '@/composables/useDict'
 
 const message = useMessage()
 const { renderStatusTag } = useStatusRender()
+const { clearDict } = useDict()
 const { pagination: typePagination, resetPage: resetTypePage, setPage: setTypePage, setPageSize: setTypePageSize } = usePagination()
 const { pagination: dataPagination, resetPage: resetDataPage, setPage: setDataPage, setPageSize: setDataPageSize } = usePagination()
 const activeTab = ref('type')
@@ -36,7 +38,7 @@ const typeColumns = [
       h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => { selectedDictType.value = row.dictType; dataSearchForm.dictType = row.dictType; activeTab.value = 'data'; fetchDataList() } }, { default: () => '数据' }),
       h(NPopconfirm, { onPositiveClick: () => handleTypeDelete(row.id) }, {
         trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
-        default: () => '确认删除？',
+        default: () => '删除类型将同时删除其下所有字典数据，确认删除？',
       }),
     ]),
   },
@@ -75,7 +77,7 @@ async function handleTypeSubmit() {
 }
 
 async function handleTypeDelete(id: string) {
-  try { await deleteDictType(id); message.success('删除成功'); fetchTypeList() }
+  try { await deleteDictType(id); message.success('删除成功'); clearDict(); fetchTypeList() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
 
@@ -97,6 +99,10 @@ const dataRules = {
 const dataColumns = [
   { title: '字典标签', key: 'dictLabel', width: 140 },
   { title: '字典值', key: 'dictValue', width: 140 },
+  {
+    title: '样式', key: 'listClass', width: 100, align: 'center' as const,
+    render: (row: any) => renderDictTag({ label: row.dictLabel, listClass: row.listClass, cssClass: row.cssClass }),
+  },
   { title: '排序', key: 'orderNum', width: 60, align: 'center' as const },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
@@ -119,7 +125,7 @@ async function fetchDataList() {
   if (!dataSearchForm.dictType) return
   dataLoading.value = true
   try {
-    const res: any = await getDictDataList({ pageNum: dataPagination.page, pageSize: dataPagination.pageSize, dictType: dataSearchForm.dictType })
+    const res: any = await getDictDataList({ pageNum: dataPagination.page, pageSize: dataPagination.pageSize, dictType: dataSearchForm.dictType, dictLabel: dataSearchForm.dictLabel || undefined })
     dataList.value = res.data?.records ?? []
     dataPagination.itemCount = res.data?.total ?? 0
   } catch (e: any) { message.error(e.message || '查询失败') }
@@ -144,12 +150,13 @@ async function handleDataSubmit() {
     const data: any = { ...dataForm }
     if (dataForm.id) { data.id = dataForm.id; await updateDictData(data); message.success('修改成功') }
     else { await addDictData(data); message.success('新增成功') }
+    clearDict(dataForm.dictType)
     dataDialogVisible.value = false; fetchDataList()
   } catch (e: any) { message.error(e.message || '操作失败') }
 }
 
 async function handleDataDelete(id: string) {
-  try { await deleteDictData(id); message.success('删除成功'); fetchDataList() }
+  try { await deleteDictData(id); message.success('删除成功'); clearDict(selectedDictType.value); fetchDataList() }
   catch (e: any) { message.error(e.message || '删除失败') }
 }
 
@@ -166,7 +173,7 @@ onMounted(() => fetchTypeList())
     <n-tabs v-model:value="activeTab" @update:value="handleTabChange">
       <n-tab-pane name="type" tab="字典类型">
         <div class="mb-12px">
-          <n-button type="primary" @click="handleTypeAdd"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+          <n-button type="primary" @click="handleTypeAdd" v-permission="'system:dict:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
         </div>
         <n-data-table :columns="typeColumns" :data="typeData" :loading="typeLoading" :pagination="typePagination"
           :row-key="(row: any) => row.id" striped size="small" remote
@@ -175,11 +182,12 @@ onMounted(() => fetchTypeList())
       </n-tab-pane>
 
       <n-tab-pane name="data" tab="字典数据" :disabled="!selectedDictType">
-        <div class="mb-12px">
-          <n-button type="primary" @click="handleDataAdd" :disabled="!selectedDictType">
+        <div class="mb-12px flex items-center gap-12px">
+          <n-button type="primary" @click="handleDataAdd" :disabled="!selectedDictType" v-permission="'system:dict:add'">
             <template #icon><n-icon :component="AddOutline" /></template>新增
           </n-button>
-          <span v-if="selectedDictType" class="ml-12px text-sm text-gray-500">当前类型：{{ selectedDictType }}</span>
+          <n-input v-model:value="dataSearchForm.dictLabel" placeholder="搜索字典标签" clearable size="small" style="width: 180px" @update:value="() => { resetDataPage(); fetchDataList() }" />
+          <span v-if="selectedDictType" class="text-sm text-gray-500">当前类型：{{ selectedDictType }}</span>
         </div>
         <n-data-table :columns="dataColumns" :data="dataList" :loading="dataLoading" :pagination="dataPagination"
           :row-key="(row: any) => row.id" striped size="small" remote
@@ -225,6 +233,12 @@ onMounted(() => fetchTypeList())
         </n-form-item>
         <n-form-item label="排序" path="orderNum">
           <n-input-number v-model:value="dataForm.orderNum" :min="0" style="width: 100%" />
+        </n-form-item>
+        <n-form-item label="回显样式" path="listClass">
+          <n-select v-model:value="dataForm.listClass" :options="LIST_CLASS_OPTIONS as any" placeholder="预设主题或自定义hex色值" clearable filterable tag />
+        </n-form-item>
+        <n-form-item label="CSS类名" path="cssClass">
+          <n-input v-model:value="dataForm.cssClass" placeholder="自定义CSS类名，如 text-red" />
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="dataForm.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">

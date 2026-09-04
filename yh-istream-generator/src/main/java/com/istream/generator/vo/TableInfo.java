@@ -1,4 +1,4 @@
-package com.istream.generator.model;
+package com.istream.generator.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

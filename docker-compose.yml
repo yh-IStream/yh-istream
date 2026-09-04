@@ -1,4 +1,4 @@
-services:
+﻿services:
   mysql:
     # MySQL 9.x Innovation Release（Docker Hub 官方镜像）
     image: mysql:9.2
@@ -50,7 +50,7 @@ services:
       retries: 3
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:mysql://mysql:3306/yh_istream?connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=PREFERRED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
+      DB_URL: jdbc:mysql://mysql:3306/yh_istream?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=PREFERRED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
       DB_USERNAME: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
       REDIS_HOST: redis

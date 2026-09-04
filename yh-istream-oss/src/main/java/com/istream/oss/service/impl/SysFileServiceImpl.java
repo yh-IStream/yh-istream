@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -89,6 +92,24 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         } catch (Exception e) {
             log.error("磁盘文件删除失败，但数据库记录已删除: {}", sysFile.getFilePath(), e);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByIds(Collection<?> list) {
+        @SuppressWarnings("unchecked")
+        List<SysFile> files = listByIds((Collection<? extends Serializable>) list);
+        boolean result = super.removeByIds(list);
+        if (result) {
+            for (SysFile file : files) {
+                try {
+                    fileStorageService.delete(file.getFilePath());
+                } catch (Exception e) {
+                    log.error("磁盘文件删除失败，但数据库记录已删除: {}", file.getFilePath(), e);
+                }
+            }
+        }
+        return result;
     }
 
     private void validateFile(MultipartFile file) {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
+import { SearchOutline, AddOutline, RefreshOutline, DownloadOutline } from '@vicons/ionicons5'
 import {
-  getRoleList, addRole, updateRole, deleteRole, getRoleMenuTree, assignRoleMenu,
+  getRoleList, addRole, updateRole, deleteRole, changeRoleStatus, getRoleMenuTree, assignRoleMenu,
   getRoleUsers, assignRoleUsers, getUserList,
+  getDeptTree, getRoleDeptIds, assignRoleDept, exportRole,
 } from '@/api/modules/system'
-import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
+import { STATUS, STATUS_OPTIONS, STATUS_LABEL, DATA_SCOPE, DATA_SCOPE_LABEL, DATA_SCOPE_OPTIONS } from '@/constants'
 
 const message = useMessage()
 const dialog = useDialog()
@@ -22,7 +23,11 @@ const dialogTitle = ref('新增角色')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as string | null, roleName: '', roleKey: '', roleSort: 0, status: 0, remark: '' })
+const formData = reactive<{ id: string | null; roleName: string; roleKey: string; roleSort: number; dataScope: number; status: number; remark: string }>({ id: null, roleName: '', roleKey: '', roleSort: 0, dataScope: DATA_SCOPE.SELF, status: 0, remark: '' })
+
+const deptTree = ref<any[]>([])
+const checkedDeptKeys = ref<string[]>([])
+const isCustomScope = computed(() => formData.dataScope === DATA_SCOPE.CUSTOM)
 
 const menuDialogVisible = ref(false)
 const menuRoleId = ref<string>()
@@ -47,8 +52,17 @@ const columns = [
   { title: '角色标识', key: 'roleKey', width: 160 },
   { title: '排序', key: 'roleSort', width: 80, align: 'center' as const },
   {
+    title: '数据范围', key: 'dataScope', width: 140, align: 'center' as const,
+    render: (row: any) => DATA_SCOPE_LABEL[row.dataScope] ?? '-',
+  },
+  {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => renderStatusTag(row.status),
+    render: (row: any) => h(NSwitch, {
+      value: row.status === STATUS.NORMAL,
+      checkedValue: true,
+      uncheckedValue: false,
+      onUpdateValue: (val: boolean) => handleStatusChange(row, val),
+    }),
   },
   { title: '创建时间', key: 'createTime', width: 170 },
   {
@@ -85,25 +99,60 @@ function handleReset() { searchForm.roleName = ''; searchForm.roleKey = ''; sear
 function handlePageChange(page: number) { setPage(page); fetchData() }
 function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
 
-function handleAdd() {
+async function handleAdd() {
   isEdit.value = false; dialogTitle.value = '新增角色'
-  Object.assign(formData, { id: null, roleName: '', roleKey: '', roleSort: 0, status: STATUS.NORMAL, remark: '' })
+  Object.assign(formData, { id: null, roleName: '', roleKey: '', roleSort: 0, dataScope: DATA_SCOPE.SELF, status: STATUS.NORMAL, remark: '' })
+  checkedDeptKeys.value = []
+  await ensureDeptTree()
   dialogVisible.value = true
 }
 
-function handleEdit(row: any) {
+async function handleEdit(row: any) {
   isEdit.value = true; dialogTitle.value = '编辑角色'
-  Object.assign(formData, { id: row.id, roleName: row.roleName, roleKey: row.roleKey, roleSort: row.roleSort, status: row.status, remark: row.remark ?? '' })
+  Object.assign(formData, { id: row.id, roleName: row.roleName, roleKey: row.roleKey, roleSort: row.roleSort, dataScope: row.dataScope ?? DATA_SCOPE.SELF, status: row.status, remark: row.remark ?? '' })
+  await ensureDeptTree()
+  try {
+    const res = await getRoleDeptIds(row.id)
+    checkedDeptKeys.value = (res.data ?? []).map((id: any) => String(id))
+  } catch {
+    checkedDeptKeys.value = []
+  }
   dialogVisible.value = true
+}
+
+async function ensureDeptTree() {
+  if (deptTree.value.length === 0) {
+    try {
+      const res = await getDeptTree()
+      deptTree.value = res.data ?? []
+    } catch {
+      deptTree.value = []
+    }
+  }
 }
 
 async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { roleName: formData.roleName, roleKey: formData.roleKey, roleSort: formData.roleSort, status: formData.status, remark: formData.remark }
-    if (formData.id) { data.id = formData.id; await updateRole(data); message.success('修改成功') }
-    else { await addRole(data); message.success('新增成功') }
+    const data: any = { roleName: formData.roleName, roleKey: formData.roleKey, roleSort: formData.roleSort, dataScope: formData.dataScope, status: formData.status, remark: formData.remark }
+    if (formData.id) {
+      data.id = formData.id
+      await updateRole(data)
+      if (isCustomScope.value) {
+        await assignRoleDept(formData.id, checkedDeptKeys.value)
+      } else {
+        await assignRoleDept(formData.id, [])
+      }
+      message.success('修改成功')
+    } else {
+      const res = await addRole(data)
+      const newId = res.data
+      if (isCustomScope.value && newId) {
+        await assignRoleDept(newId, checkedDeptKeys.value)
+      }
+      message.success('新增成功')
+    }
     dialogVisible.value = false; fetchData()
   } catch (e: any) { message.error(e.message || '操作失败') }
   finally { submitLoading.value = false }
@@ -112,6 +161,48 @@ async function handleSubmit() {
 async function handleDelete(id: string) {
   try { await deleteRole(id); message.success('删除成功'); fetchData() }
   catch (e: any) { message.error(e.message || '删除失败') }
+}
+
+async function handleStatusChange(row: any, val: boolean) {
+  const newStatus = val ? STATUS.NORMAL : STATUS.DISABLED
+  try {
+    await changeRoleStatus(row.id, newStatus)
+    row.status = newStatus
+    message.success('状态修改成功')
+  } catch (e: any) {
+    message.error(e.message || '修改失败')
+  }
+}
+
+async function handleBatchDelete() {
+  if (selectedIds.value.length === 0) {
+    message.warning('请选择要删除的角色')
+    return
+  }
+  try {
+    await deleteRole(selectedIds.value)
+    message.success('批量删除成功')
+    selectedIds.value = []
+    fetchData()
+  } catch (e: any) {
+    message.error(e.message || '批量删除失败')
+  }
+}
+
+async function handleExport() {
+  try {
+    const res: any = await exportRole()
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '角色列表.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    message.success('导出成功')
+  } catch (e: any) {
+    message.error(e.message || '导出失败')
+  }
 }
 
 async function handleMenuAssign(row: any) {
@@ -127,7 +218,7 @@ async function handleMenuAssign(row: any) {
 function getAllMenuKeys(tree: any[]): string[] {
   const keys: string[] = []
   for (const node of tree) {
-    keys.push(node.id)
+    keys.push(String(node.id))
     if (node.children && node.children.length > 0) {
       keys.push(...getAllMenuKeys(node.children))
     }
@@ -192,7 +283,7 @@ async function handleUserSearch(query: string) {
     const records = (res.data?.records ?? []) as any[]
     const newOptions = records.map((u: any) => ({
       label: `${u.nickname} (${u.username})`,
-      value: u.id,
+      value: String(u.id),
     }))
     const existingIds = new Set(allUserOptions.value.map((o: any) => o.value))
     for (const opt of newOptions) {
@@ -242,7 +333,16 @@ onMounted(() => fetchData())
 
     <div class="card">
       <div class="flex items-center justify-between mb-12px">
-        <n-button type="primary" @click="handleAdd"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+        <n-space>
+          <n-button type="primary" @click="handleAdd" v-permission="'system:role:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+          <n-popconfirm @positive-click="handleBatchDelete">
+            <template #trigger>
+              <n-button type="error" :disabled="selectedIds.length === 0" v-permission="'system:role:delete'">批量删除</n-button>
+            </template>
+            确认删除选中的 {{ selectedIds.length }} 条角色吗？
+          </n-popconfirm>
+          <n-button @click="handleExport" v-permission="'system:role:export'"><template #icon><n-icon :component="DownloadOutline" /></template>导出</n-button>
+        </n-space>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
         :row-key="(row: any) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
@@ -260,6 +360,23 @@ onMounted(() => fetchData())
         </n-form-item>
         <n-form-item label="排序" path="roleSort">
           <n-input-number v-model:value="formData.roleSort" :min="0" style="width: 100%" />
+        </n-form-item>
+        <n-form-item label="数据范围" path="dataScope">
+          <n-select v-model:value="formData.dataScope" :options="DATA_SCOPE_OPTIONS as any" placeholder="请选择数据范围" />
+        </n-form-item>
+        <n-form-item v-if="isCustomScope" label="授权部门" path="deptIds">
+          <n-tree
+            v-model:checked-keys="checkedDeptKeys"
+            :data="deptTree"
+            key-field="id"
+            label-field="deptName"
+            children-field="children"
+            checkable
+            cascade
+            :selectable="false"
+            style="max-height: 280px; overflow: auto; width: 100%"
+            placeholder="请选择该角色可访问的部门"
+          />
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="formData.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">

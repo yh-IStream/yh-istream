@@ -44,6 +44,9 @@ public enum ResultCode {
     HAS_CHILDREN(20005, "存在子节点，无法删除"),
     HAS_USERS(20006, "存在关联用户，无法删除"),
     HAS_ROLES(20007, "存在关联角色，无法删除"),
+    SUPER_ADMIN_PROTECT(20008, "超级管理员不允许删除"),
+    DEPT_CYCLE_REFERENCE(20009, "上级部门不能是自己的子部门，存在循环引用"),
+    MENU_CYCLE_REFERENCE(20010, "上级菜单不能是自己的子菜单，存在循环引用"),
 
     /** 文件相关错误码（3xxxx） */
     FILE_UPLOAD_ERROR(30001, "文件上传失败"),

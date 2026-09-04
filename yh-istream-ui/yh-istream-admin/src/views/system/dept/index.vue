@@ -12,11 +12,23 @@ const dialogTitle = ref('新增部门')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref()
-const formData = reactive({ id: null as string | null, parentId: 0, deptName: '', leader: '', phone: '', email: '', sort: 0, status: 0 })
+const formData = reactive({ id: null as string | null, parentId: '0' as string, deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: 0 })
+
+const deptTreeSelectData = computed(() => {
+  const filterTree = (list: any[]): any[] =>
+    list
+      .filter(item => String(item.id) !== String(formData.id))
+      .map(item => ({
+        key: String(item.id),
+        label: item.deptName,
+        children: item.children && item.children.length ? filterTree(item.children) : undefined,
+      }))
+  return [{ key: '0', label: '顶级部门', children: filterTree(treeData.value) }]
+})
 
 const rules = {
   deptName: [{ required: true, message: '请输入部门名称', trigger: 'blur' }],
-  sort: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
+  orderNum: [{ required: true, type: 'number' as const, message: '请输入排序', trigger: 'blur' }],
 }
 
 const columns = [
@@ -24,7 +36,7 @@ const columns = [
   { title: '负责人', key: 'leader', width: 120 },
   { title: '联系电话', key: 'phone', width: 130 },
   { title: '邮箱', key: 'email', width: 180 },
-  { title: '排序', key: 'sort', width: 60, align: 'center' as const },
+  { title: '排序', key: 'orderNum', width: 60, align: 'center' as const },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
     render: (row: any) => renderStatusTag(row.status),
@@ -53,13 +65,13 @@ async function fetchData() {
 
 function handleAdd(parent?: any) {
   isEdit.value = false; dialogTitle.value = '新增部门'
-  Object.assign(formData, { id: null, parentId: parent ? parent.id : 0, deptName: '', leader: '', phone: '', email: '', sort: 0, status: STATUS.NORMAL })
+  Object.assign(formData, { id: null, parentId: parent ? String(parent.id) : '0', deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: STATUS.NORMAL })
   dialogVisible.value = true
 }
 
 function handleEdit(row: any) {
   isEdit.value = true; dialogTitle.value = '编辑部门'
-  Object.assign(formData, { id: row.id, parentId: row.parentId ?? 0, deptName: row.deptName, leader: row.leader ?? '', phone: row.phone ?? '', email: row.email ?? '', sort: row.sort ?? 0, status: row.status ?? 0 })
+  Object.assign(formData, { id: row.id, parentId: row.parentId != null ? String(row.parentId) : '0', deptName: row.deptName, leader: row.leader ?? '', phone: row.phone ?? '', email: row.email ?? '', orderNum: row.orderNum ?? 0, status: row.status ?? 0 })
   dialogVisible.value = true
 }
 
@@ -67,7 +79,7 @@ async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { ...formData, parentId: formData.parentId || 0 }
+    const data: any = { ...formData, parentId: Number(formData.parentId) || 0 }
     if (formData.id) { data.id = formData.id; await updateDept(data); message.success('修改成功') }
     else { await addDept(data); message.success('新增成功') }
     dialogVisible.value = false; fetchData()
@@ -87,7 +99,7 @@ onMounted(() => fetchData())
   <div class="flex flex-col gap-12px">
     <div class="card">
       <div class="flex items-center justify-between mb-12px">
-        <n-button type="primary" @click="handleAdd()"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
+        <n-button type="primary" @click="handleAdd()" v-permission="'system:dept:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
         <n-button @click="fetchData"><template #icon><n-icon :component="RefreshOutline" /></template>刷新</n-button>
       </div>
       <n-data-table :columns="columns" :data="treeData" :loading="loading" :row-key="(row: any) => row.id" striped size="small" default-expand-all />
@@ -95,6 +107,9 @@ onMounted(() => fetchData())
 
     <n-modal v-model:show="dialogVisible" :title="dialogTitle" preset="card" style="width: 560px" :mask-closable="false">
       <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="80px">
+        <n-form-item label="上级部门" path="parentId">
+          <n-tree-select v-model:value="formData.parentId" :options="deptTreeSelectData" :default-expand-all="false" placeholder="请选择上级部门" />
+        </n-form-item>
         <n-form-item label="部门名称" path="deptName">
           <n-input v-model:value="formData.deptName" placeholder="请输入部门名称" />
         </n-form-item>
@@ -107,8 +122,8 @@ onMounted(() => fetchData())
         <n-form-item label="邮箱" path="email">
           <n-input v-model:value="formData.email" placeholder="请输入邮箱" />
         </n-form-item>
-        <n-form-item label="排序" path="sort">
-          <n-input-number v-model:value="formData.sort" :min="0" style="width: 100%" />
+        <n-form-item label="排序" path="orderNum">
+          <n-input-number v-model:value="formData.orderNum" :min="0" style="width: 100%" />
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="formData.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">

@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
-import com.istream.common.model.dto.SysLoginInfoQuery;
+import com.istream.common.model.query.SysLoginInfoQuery;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysLoginInfo;
 import com.istream.system.service.SysLoginInfoService;
@@ -34,14 +34,14 @@ public class SysLoginInfoController {
     private final SysLoginInfoService sysLoginInfoService;
 
     @Operation(summary = "分页查询登录日志")
-    @SaCheckPermission("system:login-info:list")
+    @SaCheckPermission("monitor:login-info:list")
     @GetMapping("/list")
     public R<IPage<SysLoginInfo>> list(SysLoginInfoQuery query) {
         Page<SysLoginInfo> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<SysLoginInfo> wrapper = new LambdaQueryWrapper<SysLoginInfo>()
-                .eq(query.getUsername() != null && !query.getUsername().isEmpty(),
+                .like(query.getUsername() != null && !query.getUsername().isEmpty(),
                         SysLoginInfo::getUsername, query.getUsername())
-                .eq(query.getIpAddress() != null && !query.getIpAddress().isEmpty(),
+                .like(query.getIpAddress() != null && !query.getIpAddress().isEmpty(),
                         SysLoginInfo::getIpAddress, query.getIpAddress())
                 .eq(query.getStatus() != null, SysLoginInfo::getStatus, query.getStatus())
                 .orderByDesc(SysLoginInfo::getLoginTime);
@@ -50,7 +50,7 @@ public class SysLoginInfoController {
     }
 
     @Operation(summary = "根据ID查询登录日志")
-    @SaCheckPermission("system:login-info:query")
+    @SaCheckPermission("monitor:login-info:query")
     @GetMapping("/{id}")
     public R<SysLoginInfo> getById(@PathVariable Long id) {
         return R.ok(sysLoginInfoService.getById(id));
@@ -58,25 +58,16 @@ public class SysLoginInfoController {
 
     @OperLog(title = "登录日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除登录日志")
-    @SaCheckPermission("system:login-info:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        sysLoginInfoService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "登录日志管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除登录日志")
-    @SaCheckPermission("system:login-info:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @SaCheckPermission("monitor:login-info:delete")
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         sysLoginInfoService.removeByIds(ids);
         return R.ok();
     }
 
     @OperLog(title = "登录日志管理", businessType = BusinessType.DELETE)
     @Operation(summary = "清空登录日志")
-    @SaCheckPermission("system:login-info:clean")
+    @SaCheckPermission("monitor:login-info:clean")
     @DeleteMapping("/clear")
     public R<Void> clear() {
         sysLoginInfoService.truncate();
@@ -84,7 +75,7 @@ public class SysLoginInfoController {
     }
 
     @Operation(summary = "导出登录日志")
-    @SaCheckPermission("system:login-info:list")
+    @SaCheckPermission("monitor:login-info:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
         List<SysLoginInfo> list = sysLoginInfoService.list(

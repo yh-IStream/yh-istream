@@ -1,5 +1,5 @@
 -- ============================================================
--- V1__init_schema1.sql（合并 V1~V6，ID 严格遵循 100-block 递增）
+-- V1__init_schema1.sql
 -- 数据库: MySQL 9.7.2 LTS（utf8mb4_0900_ai_ci）
 -- ============================================================
 
@@ -337,6 +337,7 @@ INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, path, component, perm
 (202, 200, '角色新增', 'F', NULL, NULL, 'system:role:add', NULL, 2, 1, 0),
 (203, 200, '角色修改', 'F', NULL, NULL, 'system:role:edit', NULL, 3, 1, 0),
 (204, 200, '角色删除', 'F', NULL, NULL, 'system:role:delete', NULL, 4, 1, 0),
+(205, 200, '角色导出', 'F', NULL, NULL, 'system:role:export', NULL, 5, 1, 0),
 -- 菜单管理 300-399
 (300, 1, '菜单管理', 'C', '/system/menu', 'system/menu/index', 'system:menu:list', 'menu', 3, 1, 0),
 (301, 300, '菜单查询', 'F', NULL, NULL, 'system:menu:query', NULL, 1, 1, 0),
@@ -370,16 +371,18 @@ INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, path, component, perm
 
 -- ===== 监控管理（2）=====
 (2, 0, '监控管理', 'M', NULL, NULL, NULL, 'monitor', 8, 1, 0),
--- 操作日志 800-899（原 700-703，路径匹配实际路由 /monitor/oper-log）
-(800, 2, '操作日志', 'C', '/monitor/oper-log', 'monitor/oper-log/index', 'system:oper-log:list', 'operLog', 1, 1, 0),
-(801, 800, '日志查询', 'F', NULL, NULL, 'system:oper-log:query', NULL, 1, 1, 0),
-(802, 800, '日志删除', 'F', NULL, NULL, 'system:oper-log:delete', NULL, 2, 1, 0),
-(803, 800, '日志清空', 'F', NULL, NULL, 'system:oper-log:clean', NULL, 3, 1, 0),
--- 登录日志 900-999（原 800-803，路径匹配实际路由 /monitor/login-info）
-(900, 2, '登录日志', 'C', '/monitor/login-info', 'monitor/login-info/index', 'system:login-info:list', 'loginInfo', 2, 1, 0),
-(901, 900, '日志查询', 'F', NULL, NULL, 'system:login-info:query', NULL, 1, 1, 0),
-(902, 900, '日志删除', 'F', NULL, NULL, 'system:login-info:delete', NULL, 2, 1, 0),
-(903, 900, '日志清空', 'F', NULL, NULL, 'system:login-info:clean', NULL, 3, 1, 0),
+-- 操作日志 800-899
+(800, 2, '操作日志', 'C', '/monitor/oper-log', 'monitor/oper-log/index', 'monitor:oper-log:list', 'operLog', 1, 1, 0),
+(801, 800, '日志查询', 'F', NULL, NULL, 'monitor:oper-log:query', NULL, 1, 1, 0),
+(802, 800, '日志删除', 'F', NULL, NULL, 'monitor:oper-log:delete', NULL, 2, 1, 0),
+(803, 800, '日志清空', 'F', NULL, NULL, 'monitor:oper-log:clean', NULL, 3, 1, 0),
+(804, 800, '日志导出', 'F', NULL, NULL, 'monitor:oper-log:export', NULL, 4, 1, 0),
+-- 登录日志 900-999
+(900, 2, '登录日志', 'C', '/monitor/login-info', 'monitor/login-info/index', 'monitor:login-info:list', 'loginInfo', 2, 1, 0),
+(901, 900, '日志查询', 'F', NULL, NULL, 'monitor:login-info:query', NULL, 1, 1, 0),
+(902, 900, '日志删除', 'F', NULL, NULL, 'monitor:login-info:delete', NULL, 2, 1, 0),
+(903, 900, '日志清空', 'F', NULL, NULL, 'monitor:login-info:clean', NULL, 3, 1, 0),
+(904, 900, '日志导出', 'F', NULL, NULL, 'monitor:login-info:export', NULL, 4, 1, 0),
 
 -- ===== 代码生成器（3）=====
 (3, 0, '代码生成器', 'M', '/generator', NULL, NULL, 'generator', 9, 1, 0),
@@ -401,27 +404,27 @@ VALUES (1, '用户性别', 'sys_user_sex', 0),
        (6, '登录状态', 'sys_login_status', 0);
 
 -- 字典数据
-INSERT INTO sys_dict_data (id, dict_type, dict_label, dict_value, is_default, order_num, status)
+INSERT INTO sys_dict_data (id, dict_type, dict_label, dict_value, css_class, list_class, is_default, order_num, status)
 VALUES
-(1, 'sys_user_sex', '男', '1', 0, 1, 0),
-(2, 'sys_user_sex', '女', '2', 0, 2, 0),
-(3, 'sys_user_sex', '未知', '0', 1, 0, 0),
-(4, 'sys_menu_type', '目录', 'M', 0, 1, 0),
-(5, 'sys_menu_type', '菜单', 'C', 0, 2, 0),
-(6, 'sys_menu_type', '按钮', 'F', 0, 3, 0),
-(7, 'sys_data_scope', '全部数据', '1', 0, 1, 0),
-(8, 'sys_data_scope', '自定义数据', '2', 0, 2, 0),
-(9, 'sys_data_scope', '本部门数据', '3', 0, 3, 0),
-(10, 'sys_data_scope', '本部门及以下', '4', 0, 4, 0),
-(11, 'sys_data_scope', '仅本人数据', '5', 1, 5, 0),
-(12, 'sys_status', '启用', '0', 1, 1, 0),
-(13, 'sys_status', '禁用', '1', 0, 2, 0),
-(14, 'sys_oper_type', '其他', '0', 0, 1, 0),
-(15, 'sys_oper_type', '新增', '1', 0, 2, 0),
-(16, 'sys_oper_type', '修改', '2', 0, 3, 0),
-(17, 'sys_oper_type', '删除', '3', 0, 4, 0),
-(18, 'sys_login_status', '成功', '0', 0, 1, 0),
-(19, 'sys_login_status', '失败', '1', 0, 2, 0);
+(1, 'sys_user_sex', '男', '1', NULL, 'primary', 0, 1, 0),
+(2, 'sys_user_sex', '女', '2', NULL, 'error', 0, 2, 0),
+(3, 'sys_user_sex', '未知', '0', NULL, 'default', 1, 0, 0),
+(4, 'sys_menu_type', '目录', 'M', NULL, 'info', 0, 1, 0),
+(5, 'sys_menu_type', '菜单', 'C', NULL, 'primary', 0, 2, 0),
+(6, 'sys_menu_type', '按钮', 'F', NULL, 'warning', 0, 3, 0),
+(7, 'sys_data_scope', '全部数据', '1', NULL, NULL, 0, 1, 0),
+(8, 'sys_data_scope', '自定义数据', '2', NULL, NULL, 0, 2, 0),
+(9, 'sys_data_scope', '本部门数据', '3', NULL, NULL, 0, 3, 0),
+(10, 'sys_data_scope', '本部门及以下', '4', NULL, NULL, 0, 4, 0),
+(11, 'sys_data_scope', '仅本人数据', '5', NULL, NULL, 1, 5, 0),
+(12, 'sys_status', '启用', '0', NULL, 'success', 1, 1, 0),
+(13, 'sys_status', '禁用', '1', NULL, 'error', 0, 2, 0),
+(14, 'sys_oper_type', '其他', '0', NULL, 'default', 0, 1, 0),
+(15, 'sys_oper_type', '新增', '1', NULL, 'info', 0, 2, 0),
+(16, 'sys_oper_type', '修改', '2', NULL, 'warning', 0, 3, 0),
+(17, 'sys_oper_type', '删除', '3', NULL, 'error', 0, 4, 0),
+(18, 'sys_login_status', '成功', '0', NULL, 'success', 0, 1, 0),
+(19, 'sys_login_status', '失败', '1', NULL, 'error', 0, 2, 0);
 
 -- 系统配置
 INSERT INTO sys_config (id, config_name, config_key, config_value, config_type)

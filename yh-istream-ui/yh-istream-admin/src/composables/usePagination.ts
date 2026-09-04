@@ -2,7 +2,7 @@
  * 分页组合式函数
  * 封装列表页通用的分页、搜索、重置逻辑
  */
-import { PAGINATION_DEFAULTS, PAGE_SIZES } from '@/constants'
+import { PAGINATION_DEFAULTS } from '@/constants'
 
 export function usePagination(pageSize = 10) {
   const pagination = reactive({
@@ -10,7 +10,7 @@ export function usePagination(pageSize = 10) {
     pageSize,
     itemCount: PAGINATION_DEFAULTS.itemCount,
     showSizePicker: PAGINATION_DEFAULTS.showSizePicker,
-    pageSizes: [...PAGE_SIZES],
+    pageSizes: [...PAGINATION_DEFAULTS.pageSizes],
     prefix: PAGINATION_DEFAULTS.prefix,
   })
 

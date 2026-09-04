@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.model.dto.SysRoleQuery;
+import com.istream.common.model.query.SysRoleQuery;
+import com.istream.common.model.dto.RoleMenuAssignDTO;
+import com.istream.common.model.dto.RoleDeptAssignDTO;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -72,14 +75,14 @@ public class SysRoleController {
     @Operation(summary = "新增角色")
     @SaCheckPermission("system:role:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysRole role) {
+    public R<Long> add(@Valid @RequestBody SysRole role) {
         if (sysRoleService.count(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleKey, role.getRoleKey())) > 0) {
             return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
         }
         role.setId(null);
         sysRoleService.save(role);
-        return R.ok();
+        return R.ok(role.getId());
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
@@ -99,20 +102,8 @@ public class SysRoleController {
     @OperLog(title = "角色管理", businessType = BusinessType.DELETE)
     @Operation(summary = "删除角色")
     @SaCheckPermission("system:role:delete")
-    @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        if (sysRoleService.hasUsers(id)) {
-            return R.fail(ResultCode.HAS_USERS);
-        }
-        sysRoleService.removeById(id);
-        return R.ok();
-    }
-
-    @OperLog(title = "角色管理", businessType = BusinessType.DELETE)
-    @Operation(summary = "批量删除角色")
-    @SaCheckPermission("system:role:delete")
-    @DeleteMapping("/batch")
-    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+    @DeleteMapping
+    public R<Void> delete(@RequestBody List<Long> ids) {
         if (sysRoleService.hasUsersAny(ids)) {
             return R.fail(ResultCode.HAS_USERS);
         }
@@ -124,8 +115,8 @@ public class SysRoleController {
     @Operation(summary = "修改角色状态")
     @SaCheckPermission("system:role:edit")
     @PutMapping("/change-status")
-    public R<Void> changeStatus(@RequestBody SysRole role) {
-        sysRoleService.changeStatus(role.getId(), role.getStatus());
+    public R<Void> changeStatus(@RequestParam Long roleId, @RequestParam Integer status) {
+        sysRoleService.changeStatus(roleId, status);
         return R.ok();
     }
 
@@ -145,14 +136,24 @@ public class SysRoleController {
     @Operation(summary = "保存角色菜单分配")
     @SaCheckPermission("system:role:edit")
     @PutMapping("/menu-assign")
-    public R<Void> saveRoleMenu(@RequestBody Map<String, Object> params) {
-        Long roleId = Long.valueOf(params.get("roleId").toString());
-        @SuppressWarnings("unchecked")
-        List<Object> rawIds = (List<Object>) params.get("menuIds");
-        List<Long> menuIds = rawIds.stream()
-                .map(id -> Long.valueOf(id.toString()))
-                .toList();
-        sysRoleService.saveRoleMenu(roleId, menuIds);
+    public R<Void> saveRoleMenu(@Valid @RequestBody RoleMenuAssignDTO dto) {
+        sysRoleService.saveRoleMenu(dto.getRoleId(), dto.getMenuIds());
+        return R.ok();
+    }
+
+    @Operation(summary = "查询角色已授权的部门ID列表（自定义数据范围）")
+    @SaCheckPermission("system:role:edit")
+    @GetMapping("/{roleId}/depts")
+    public R<List<Long>> getRoleDepts(@PathVariable Long roleId) {
+        return R.ok(sysRoleService.getDeptIdsByRoleId(roleId));
+    }
+
+    @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
+    @Operation(summary = "保存角色自定义数据范围授权的部门")
+    @SaCheckPermission("system:role:edit")
+    @PutMapping("/dept-assign")
+    public R<Void> saveRoleDept(@Valid @RequestBody RoleDeptAssignDTO dto) {
+        sysRoleService.saveRoleDept(dto.getRoleId(), dto.getDeptIds() != null ? dto.getDeptIds() : List.of());
         return R.ok();
     }
 
@@ -175,7 +176,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "导出角色列表")
-    @SaCheckPermission("system:role:list")
+    @SaCheckPermission("system:role:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
         List<SysRole> list = sysRoleService.list();

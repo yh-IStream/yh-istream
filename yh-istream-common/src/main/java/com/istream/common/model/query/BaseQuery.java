@@ -1,4 +1,4 @@
-package com.istream.common.model;
+package com.istream.common.model.query;
 
 import lombok.Data;
 
