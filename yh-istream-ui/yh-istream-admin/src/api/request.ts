@@ -67,6 +67,14 @@ export function del<T = unknown>(url: string, data?: unknown, config?: AxiosRequ
   return instance.delete<T, T>(url, { data, ...config })
 }
 
+export function createAbortController() {
+  return new AbortController()
+}
+
+export function isAbortError(e: unknown): boolean {
+  return e instanceof Error && e.name === 'AbortError'
+}
+
 export function upload<T = unknown>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
   return instance.post<T, T>(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

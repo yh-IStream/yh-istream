@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, TOKEN_KEY } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,7 +13,7 @@ router.beforeEach(async (to) => {
   if (publicPaths.includes(to.path)) {
     return
   }
-  const token = localStorage.getItem('yh-istream-token')
+  const token = localStorage.getItem(TOKEN_KEY)
   if (!token) {
     return { path: '/login', query: { redirect: to.fullPath } }
   }

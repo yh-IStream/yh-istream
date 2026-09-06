@@ -3,6 +3,7 @@ package com.istream.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
 import com.istream.system.entity.SysDept;
 import com.istream.system.service.SysDeptService;
@@ -21,6 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 部门管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "部门管理")
 @RestController
 @RequestMapping("/system/dept")
@@ -59,7 +66,7 @@ public class SysDeptController {
     @PutMapping
     public R<Void> update(@Valid @RequestBody SysDept dept) {
         if (dept.getId().equals(dept.getParentId())) {
-            return R.fail("上级部门不能是自己");
+            return R.fail(ResultCode.PARAM_VALID_ERROR, "上级部门不能是自己");
         }
         sysDeptService.updateById(dept);
         return R.ok();

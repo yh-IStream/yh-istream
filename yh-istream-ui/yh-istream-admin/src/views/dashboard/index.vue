@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { getOperLogList } from '@/api/modules/monitor'
-import { getDashboardStats } from '@/api/modules/dashboard'
+import { getOperLogList, type SysOperLog } from '@/api/modules/monitor'
+import { getDashboardStats, type DashboardStats } from '@/api/modules/dashboard'
 import {
   PeopleOutline,
   ShieldOutline,
@@ -8,12 +8,14 @@ import {
   ServerOutline,
   TrendingUpOutline,
 } from '@vicons/ionicons5'
+import { createAbortController, isAbortError } from '@/api/request'
 
 const authStore = useAuthStore()
 const now = ref(new Date())
-const logList = ref<any[]>([])
+const logList = ref<SysOperLog[]>([])
 const statsLoaded = ref(false)
 let timer: ReturnType<typeof setInterval>
+let dashboardAbort: AbortController | null = null
 
 const stats = reactive([
   { label: '用户数', value: '--', displayValue: '--', icon: PeopleOutline, gradient: 'from-teal-500 to-cyan-400' },
@@ -41,27 +43,29 @@ onMounted(() => {
     now.value = new Date()
   }, 1000)
 
+  dashboardAbort = createAbortController()
   fetchLatestLogs()
   fetchStats()
 })
 
 onUnmounted(() => {
   clearInterval(timer)
+  dashboardAbort?.abort()
 })
 
 async function fetchLatestLogs() {
   try {
-    const res = await getOperLogList({ pageNum: 1, pageSize: 5 })
-    logList.value = (res as any).data?.records ?? []
-  } catch {
-    // ignore
+    const res = await getOperLogList({ pageNum: 1, pageSize: 5 }, { signal: dashboardAbort?.signal })
+    logList.value = res.data?.records ?? []
+  } catch (e: unknown) {
+    if (!isAbortError(e)) { /* ignore */ }
   }
 }
 
 async function fetchStats() {
   try {
-    const res: any = await getDashboardStats()
-    const data = res.data
+    const res = await getDashboardStats({ signal: dashboardAbort?.signal })
+    const data: DashboardStats = res.data
     if (data) {
       const values = [
         data.userCount ?? 0,

@@ -25,6 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 登录日志管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "登录日志管理")
 @RestController
 @RequestMapping("/monitor/login-info")
@@ -78,8 +84,12 @@ public class SysLoginInfoController {
     @SaCheckPermission("monitor:login-info:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
-        List<SysLoginInfo> list = sysLoginInfoService.list(
-                new LambdaQueryWrapper<SysLoginInfo>().orderByDesc(SysLoginInfo::getLoginTime));
-        ExcelExportUtil.export(response, "登录日志", "登录日志", SysLoginInfo.class, list);
+        ExcelExportUtil.exportByPage(response, "登录日志", "登录日志", SysLoginInfo.class,
+                (pageNum) -> {
+                    Page<SysLoginInfo> page = new Page<>(pageNum, 5000);
+                    sysLoginInfoService.page(page, new LambdaQueryWrapper<SysLoginInfo>()
+                            .orderByDesc(SysLoginInfo::getLoginTime));
+                    return page;
+                });
     }
 }

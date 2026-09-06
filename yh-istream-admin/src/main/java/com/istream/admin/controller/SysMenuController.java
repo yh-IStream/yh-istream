@@ -22,6 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 菜单管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "菜单管理")
 @RestController
 @RequestMapping("/system/menu")

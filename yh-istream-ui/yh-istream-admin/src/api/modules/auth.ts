@@ -1,4 +1,7 @@
 import { post, get } from '@/api/request'
+import type { ApiResponse } from '@/api/types'
+import type { AxiosRequestConfig } from 'axios'
+import type { SysMenu } from '@/api/modules/system'
 
 export interface LoginParams {
   username: string
@@ -8,7 +11,7 @@ export interface LoginParams {
 }
 
 export interface LoginResult {
-  tokenValue: string
+  token: string
   tokenName: string
 }
 
@@ -18,14 +21,21 @@ export interface UserInfoResult {
     username: string
     nickname: string
     avatar: string
+    deptId: string
     deptName: string
     email: string
     phone: string
+    gender: number
     status: number
+    loginIp: string
+    loginDate: string
+    loginCount: number
+    roleIds: string[]
+    roleNames: string[]
   }
   permissions: string[]
   roles: string[]
-  menus: any[]
+  menus: SysMenu[]
 }
 
 export interface CaptchaResult {
@@ -35,7 +45,7 @@ export interface CaptchaResult {
 
 /** 登录 */
 export function login(data: LoginParams) {
-  return post<{ code: number; data: LoginResult; msg: string }>('/auth/login', data)
+  return post<ApiResponse<LoginResult>>('/auth/login', data)
 }
 
 /** 登出 */
@@ -45,10 +55,10 @@ export function logout() {
 
 /** 获取用户信息 */
 export function getUserInfo() {
-  return get<{ code: number; data: UserInfoResult; msg: string }>('/auth/user-info')
+  return get<ApiResponse<UserInfoResult>>('/auth/user-info')
 }
 
 /** 获取验证码 */
-export function getCaptcha() {
-  return get<{ code: number; data: CaptchaResult; msg: string }>('/auth/captcha')
+export function getCaptcha(config?: AxiosRequestConfig) {
+  return get<ApiResponse<CaptchaResult>>('/auth/captcha', undefined, config)
 }

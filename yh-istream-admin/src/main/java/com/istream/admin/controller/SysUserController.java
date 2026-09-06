@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
+import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.dto.SysUserDTO;
 import com.istream.common.model.query.SysUserQuery;
@@ -33,11 +34,21 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 用户管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "用户管理")
 @RestController
 @RequestMapping("/system/user")
 @RequiredArgsConstructor
 public class SysUserController {
+
+    private static final int MIN_PASSWORD_LENGTH = 6;
+    private static final int MAX_PASSWORD_LENGTH = 32;
+    private static final int EXPORT_PAGE_SIZE = 5000;
 
     private final SysUserService sysUserService;
     private final SysUserConverter sysUserConverter;
@@ -106,10 +117,15 @@ public class SysUserController {
     }
 
     @OperLog(title = "用户管理", businessType = BusinessType.UPDATE)
+    @RateLimit(key = "user:reset-pwd", rate = 3, timeout = 60)
     @Operation(summary = "重置密码")
     @SaCheckPermission("system:user:reset-pwd")
     @PutMapping("/reset-pwd")
     public R<Void> resetPassword(@RequestParam Long userId, @RequestParam String password) {
+        if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            return R.fail(ResultCode.PARAM_VALID_ERROR,
+                    "密码长度必须在" + MIN_PASSWORD_LENGTH + "-" + MAX_PASSWORD_LENGTH + "位之间");
+        }
         sysUserService.resetPassword(userId, password);
         return R.ok();
     }
@@ -127,8 +143,11 @@ public class SysUserController {
     @SaCheckPermission("system:user:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
-        List<SysUser> list = sysUserService.list();
-        list.forEach(user -> user.setPassword(null));
-        ExcelExportUtil.export(response, "用户列表", "用户列表", SysUser.class, list);
+        ExcelExportUtil.exportByPage(response, "用户列表", "用户列表", SysUser.class,
+                (pageNum) -> {
+                    Page<SysUser> page = sysUserService.page(new Page<>(pageNum, EXPORT_PAGE_SIZE));
+                    page.getRecords().forEach(user -> user.setPassword(null));
+                    return page;
+                });
     }
 }

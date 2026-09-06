@@ -15,6 +15,12 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.Collection;
 
+/**
+ * 系统配置服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> implements SysConfigService {

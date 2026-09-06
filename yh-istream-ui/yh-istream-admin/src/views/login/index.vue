@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getCaptcha } from '@/api/modules/auth'
+import { createAbortController, isAbortError } from '@/api/request'
 import { LockClosedOutline, PersonOutline, ShieldCheckmarkOutline } from '@vicons/ionicons5'
 
 const router = useRouter()
@@ -11,6 +12,7 @@ const loading = ref(false)
 const captchaImage = ref('')
 const captchaKey = ref('')
 const cardVisible = ref(false)
+let captchaAbort: AbortController | null = null
 
 const formData = reactive({
   username: '',
@@ -26,17 +28,21 @@ const rules = {
 }
 
 async function refreshCaptcha() {
+  captchaAbort?.abort()
+  captchaAbort = createAbortController()
   try {
-    const res = await getCaptcha()
-    const data = (res as any).data
+    const res = await getCaptcha({ signal: captchaAbort.signal })
+    const data = res.data
     let img = data.image
     if (img && !img.startsWith('data:')) {
       img = 'data:image/png;base64,' + img
     }
     captchaImage.value = img
     captchaKey.value = data.uuid
-  } catch {
-    // ignore
+  } catch (e: unknown) {
+    if (!isAbortError(e)) {
+      // ignore non-abort errors silently on captcha refresh
+    }
   }
 }
 
@@ -52,8 +58,8 @@ async function handleLogin() {
     await authStore.login(formData.username, formData.password, captchaKey.value, formData.captchaCode)
     message.success('登录成功')
     router.push('/dashboard')
-  } catch (e: any) {
-    message.error(e.message || '登录失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '登录失败')
     refreshCaptcha()
   } finally {
     loading.value = false
@@ -65,6 +71,10 @@ onMounted(() => {
     cardVisible.value = true
   })
   refreshCaptcha()
+})
+
+onBeforeUnmount(() => {
+  captchaAbort?.abort()
 })
 </script>
 

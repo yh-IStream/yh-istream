@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { SearchOutline, RefreshOutline, TrashOutline, DownloadOutline } from '@vicons/ionicons5'
-import { getLoginInfoList, clearLoginInfo, exportLoginInfo } from '@/api/modules/monitor'
+import { getLoginInfoList, clearLoginInfo, exportLoginInfo, type SysLoginInfo } from '@/api/modules/monitor'
 import { SUCCESS_OPTIONS } from '@/constants'
+import { useTable } from '@/composables/useTable'
+import { useExport } from '@/composables/useExport'
 
 const message = useMessage()
 const dialog = useDialog()
-const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderSuccessTag } = useStatusRender()
+const { downloadExcel } = useExport()
 
-const loading = ref(false)
-const tableData = ref<any[]>([])
 const searchForm = reactive({ username: '', ipAddress: '', status: null as number | null })
+const searchDefaults = { username: '', ipAddress: '', status: null as number | null }
+const { loading, tableData, pagination, fetchData, handleSearch, handleReset, handlePageChange, handlePageSizeChange } = useTable<SysLoginInfo, typeof searchForm>({
+  api: getLoginInfoList,
+  searchForm,
+  searchDefaults,
+})
 
 const columns = [
   { title: '用户名', key: 'username', width: 120 },
@@ -20,30 +26,11 @@ const columns = [
   { title: '操作系统', key: 'os', width: 120 },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => renderSuccessTag(row.status),
+    render: (row: SysLoginInfo) => renderSuccessTag(row.status),
   },
   { title: '登录信息', key: 'msg', width: 200, ellipsis: { tooltip: true } },
   { title: '登录时间', key: 'loginTime', width: 170 },
 ]
-
-async function fetchData() {
-  loading.value = true
-  try {
-    const params: any = { pageNum: pagination.page, pageSize: pagination.pageSize }
-    if (searchForm.username) params.username = searchForm.username
-    if (searchForm.ipAddress) params.ipAddress = searchForm.ipAddress
-    if (searchForm.status !== null) params.status = searchForm.status
-    const res: any = await getLoginInfoList(params)
-    tableData.value = res.data?.records ?? []
-    pagination.itemCount = res.data?.total ?? 0
-  } catch (e: any) { message.error(e.message || '查询失败') }
-  finally { loading.value = false }
-}
-
-function handleSearch() { resetPage(); fetchData() }
-function handleReset() { searchForm.username = ''; searchForm.ipAddress = ''; searchForm.status = null; resetPage(); fetchData() }
-function handlePageChange(page: number) { setPage(page); fetchData() }
-function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
 
 function handleClear() {
   dialog.warning({
@@ -56,27 +43,15 @@ function handleClear() {
         await clearLoginInfo()
         message.success('清空成功')
         fetchData()
-      } catch (e: any) {
-        message.error(e.message || '清空失败')
+      } catch (e: unknown) {
+        message.error((e as Error).message || '清空失败')
       }
     },
   })
 }
 
 async function handleExport() {
-  try {
-    const res: any = await exportLoginInfo()
-    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = '登录日志.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('导出成功')
-  } catch (e: any) {
-    message.error(e.message || '导出失败')
-  }
+  await downloadExcel(exportLoginInfo, '登录日志.xlsx')
 }
 
 onMounted(() => fetchData())
@@ -98,7 +73,7 @@ onMounted(() => fetchData())
         <n-form-item>
           <n-space>
             <n-button type="primary" @click="handleSearch"><template #icon><n-icon :component="SearchOutline" /></template>搜索</n-button>
-            <n-button @click="handleReset"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
+            <n-button @click="handleReset()"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
           </n-space>
         </n-form-item>
       </n-form>
@@ -114,7 +89,7 @@ onMounted(() => fetchData())
         </n-button>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
-        :row-key="(row: any) => row.id" striped size="small" remote
+        :row-key="(row: SysLoginInfo) => row.id" striped size="small" remote
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
   </div>

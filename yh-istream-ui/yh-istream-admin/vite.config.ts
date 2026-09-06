@@ -63,13 +63,24 @@ export default defineConfig({
       },
     },
   },
-  build: {
+  /*build: {
     outDir: 'dist',
     rollupOptions: {
       output: {
         manualChunks: {
           'naive-ui': ['naive-ui'],
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
+        },
+      },
+    },
+  },*/
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('naive-ui')) return 'naive-ui'
+          if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/') || id.includes('node_modules/pinia/')) return 'vue-vendor'
         },
       },
     },

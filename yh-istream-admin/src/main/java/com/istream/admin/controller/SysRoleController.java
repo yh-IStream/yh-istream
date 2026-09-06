@@ -3,17 +3,21 @@ package com.istream.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.query.SysRoleQuery;
 import com.istream.common.model.dto.RoleMenuAssignDTO;
 import com.istream.common.model.dto.RoleDeptAssignDTO;
+import com.istream.common.model.dto.SysUserDTO;
 import com.istream.common.model.R;
+import com.istream.common.model.vo.RoleMenuTreeVO;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.entity.SysUser;
+import com.istream.system.converter.SysUserConverter;
 import com.istream.system.service.SysMenuService;
 import com.istream.system.service.SysRoleService;
 import com.istream.system.service.SysUserService;
@@ -33,10 +37,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 角色管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "角色管理")
 @RestController
 @RequestMapping("/system/role")
@@ -46,6 +54,7 @@ public class SysRoleController {
     private final SysRoleService sysRoleService;
     private final SysMenuService sysMenuService;
     private final SysUserService sysUserService;
+    private final SysUserConverter sysUserConverter;
 
     @Operation(summary = "分页查询角色列表")
     @SaCheckPermission("system:role:list")
@@ -123,13 +132,10 @@ public class SysRoleController {
     @Operation(summary = "查询角色菜单树及已选菜单ID")
     @SaCheckPermission("system:role:edit")
     @GetMapping("/menu-tree/{roleId}")
-    public R<Map<String, Object>> menuTree(@PathVariable Long roleId) {
+    public R<RoleMenuTreeVO> menuTree(@PathVariable Long roleId) {
         List<SysMenu> menus = sysMenuService.listMenuTree();
         List<Long> checkedKeys = sysRoleService.getMenuIdsByRoleId(roleId);
-        Map<String, Object> result = new HashMap<>();
-        result.put("menus", menus);
-        result.put("checkedKeys", checkedKeys);
-        return R.ok(result);
+        return R.ok(new RoleMenuTreeVO(menus, checkedKeys));
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
@@ -160,10 +166,9 @@ public class SysRoleController {
     @Operation(summary = "查询角色已分配的用户列表")
     @SaCheckPermission("system:role:edit")
     @GetMapping("/{roleId}/users")
-    public R<List<SysUser>> getUsers(@PathVariable Long roleId) {
+    public R<List<SysUserDTO>> getUsers(@PathVariable Long roleId) {
         List<SysUser> users = sysUserService.getUsersByRoleId(roleId);
-        users.forEach(user -> user.setPassword(null));
-        return R.ok(users);
+        return R.ok(users.stream().map(sysUserConverter::toDto).toList());
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
@@ -175,11 +180,13 @@ public class SysRoleController {
         return R.ok();
     }
 
+    private static final int EXPORT_PAGE_SIZE = 5000;
+
     @Operation(summary = "导出角色列表")
     @SaCheckPermission("system:role:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
-        List<SysRole> list = sysRoleService.list();
-        ExcelExportUtil.export(response, "角色列表", "角色列表", SysRole.class, list);
+        ExcelExportUtil.exportByPage(response, "角色列表", "角色列表", SysRole.class,
+                (pageNum) -> sysRoleService.page(new Page<>(pageNum, EXPORT_PAGE_SIZE)));
     }
 }

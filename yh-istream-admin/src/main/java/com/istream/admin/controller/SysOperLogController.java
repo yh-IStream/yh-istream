@@ -20,6 +20,12 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 操作日志管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "操作日志管理")
 @RestController
 @RequestMapping("/monitor/oper-log")
@@ -72,8 +78,12 @@ public class SysOperLogController {
     @SaCheckPermission("monitor:oper-log:export")
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
-        List<SysOperLog> list = sysOperLogService.list(
-                new LambdaQueryWrapper<SysOperLog>().orderByDesc(SysOperLog::getOperTime));
-        ExcelExportUtil.export(response, "操作日志", "操作日志", SysOperLog.class, list);
+        ExcelExportUtil.exportByPage(response, "操作日志", "操作日志", SysOperLog.class,
+                (pageNum) -> {
+                    Page<SysOperLog> page = new Page<>(pageNum, 5000);
+                    sysOperLogService.page(page, new LambdaQueryWrapper<SysOperLog>()
+                            .orderByDesc(SysOperLog::getOperTime));
+                    return page;
+                });
     }
 }

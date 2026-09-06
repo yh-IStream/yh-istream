@@ -27,6 +27,12 @@ import java.util.stream.Collectors;
 
 /**
  * 全局异常处理器
+ *
+ * <p>统一拦截各类异常并转换为标准响应体 {@link R}，避免向客户端暴露堆栈信息。
+ * 处理顺序：业务异常 → 权限异常 → 参数校验异常 → 请求异常 → 系统异常。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Slf4j
 @RestControllerAdvice
@@ -34,6 +40,9 @@ public class GlobalExceptionHandler {
 
     /* ==================== 业务异常 ==================== */
 
+    /**
+     * 处理业务异常
+     */
     @ExceptionHandler(BusinessException.class)
     public R<Void> handleBusinessException(BusinessException e) {
         log.warn("业务异常: code={}, msg={}", e.getCode(), e.getMessage());
@@ -42,6 +51,9 @@ public class GlobalExceptionHandler {
 
     /* ==================== Sa-Token 权限异常 ==================== */
 
+    /**
+     * 处理未登录异常
+     */
     @ExceptionHandler(NotLoginException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public R<Void> handleNotLoginException(NotLoginException e) {
@@ -49,6 +61,9 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.UNAUTHORIZED);
     }
 
+    /**
+     * 处理权限不足异常
+     */
     @ExceptionHandler(NotPermissionException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<Void> handleNotPermissionException(NotPermissionException e) {
@@ -56,6 +71,9 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.FORBIDDEN, "权限不足: " + e.getPermission());
     }
 
+    /**
+     * 处理角色不匹配异常
+     */
     @ExceptionHandler(NotRoleException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<Void> handleNotRoleException(NotRoleException e) {
@@ -65,6 +83,9 @@ public class GlobalExceptionHandler {
 
     /* ==================== 参数校验异常 ==================== */
 
+    /**
+     * 处理 @Valid 校验失败异常（@RequestBody）
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public R<String> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
@@ -74,6 +95,9 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.PARAM_VALID_ERROR, message);
     }
 
+    /**
+     * 处理参数绑定异常（@ModelAttribute）
+     */
     @ExceptionHandler(BindException.class)
     public R<String> handleBindException(BindException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
@@ -83,6 +107,9 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.PARAM_VALID_ERROR, message);
     }
 
+    /**
+     * 处理约束校验异常（@Validated on method parameters）
+     */
     @ExceptionHandler(ConstraintViolationException.class)
     public R<String> handleConstraintViolationException(ConstraintViolationException e) {
         String message = e.getConstraintViolations().stream()
@@ -92,18 +119,27 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.PARAM_VALID_ERROR, message);
     }
 
+    /**
+     * 处理缺少请求参数异常
+     */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public R<String> handleMissingServletRequestParameter(MissingServletRequestParameterException e) {
         log.warn("缺少请求参数: {}", e.getMessage());
         return R.fail(ResultCode.BAD_REQUEST, "缺少请求参数: " + e.getParameterName());
     }
 
+    /**
+     * 处理参数类型不匹配异常
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public R<String> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.warn("参数类型不匹配: {}", e.getMessage());
         return R.fail(ResultCode.BAD_REQUEST, "参数类型不匹配: " + e.getName());
     }
 
+    /**
+     * 处理请求体解析失败异常
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public R<Void> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
         log.warn("请求体解析失败: {}", e.getMessage());
@@ -112,12 +148,18 @@ public class GlobalExceptionHandler {
 
     /* ==================== 请求异常 ==================== */
 
+    /**
+     * 处理文件上传大小超限异常
+     */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public R<Void> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
         log.warn("文件上传大小超限: {}", e.getMessage());
         return R.fail(ResultCode.BAD_REQUEST, "上传文件大小超过限制");
     }
 
+    /**
+     * 处理请求方法不支持异常
+     */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public R<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
@@ -125,6 +167,9 @@ public class GlobalExceptionHandler {
         return R.fail(ResultCode.METHOD_NOT_ALLOWED);
     }
 
+    /**
+     * 处理媒体类型不支持异常
+     */
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     public R<Void> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
@@ -134,6 +179,9 @@ public class GlobalExceptionHandler {
 
     /* ==================== 系统异常 ==================== */
 
+    /**
+     * 兜底异常处理器：捕获所有未处理的异常
+     */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public R<Void> handleException(Exception e) {

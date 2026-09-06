@@ -1,3 +1,5 @@
+import type { SelectOption } from 'naive-ui'
+
 /**
  * 全局常量定义
  */
@@ -18,17 +20,17 @@ export const SUCCESS_LABEL: Record<number, string> = {
   [STATUS.DISABLED]: '失败',
 }
 
-export const STATUS_OPTIONS = [
-  { label: '全部', value: null, type: 'option' as const },
-  { label: '正常', value: STATUS.NORMAL, type: 'option' as const },
-  { label: '停用', value: STATUS.DISABLED, type: 'option' as const },
-] as any
+export const STATUS_OPTIONS: SelectOption[] = [
+  { label: '全部', value: undefined, type: 'option' },
+  { label: '正常', value: STATUS.NORMAL, type: 'option' },
+  { label: '停用', value: STATUS.DISABLED, type: 'option' },
+]
 
-export const SUCCESS_OPTIONS = [
-  { label: '全部', value: null, type: 'option' as const },
-  { label: '成功', value: STATUS.NORMAL, type: 'option' as const },
-  { label: '失败', value: STATUS.DISABLED, type: 'option' as const },
-] as any
+export const SUCCESS_OPTIONS: SelectOption[] = [
+  { label: '全部', value: undefined, type: 'option' },
+  { label: '成功', value: STATUS.NORMAL, type: 'option' },
+  { label: '失败', value: STATUS.DISABLED, type: 'option' },
+]
 
 export const PAGINATION_DEFAULTS = {
   page: 1,

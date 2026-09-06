@@ -11,8 +11,10 @@ import com.istream.oss.service.SysFileService;
 import com.istream.oss.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -21,6 +23,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 文件管理服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,7 +44,8 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             "mp3", "mp4", "avi", "mov", "wmv"
     );
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+    @Value("${spring.servlet.multipart.max-file-size:10MB}")
+    private String maxFileSize;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -116,7 +125,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         if (file.isEmpty()) {
             throw new BusinessException(ResultCode.FILE_UPLOAD_ERROR);
         }
-        if (file.getSize() > MAX_FILE_SIZE) {
+        if (file.getSize() > DataSize.parse(maxFileSize).toBytes()) {
             throw new BusinessException(ResultCode.FILE_SIZE_EXCEED);
         }
         String originalName = file.getOriginalFilename();

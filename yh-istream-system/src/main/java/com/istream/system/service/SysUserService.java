@@ -28,6 +28,8 @@ public interface SysUserService extends IService<SysUser> {
 
     List<SysRole> getRolesByUserId(Long userId);
 
+    void cleanOrphanedUserRoles(Long userId);
+
     boolean removeById(Long id);
 
     void updateLoginInfo(Long userId, String ip);

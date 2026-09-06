@@ -21,7 +21,7 @@ public final class Constants {
     public static final Long ROOT_PARENT_ID = 0L;
 
     /** 验证码有效期（秒） */
-    public static final long CAPTCHA_EXPIRE_SECONDS = 300;
+    public static final long CAPTCHA_EXPIRE_SECONDS = 120;
 
     /** 登录失败最大次数 */
     public static final int MAX_LOGIN_FAIL_COUNT = 5;

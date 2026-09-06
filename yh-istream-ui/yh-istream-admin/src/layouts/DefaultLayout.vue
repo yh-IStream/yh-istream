@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MenuOption } from 'naive-ui'
+import type { SysMenu } from '@/api/modules/system'
 import {
   HomeOutline,
   SettingsOutline,
@@ -53,8 +54,8 @@ const iconMap: Record<string, Component> = {
   loginInfo: LogInOutline,
 }
 
-function buildMenuTree(menus: any[], parentPath: string = ''): MenuOption[] {
-  return menus.map((menu: any) => {
+function buildMenuTree(menus: SysMenu[], parentPath: string = ''): MenuOption[] {
+  return menus.map((menu) => {
     const rawPath = menu.path || ''
     const fullPath = rawPath ? (rawPath.startsWith('/') ? rawPath : (parentPath ? `${parentPath}/${rawPath}` : `/${rawPath}`)) : ''
     const option: MenuOption = {
@@ -81,7 +82,7 @@ const menuOptions = ref<MenuOption[]>([
 
 const menuPathMap = ref<Record<string, string>>({})
 
-function buildPathMap(menus: any[], prefix: string = '') {
+function buildPathMap(menus: SysMenu[], prefix: string = '') {
   for (const menu of menus) {
     const path = menu.path
     if (path) {
@@ -96,8 +97,8 @@ function buildPathMap(menus: any[], prefix: string = '') {
 
 async function fetchUserMenu() {
   try {
-    const res: any = await getUserMenuTree()
-    const menus = (res.data ?? []).filter((m: any) => m.path !== '/dashboard')
+    const res = await getUserMenuTree()
+    const menus = (res.data ?? []).filter((m) => m.path !== '/dashboard')
     menuPathMap.value = {}
     buildPathMap(menus)
     menuOptions.value = [

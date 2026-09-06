@@ -34,6 +34,12 @@ import java.util.stream.Collectors;
 import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
 import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
+/**
+ * 角色管理服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {

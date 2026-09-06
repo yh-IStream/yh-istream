@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { AddOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getDeptTree, addDept, updateDept, deleteDept } from '@/api/modules/system'
+import { getDeptTree, addDept, updateDept, deleteDept, type SysDept } from '@/api/modules/system'
+import type { TreeSelectOption } from 'naive-ui'
 import { STATUS, STATUS_LABEL } from '@/constants'
+import { useTreeData } from '@/composables/useTreeData'
 
 const message = useMessage()
 const { renderStatusTag } = useStatusRender()
-const loading = ref(false)
-const treeData = ref<any[]>([])
+const { loading, treeData, fetchData } = useTreeData<SysDept>({ api: getDeptTree })
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增部门')
 const isEdit = ref(false)
@@ -15,7 +16,7 @@ const formRef = ref()
 const formData = reactive({ id: null as string | null, parentId: '0' as string, deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: 0 })
 
 const deptTreeSelectData = computed(() => {
-  const filterTree = (list: any[]): any[] =>
+  const filterTree = (list: SysDept[]): TreeSelectOption[] =>
     list
       .filter(item => String(item.id) !== String(formData.id))
       .map(item => ({
@@ -39,11 +40,11 @@ const columns = [
   { title: '排序', key: 'orderNum', width: 60, align: 'center' as const },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => renderStatusTag(row.status),
+    render: (row: SysDept) => renderStatusTag(row.status),
   },
   {
     title: '操作', key: 'actions', width: 180, fixed: 'right' as const,
-    render: (row: any) => h('div', { class: 'flex gap-4px' }, [
+    render: (row: SysDept) => h('div', { class: 'flex gap-4px' }, [
       h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleAdd(row) }, { default: () => '新增' }),
       h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
       h(NPopconfirm, { onPositiveClick: () => handleDelete(row.id) }, {
@@ -54,22 +55,13 @@ const columns = [
   },
 ]
 
-async function fetchData() {
-  loading.value = true
-  try {
-    const res: any = await getDeptTree()
-    treeData.value = res.data ?? []
-  } catch (e: any) { message.error(e.message || '查询失败') }
-  finally { loading.value = false }
-}
-
-function handleAdd(parent?: any) {
+function handleAdd(parent?: SysDept) {
   isEdit.value = false; dialogTitle.value = '新增部门'
   Object.assign(formData, { id: null, parentId: parent ? String(parent.id) : '0', deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: STATUS.NORMAL })
   dialogVisible.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: SysDept) {
   isEdit.value = true; dialogTitle.value = '编辑部门'
   Object.assign(formData, { id: row.id, parentId: row.parentId != null ? String(row.parentId) : '0', deptName: row.deptName, leader: row.leader ?? '', phone: row.phone ?? '', email: row.email ?? '', orderNum: row.orderNum ?? 0, status: row.status ?? 0 })
   dialogVisible.value = true
@@ -79,17 +71,17 @@ async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { ...formData, parentId: Number(formData.parentId) || 0 }
+    const data = { ...formData, id: formData.id ?? undefined, parentId: formData.parentId }
     if (formData.id) { data.id = formData.id; await updateDept(data); message.success('修改成功') }
     else { await addDept(data); message.success('新增成功') }
     dialogVisible.value = false; fetchData()
-  } catch (e: any) { message.error(e.message || '操作失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '操作失败') }
   finally { submitLoading.value = false }
 }
 
 async function handleDelete(id: string) {
   try { await deleteDept(id); message.success('删除成功'); fetchData() }
-  catch (e: any) { message.error(e.message || '删除失败') }
+  catch (e: unknown) { message.error((e as Error).message || '删除失败') }
 }
 
 onMounted(() => fetchData())
@@ -102,7 +94,7 @@ onMounted(() => fetchData())
         <n-button type="primary" @click="handleAdd()" v-permission="'system:dept:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
         <n-button @click="fetchData"><template #icon><n-icon :component="RefreshOutline" /></template>刷新</n-button>
       </div>
-      <n-data-table :columns="columns" :data="treeData" :loading="loading" :row-key="(row: any) => row.id" striped size="small" default-expand-all />
+      <n-data-table :columns="columns" :data="treeData" :loading="loading" :row-key="(row: SysDept) => row.id" striped size="small" default-expand-all />
     </div>
 
     <n-modal v-model:show="dialogVisible" :title="dialogTitle" preset="card" style="width: 560px" :mask-closable="false">

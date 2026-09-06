@@ -9,6 +9,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+/**
+ * 操作日志服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOperLog> implements SysOperLogService {
 

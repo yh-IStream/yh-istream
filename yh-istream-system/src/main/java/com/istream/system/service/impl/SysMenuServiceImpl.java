@@ -26,6 +26,12 @@ import java.util.stream.Collectors;
 
 import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
 
+/**
+ * 菜单管理服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
@@ -199,10 +205,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     private void clearAllPermissionCache() {
-        Iterable<String> keys = redissonClient.getKeys().getKeysByPattern(PERM_CACHE_PREFIX + "*");
-        for (String key : keys) {
-            redissonClient.getBucket(key).delete();
-        }
+        redissonClient.getKeys().unlinkByPattern(PERM_CACHE_PREFIX + "*");
     }
 
     /**

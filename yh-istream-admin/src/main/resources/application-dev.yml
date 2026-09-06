@@ -3,8 +3,8 @@
     # MySQL 9.7.2 LTS
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3307/yh_istream?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=DISABLED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
-    username: root
-    password: 123321
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123321}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20

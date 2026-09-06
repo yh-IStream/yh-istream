@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getConfigList, addConfig, updateConfig, deleteConfig } from '@/api/modules/system'
+import { getConfigList, addConfig, updateConfig, deleteConfig, type SysConfig } from '@/api/modules/system'
+import { useTable } from '@/composables/useTable'
 
 const message = useMessage()
-const { pagination, resetPage, setPage, setPageSize } = usePagination()
-const loading = ref(false)
-const tableData = ref<any[]>([])
-const selectedIds = ref<string[]>([])
 const searchForm = reactive({ configName: '', configKey: '' })
+const searchDefaults = { configName: '', configKey: '' }
+const { loading, tableData, selectedIds, pagination, fetchData, handleSearch, handleReset, handlePageChange, handlePageSizeChange, handleSelectionChange } = useTable<SysConfig, typeof searchForm>({
+  api: getConfigList,
+  searchForm,
+  searchDefaults,
+})
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增配置')
@@ -31,7 +34,7 @@ const columns = [
   { title: '创建时间', key: 'createTime', width: 170 },
   {
     title: '操作', key: 'actions', width: 150, fixed: 'right' as const,
-    render: (row: any) => h('div', { class: 'flex gap-4px' }, [
+    render: (row: SysConfig) => h('div', { class: 'flex gap-4px' }, [
       h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
       h(NPopconfirm, { onPositiveClick: () => handleDelete(row.id) }, {
         trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
@@ -41,31 +44,13 @@ const columns = [
   },
 ]
 
-async function fetchData() {
-  loading.value = true
-  try {
-    const params: any = { pageNum: pagination.page, pageSize: pagination.pageSize }
-    if (searchForm.configName) params.configName = searchForm.configName
-    if (searchForm.configKey) params.configKey = searchForm.configKey
-    const res: any = await getConfigList(params)
-    tableData.value = res.data?.records ?? []
-    pagination.itemCount = res.data?.total ?? 0
-  } catch (e: any) { message.error(e.message || '查询失败') }
-  finally { loading.value = false }
-}
-
-function handleSearch() { resetPage(); fetchData() }
-function handleReset() { searchForm.configName = ''; searchForm.configKey = ''; resetPage(); fetchData() }
-function handlePageChange(page: number) { setPage(page); fetchData() }
-function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
-
 function handleAdd() {
   isEdit.value = false; dialogTitle.value = '新增配置'
   Object.assign(formData, { id: null, configName: '', configKey: '', configValue: '', remark: '' })
   dialogVisible.value = true
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: SysConfig) {
   isEdit.value = true; dialogTitle.value = '编辑配置'
   Object.assign(formData, { id: row.id, configName: row.configName, configKey: row.configKey, configValue: row.configValue, remark: row.remark ?? '' })
   dialogVisible.value = true
@@ -75,17 +60,17 @@ async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { configName: formData.configName, configKey: formData.configKey, configValue: formData.configValue, remark: formData.remark }
+    const data = { configName: formData.configName, configKey: formData.configKey, configValue: formData.configValue, remark: formData.remark, id: formData.id ?? undefined }
     if (formData.id) { data.id = formData.id; await updateConfig(data); message.success('修改成功') }
     else { await addConfig(data); message.success('新增成功') }
     dialogVisible.value = false; fetchData()
-  } catch (e: any) { message.error(e.message || '操作失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '操作失败') }
   finally { submitLoading.value = false }
 }
 
 async function handleDelete(id: string) {
   try { await deleteConfig(id); message.success('删除成功'); fetchData() }
-  catch (e: any) { message.error(e.message || '删除失败') }
+  catch (e: unknown) { message.error((e as Error).message || '删除失败') }
 }
 
 async function handleBatchDelete() {
@@ -98,8 +83,8 @@ async function handleBatchDelete() {
     message.success('批量删除成功')
     selectedIds.value = []
     fetchData()
-  } catch (e: any) {
-    message.error(e.message || '批量删除失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '批量删除失败')
   }
 }
 
@@ -119,7 +104,7 @@ onMounted(() => fetchData())
         <n-form-item>
           <n-space>
             <n-button type="primary" @click="handleSearch"><template #icon><n-icon :component="SearchOutline" /></template>搜索</n-button>
-            <n-button @click="handleReset"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
+            <n-button @click="handleReset()"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
           </n-space>
         </n-form-item>
       </n-form>
@@ -138,8 +123,8 @@ onMounted(() => fetchData())
         </n-space>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
-        :row-key="(row: any) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
-        @update:checked-row-keys="(keys: any[]) => selectedIds = keys"
+        :row-key="(row: SysConfig) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
+        @update:checked-row-keys="(keys: (string | number)[]) => selectedIds = keys as string[]"
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
 

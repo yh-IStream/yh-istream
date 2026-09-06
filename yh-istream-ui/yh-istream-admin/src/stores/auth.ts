@@ -1,4 +1,4 @@
-import { login as loginApi, logout as logoutApi, getUserInfo } from '@/api/modules/auth'
+import { login as loginApi, logout as logoutApi, getUserInfo, type LoginResult, type UserInfoResult } from '@/api/modules/auth'
 import router from '@/router'
 
 export interface UserInfo {
@@ -11,7 +11,7 @@ export interface UserInfo {
   roles: string[]
 }
 
-const TOKEN_KEY = 'yh-istream-token'
+export const TOKEN_KEY = 'yh-istream-token'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem(TOKEN_KEY) ?? '')
@@ -24,9 +24,14 @@ export const useAuthStore = defineStore('auth', () => {
   const nickname = computed(() => userInfo.value?.nickname ?? userInfo.value?.username ?? '')
   const avatar = computed(() => userInfo.value?.avatar ?? '')
 
-  function extractMenuPaths(menus: any[]): Set<string> {
+  interface MenuItem {
+    path?: string
+    children?: MenuItem[]
+  }
+
+  function extractMenuPaths(menus: MenuItem[]): Set<string> {
     const paths = new Set<string>()
-    function walk(items: any[]) {
+    function walk(items: MenuItem[]) {
       for (const item of items) {
         if (item.path) paths.add(item.path)
         if (item.children?.length) walk(item.children)
@@ -39,9 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
   /** 登录 */
   async function login(username: string, password: string, captchaKey: string, captchaCode: string) {
     const res = await loginApi({ username, password, captchaKey, captchaCode })
-    const tokenVal = (res.data as any).token ?? (res.data as any).tokenValue
-    token.value = tokenVal
-    localStorage.setItem(TOKEN_KEY, tokenVal)
+    const loginData = res.data
+    token.value = loginData.token
+    localStorage.setItem(TOKEN_KEY, loginData.token)
     try {
       await fetchUserInfo()
     } catch {
@@ -54,10 +59,20 @@ export const useAuthStore = defineStore('auth', () => {
   /** 获取用户信息 */
   async function fetchUserInfo() {
     const res = await getUserInfo()
-    userInfo.value = res.data.user as unknown as UserInfo
-    permissions.value = res.data.permissions ?? []
-    roles.value = res.data.roles ?? []
-    menuPaths.value = extractMenuPaths(res.data.menus ?? [])
+    const infoData = res.data
+    const user = infoData.user
+    userInfo.value = {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      deptName: user.deptName,
+      permissions: infoData.permissions ?? [],
+      roles: infoData.roles ?? [],
+    }
+    permissions.value = infoData.permissions ?? []
+    roles.value = infoData.roles ?? []
+    menuPaths.value = extractMenuPaths(infoData.menus ?? [])
   }
 
   /** 登出 */

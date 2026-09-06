@@ -26,6 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 字典数据管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Tag(name = "字典数据管理")
 @RestController
 @RequestMapping("/system/dict-data")

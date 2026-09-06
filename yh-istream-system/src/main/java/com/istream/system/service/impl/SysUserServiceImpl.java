@@ -34,6 +34,12 @@ import java.util.stream.Collectors;
 import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
 import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
+/**
+ * 用户管理服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
@@ -187,12 +193,28 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return Collections.emptyList();
         }
         List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
-        List<SysRole> roles = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
+        return sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getId, roleIds)
+                .eq(SysRole::getStatus, 0)
+                .eq(SysRole::getDelFlag, 0));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cleanOrphanedUserRoles(Long userId) {
+        List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
+                new LambdaQueryWrapper<SysUserRole>()
+                        .eq(SysUserRole::getUserId, userId));
+        if (userRoles.isEmpty()) {
+            return;
+        }
+        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
+        List<SysRole> validRoles = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getId, roleIds)
                 .eq(SysRole::getStatus, 0)
                 .eq(SysRole::getDelFlag, 0));
 
-        Set<Long> validRoleIds = roles.stream().map(SysRole::getId).collect(Collectors.toSet());
+        Set<Long> validRoleIds = validRoles.stream().map(SysRole::getId).collect(Collectors.toSet());
         List<Long> orphanedIds = roleIds.stream()
                 .filter(id -> !validRoleIds.contains(id))
                 .toList();
@@ -203,8 +225,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                         .eq(SysUserRole::getRoleId, orphanedId));
             }
         }
-
-        return roles;
     }
 
     @Override

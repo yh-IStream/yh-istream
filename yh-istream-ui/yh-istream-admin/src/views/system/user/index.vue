@@ -3,22 +3,19 @@ import { SearchOutline, AddOutline, TrashOutline, DownloadOutline, RefreshOutlin
 import {
   getUserList, getUserById, addUser, updateUser, assignUserRoles, deleteUser,
   resetUserPwd, changeUserStatus, exportUser, getDeptTree, getAllRoles, type SysUser,
+  type SysRole, type SysDept,
 } from '@/api/modules/system'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
 import { useDict } from '@/composables/useDict'
+import { useTable } from '@/composables/useTable'
+import { useExport } from '@/composables/useExport'
 
 const message = useMessage()
 const dialog = useDialog()
-const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderStatusTag } = useStatusRender()
 const { loadDict, useDictTag } = useDict()
 const { render: renderGenderTag } = useDictTag('sys_user_sex')
-
-// ==================== State ====================
-const loading = ref(false)
-const genderOptions = ref<{ label: string; value: string }[]>([])
-const tableData = ref<SysUser[]>([])
-const selectedIds = ref<string[]>([])
+const { downloadExcel } = useExport()
 
 const searchForm = reactive({
   username: '',
@@ -28,6 +25,21 @@ const searchForm = reactive({
   beginTime: null as string | null,
   endTime: null as string | null,
 })
+const searchDefaults = {
+  username: '',
+  phone: '',
+  status: null as number | null,
+  deptId: null as string | null,
+  beginTime: null as string | null,
+  endTime: null as string | null,
+}
+const { loading, tableData, selectedIds, pagination, fetchData, handleSearch, handleReset, handlePageChange, handlePageSizeChange, handleSelectionChange } = useTable<SysUser, typeof searchForm>({
+  api: getUserList,
+  searchForm,
+  searchDefaults,
+})
+
+const genderOptions = ref<{ label: string; value: string }[]>([])
 
 // 对话框
 const dialogVisible = ref(false)
@@ -48,9 +60,9 @@ const formData = reactive({
   remark: '',
 })
 
-const deptOptions = ref<any[]>([])
+const deptOptions = ref<SysDept[]>([])
 
-const roleOptions = ref<any[]>([])
+const roleOptions = ref<{ label: string; value: string }[]>([])
 
 // 重置密码对话框
 const pwdDialogVisible = ref(false)
@@ -68,7 +80,7 @@ const columns = [
   { type: 'selection' as const },
   { title: '用户名', key: 'username', width: 120, ellipsis: { tooltip: true } },
   { title: '昵称', key: 'nickname', width: 120, ellipsis: { tooltip: true } },
-  { title: '部门', key: 'dept', width: 140, render: (row: any) => row.deptName ?? '-' },
+  { title: '部门', key: 'dept', width: 140, render: (row: SysUser) => row.deptName ?? '-' },
   { title: '手机号', key: 'phone', width: 130 },
   { title: '邮箱', key: 'email', width: 180, ellipsis: { tooltip: true } },
   {
@@ -119,77 +131,23 @@ const pwdRules = {
   password: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 6, message: '密码至少6位', trigger: 'blur' }],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
-    { validator: (_: any, value: string) => value === pwdForm.password, message: '两次密码不一致', trigger: 'blur' },
+    { validator: (_rule: unknown, value: string) => value === pwdForm.password, message: '两次密码不一致', trigger: 'blur' },
   ],
 }
 
 // ==================== Methods ====================
-async function fetchData() {
-  loading.value = true
-  try {
-    const params: Record<string, unknown> = {
-      pageNum: pagination.page,
-      pageSize: pagination.pageSize,
-    }
-    if (searchForm.username) params.username = searchForm.username
-    if (searchForm.phone) params.phone = searchForm.phone
-    if (searchForm.status !== null) params.status = searchForm.status
-    if (searchForm.deptId) params.deptId = searchForm.deptId
-    if (searchForm.beginTime) params.beginTime = searchForm.beginTime
-    if (searchForm.endTime) params.endTime = searchForm.endTime
-
-    const res: any = await getUserList(params as any)
-    tableData.value = res.data?.records ?? []
-    pagination.itemCount = res.data?.total ?? 0
-  } catch (e: any) {
-    message.error(e.message || '查询失败')
-  } finally {
-    loading.value = false
-  }
-}
-
 async function fetchDeptTree() {
   try {
-    const res: any = await getDeptTree()
+    const res = await getDeptTree()
     deptOptions.value = res.data ?? []
   } catch { /* ignore */ }
 }
 
 async function fetchRoles() {
   try {
-    const res: any = await getAllRoles()
-    roleOptions.value = (res.data ?? []).map((r: any) => ({ label: r.roleName, value: String(r.id) }))
+    const res = await getAllRoles()
+    roleOptions.value = (res.data ?? []).map((r: SysRole) => ({ label: r.roleName, value: String(r.id) }))
   } catch { /* ignore */ }
-}
-
-function handleSearch() {
-  resetPage()
-  fetchData()
-}
-
-function handleReset() {
-  searchForm.username = ''
-  searchForm.phone = ''
-  searchForm.status = null
-  searchForm.deptId = null
-  searchForm.beginTime = null
-  searchForm.endTime = null
-  resetPage()
-  fetchData()
-}
-
-function handlePageChange(page: number) {
-  setPage(page)
-  fetchData()
-}
-
-function handlePageSizeChange(pageSize: number) {
-  setPageSize(pageSize)
-  fetchData()
-}
-
-function handleSelectionChange(keys: any[]) {
-  selectedIds.value = keys as string[]
 }
 
 function handleAdd() {
@@ -259,8 +217,8 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     fetchData()
-  } catch (e: any) {
-    message.error(e.message || '操作失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -270,9 +228,9 @@ async function handleRoleAssign(row: SysUser) {
   roleUserId.value = row.id
   roleForm.roleIds = []
   try {
-    const res: any = await getUserById(row.id)
+    const res = await getUserById(row.id)
     if (res.data?.roleIds) {
-      roleForm.roleIds = (res.data.roleIds as any[]).map((id: any) => String(id))
+      roleForm.roleIds = res.data.roleIds.map((id: string) => String(id))
     }
   } catch { /* ignore */ }
   roleDialogVisible.value = true
@@ -287,8 +245,8 @@ async function handleRoleSubmit() {
     message.success('角色分配成功')
     roleDialogVisible.value = false
     fetchData()
-  } catch (e: any) {
-    message.error(e.message || '角色分配失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '角色分配失败')
   }
 }
 
@@ -297,8 +255,8 @@ async function handleDelete(id: string) {
     await deleteUser(id)
     message.success('删除成功')
     fetchData()
-  } catch (e: any) {
-    message.error(e.message || '删除失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '删除失败')
   }
 }
 
@@ -318,8 +276,8 @@ async function handleBatchDelete() {
         message.success('批量删除成功')
         selectedIds.value = []
         fetchData()
-      } catch (e: any) {
-        message.error(e.message || '删除失败')
+      } catch (e: unknown) {
+        message.error((e as Error).message || '删除失败')
       }
     },
   })
@@ -342,8 +300,8 @@ async function handlePwdSubmit() {
     await resetUserPwd(pwdUserId.value!, pwdForm.password)
     message.success('密码重置成功')
     pwdDialogVisible.value = false
-  } catch (e: any) {
-    message.error(e.message || '重置失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '重置失败')
   }
 }
 
@@ -353,25 +311,13 @@ async function handleStatusChange(row: SysUser, value: boolean) {
     await changeUserStatus(row.id, newStatus)
     row.status = newStatus
     message.success('状态修改成功')
-  } catch (e: any) {
-    message.error(e.message || '修改失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '修改失败')
   }
 }
 
 async function handleExport() {
-  try {
-    const res = await exportUser({})
-    const blob = new Blob([res as any], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = '用户列表.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('导出成功')
-  } catch (e: any) {
-    message.error(e.message || '导出失败')
-  }
+  await downloadExcel(() => exportUser({}), '用户列表.xlsx')
 }
 
 onMounted(async () => {
@@ -414,7 +360,7 @@ onMounted(async () => {
               <template #icon><n-icon :component="SearchOutline" /></template>
               搜索
             </n-button>
-            <n-button @click="handleReset">
+            <n-button @click="handleReset()">
               <template #icon><n-icon :component="RefreshOutline" /></template>
               重置
             </n-button>

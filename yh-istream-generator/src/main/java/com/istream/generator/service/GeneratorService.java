@@ -31,9 +31,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 代码生成服务
+ * 代码生成器服务
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Slf4j

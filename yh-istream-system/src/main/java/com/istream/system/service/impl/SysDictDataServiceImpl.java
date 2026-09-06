@@ -20,6 +20,12 @@ import java.util.stream.Collectors;
 
 import static com.istream.common.constant.Constants.DICT_MAP_KEY;
 
+/**
+ * 字典数据服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDictData> implements SysDictDataService {

@@ -3,8 +3,9 @@
  * 封装字典数据的获取、缓存与标签渲染，消除各页面重复的字典加载与渲染逻辑
  * 缓存基于模块级 Map，同一字典类型全应用只请求一次
  * tagMap 注册表确保 clearDict 后消费端自动重载，无需刷新页面
+ * 请求版本号机制防止过时请求覆盖新数据（竞态安全）
  */
-import { getDictDataByType } from '@/api/modules/system'
+import { getDictDataByType, type SysDictData } from '@/api/modules/system'
 
 export interface DictOption {
   label: string
@@ -22,6 +23,8 @@ const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 const dictCache = new Map<string, DictOption[]>()
 
 const tagMapRegistry = new Map<string, Ref<Map<string, DictOption>>>()
+
+const requestVersion = new Map<string, number>()
 
 /**
  * 渲染单个字典标签（纯函数，无状态）
@@ -53,9 +56,14 @@ export function useDict() {
     if (dictCache.has(dictType)) {
       return dictCache.get(dictType)!
     }
+    const version = (requestVersion.get(dictType) ?? 0) + 1
+    requestVersion.set(dictType, version)
     try {
-      const res: any = await getDictDataByType(dictType)
-      const list: DictOption[] = (res.data ?? []).map((item: any) => ({
+      const res = await getDictDataByType(dictType)
+      if (requestVersion.get(dictType) !== version) {
+        return dictCache.get(dictType) ?? []
+      }
+      const list: DictOption[] = (res.data ?? []).map((item) => ({
         label: item.dictLabel,
         value: item.dictValue,
         listClass: item.listClass,
@@ -64,18 +72,17 @@ export function useDict() {
       dictCache.set(dictType, list)
       return list
     } catch {
+      if (requestVersion.get(dictType) === version) {
+        requestVersion.delete(dictType)
+      }
       return []
     }
   }
 
-  /**
-   * 清除字典缓存并重载消费端 tagMap
-   * 字典数据变更后调用，消费页面无需刷新即可看到最新数据
-   * @param dictType 指定清除的类型；不传则清除全部
-   */
   function clearDict(dictType?: string) {
     if (dictType) {
       dictCache.delete(dictType)
+      requestVersion.set(dictType, (requestVersion.get(dictType) ?? 0) + 1)
       const tagMap = tagMapRegistry.get(dictType)
       if (tagMap) {
         loadDict(dictType).then(list => {
@@ -84,6 +91,9 @@ export function useDict() {
       }
     } else {
       dictCache.clear()
+      for (const type of tagMapRegistry.keys()) {
+        requestVersion.set(type, (requestVersion.get(type) ?? 0) + 1)
+      }
       for (const [type, tagMap] of tagMapRegistry) {
         loadDict(type).then(list => {
           tagMap.value = new Map(list.map(item => [item.value, item]))

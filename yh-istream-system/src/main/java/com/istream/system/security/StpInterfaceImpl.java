@@ -17,9 +17,12 @@ import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
 /**
  * Sa-Token 权限加载实现
- * <p>
- * 从数据库加载当前用户的角色和权限码集合，使用 Redis 缓存以减少数据库查询压力。
- * 缓存 TTL 为 5 分钟，角色/权限变更时通过 Redis 发布订阅或手动清除缓存。
+ *
+ * <p>从数据库加载当前用户的角色和权限码集合，使用 Redis 缓存以减少数据库查询压力。
+ * 缓存 TTL 为 30 分钟，角色/权限变更时通过 {@code clearUserCache} 主动清除缓存。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Component
 @RequiredArgsConstructor

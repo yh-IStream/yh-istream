@@ -4,19 +4,27 @@ import {
   getRoleList, addRole, updateRole, deleteRole, changeRoleStatus, getRoleMenuTree, assignRoleMenu,
   getRoleUsers, assignRoleUsers, getUserList,
   getDeptTree, getRoleDeptIds, assignRoleDept, exportRole,
+  type SysRole, type SysMenu, type SysUser, type SysDept,
 } from '@/api/modules/system'
+import type { PageParams } from '@/api/types'
+import { createAbortController, isAbortError } from '@/api/request'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL, DATA_SCOPE, DATA_SCOPE_LABEL, DATA_SCOPE_OPTIONS } from '@/constants'
+import { useTable } from '@/composables/useTable'
+import { useExport } from '@/composables/useExport'
+import type { SelectOption } from 'naive-ui'
 
 const message = useMessage()
 const dialog = useDialog()
-const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderStatusTag } = useStatusRender()
-
-const loading = ref(false)
-const tableData = ref<any[]>([])
-const selectedIds = ref<string[]>([])
+const { downloadExcel } = useExport()
 
 const searchForm = reactive({ roleName: '', roleKey: '', status: null as number | null })
+const searchDefaults = { roleName: '', roleKey: '', status: null as number | null }
+const { loading, tableData, selectedIds, pagination, fetchData, handleSearch, handleReset, handlePageChange, handlePageSizeChange, handleSelectionChange } = useTable<SysRole, typeof searchForm>({
+  api: getRoleList,
+  searchForm,
+  searchDefaults,
+})
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增角色')
@@ -25,20 +33,21 @@ const submitLoading = ref(false)
 const formRef = ref()
 const formData = reactive<{ id: string | null; roleName: string; roleKey: string; roleSort: number; dataScope: number; status: number; remark: string }>({ id: null, roleName: '', roleKey: '', roleSort: 0, dataScope: DATA_SCOPE.SELF, status: 0, remark: '' })
 
-const deptTree = ref<any[]>([])
+const deptTree = ref<SysDept[]>([])
 const checkedDeptKeys = ref<string[]>([])
 const isCustomScope = computed(() => formData.dataScope === DATA_SCOPE.CUSTOM)
 
 const menuDialogVisible = ref(false)
 const menuRoleId = ref<string>()
-const menuTree = ref<any[]>([])
+const menuTree = ref<SysMenu[]>([])
 const checkedMenuKeys = ref<string[]>([])
 
 const userDialogVisible = ref(false)
 const userRoleId = ref<string>()
-const allUserOptions = ref<any[]>([])
+const allUserOptions = ref<{ label: string; value: string }[]>([])
 const selectedUserIds = ref<string[]>([])
 const userSearchLoading = ref(false)
+let userSearchAbort: AbortController | null = null
 
 const rules = {
   roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
@@ -53,11 +62,11 @@ const columns = [
   { title: '排序', key: 'roleSort', width: 80, align: 'center' as const },
   {
     title: '数据范围', key: 'dataScope', width: 140, align: 'center' as const,
-    render: (row: any) => DATA_SCOPE_LABEL[row.dataScope] ?? '-',
+    render: (row: SysRole) => DATA_SCOPE_LABEL[row.dataScope] ?? '-',
   },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => h(NSwitch, {
+    render: (row: SysRole) => h(NSwitch, {
       value: row.status === STATUS.NORMAL,
       checkedValue: true,
       uncheckedValue: false,
@@ -67,7 +76,7 @@ const columns = [
   { title: '创建时间', key: 'createTime', width: 170 },
   {
     title: '操作', key: 'actions', width: 340, fixed: 'right' as const,
-    render: (row: any) => h('div', { class: 'flex gap-4px' }, [
+    render: (row: SysRole) => h('div', { class: 'flex gap-4px' }, [
       h(NButton, { size: 'tiny', quaternary: true, type: 'primary', onClick: () => handleEdit(row) }, { default: () => '编辑' }),
       h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => handleMenuAssign(row) }, { default: () => '分配菜单' }),
       h(NButton, { size: 'tiny', quaternary: true, type: 'success', onClick: () => handleUserAssign(row) }, { default: () => '分配用户' }),
@@ -79,26 +88,6 @@ const columns = [
   },
 ]
 
-async function fetchData() {
-  loading.value = true
-  try {
-    const params: any = { pageNum: pagination.page, pageSize: pagination.pageSize }
-    if (searchForm.roleName) params.roleName = searchForm.roleName
-    if (searchForm.roleKey) params.roleKey = searchForm.roleKey
-    if (searchForm.status !== null) params.status = searchForm.status
-    const res: any = await getRoleList(params)
-    tableData.value = res.data?.records ?? []
-    pagination.itemCount = res.data?.total ?? 0
-  } catch (e: any) {
-    message.error(e.message || '查询失败')
-  } finally { loading.value = false }
-}
-
-function handleSearch() { resetPage(); fetchData() }
-function handleReset() { searchForm.roleName = ''; searchForm.roleKey = ''; searchForm.status = null; resetPage(); fetchData() }
-function handlePageChange(page: number) { setPage(page); fetchData() }
-function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
-
 async function handleAdd() {
   isEdit.value = false; dialogTitle.value = '新增角色'
   Object.assign(formData, { id: null, roleName: '', roleKey: '', roleSort: 0, dataScope: DATA_SCOPE.SELF, status: STATUS.NORMAL, remark: '' })
@@ -107,13 +96,13 @@ async function handleAdd() {
   dialogVisible.value = true
 }
 
-async function handleEdit(row: any) {
+async function handleEdit(row: SysRole) {
   isEdit.value = true; dialogTitle.value = '编辑角色'
   Object.assign(formData, { id: row.id, roleName: row.roleName, roleKey: row.roleKey, roleSort: row.roleSort, dataScope: row.dataScope ?? DATA_SCOPE.SELF, status: row.status, remark: row.remark ?? '' })
   await ensureDeptTree()
   try {
     const res = await getRoleDeptIds(row.id)
-    checkedDeptKeys.value = (res.data ?? []).map((id: any) => String(id))
+    checkedDeptKeys.value = res.data ?? []
   } catch {
     checkedDeptKeys.value = []
   }
@@ -135,7 +124,7 @@ async function handleSubmit() {
   try { await formRef.value?.validate() } catch { return }
   submitLoading.value = true
   try {
-    const data: any = { roleName: formData.roleName, roleKey: formData.roleKey, roleSort: formData.roleSort, dataScope: formData.dataScope, status: formData.status, remark: formData.remark }
+    const data: Partial<SysRole> = { roleName: formData.roleName, roleKey: formData.roleKey, roleSort: formData.roleSort, dataScope: formData.dataScope, status: formData.status, remark: formData.remark }
     if (formData.id) {
       data.id = formData.id
       await updateRole(data)
@@ -154,23 +143,23 @@ async function handleSubmit() {
       message.success('新增成功')
     }
     dialogVisible.value = false; fetchData()
-  } catch (e: any) { message.error(e.message || '操作失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '操作失败') }
   finally { submitLoading.value = false }
 }
 
 async function handleDelete(id: string) {
   try { await deleteRole(id); message.success('删除成功'); fetchData() }
-  catch (e: any) { message.error(e.message || '删除失败') }
+  catch (e: unknown) { message.error((e as Error).message || '删除失败') }
 }
 
-async function handleStatusChange(row: any, val: boolean) {
+async function handleStatusChange(row: SysRole, val: boolean) {
   const newStatus = val ? STATUS.NORMAL : STATUS.DISABLED
   try {
     await changeRoleStatus(row.id, newStatus)
     row.status = newStatus
     message.success('状态修改成功')
-  } catch (e: any) {
-    message.error(e.message || '修改失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '修改失败')
   }
 }
 
@@ -184,38 +173,26 @@ async function handleBatchDelete() {
     message.success('批量删除成功')
     selectedIds.value = []
     fetchData()
-  } catch (e: any) {
-    message.error(e.message || '批量删除失败')
+  } catch (e: unknown) {
+    message.error((e as Error).message || '批量删除失败')
   }
 }
 
 async function handleExport() {
-  try {
-    const res: any = await exportRole()
-    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = '角色列表.xlsx'
-    link.click()
-    window.URL.revokeObjectURL(url)
-    message.success('导出成功')
-  } catch (e: any) {
-    message.error(e.message || '导出失败')
-  }
+  await downloadExcel(exportRole, '角色列表.xlsx')
 }
 
-async function handleMenuAssign(row: any) {
+async function handleMenuAssign(row: SysRole) {
   menuRoleId.value = row.id
   try {
-    const res: any = await getRoleMenuTree(row.id)
+    const res = await getRoleMenuTree(row.id)
     menuTree.value = res.data?.menus ?? []
-    checkedMenuKeys.value = (res.data?.checkedKeys ?? []).map((id: any) => String(id))
+    checkedMenuKeys.value = res.data?.checkedKeys ?? []
   } catch { menuTree.value = []; checkedMenuKeys.value = [] }
   menuDialogVisible.value = true
 }
 
-function getAllMenuKeys(tree: any[]): string[] {
+function getAllMenuKeys(tree: SysMenu[]): string[] {
   const keys: string[] = []
   for (const node of tree) {
     keys.push(String(node.id))
@@ -239,10 +216,10 @@ async function handleMenuSubmit() {
   try {
     await assignRoleMenu(menuRoleId.value, checkedMenuKeys.value)
     message.success('菜单分配成功'); menuDialogVisible.value = false
-  } catch (e: any) { message.error(e.message || '分配失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '分配失败') }
 }
 
-async function handleUserAssign(row: any) {
+async function handleUserAssign(row: SysRole) {
   userRoleId.value = row.id
   selectedUserIds.value = []
   allUserOptions.value = []
@@ -252,18 +229,18 @@ async function handleUserAssign(row: any) {
     const [allRes, roleRes] = await Promise.all([
       getUserList({ pageNum: 1, pageSize: 200 }),
       getRoleUsers(row.id),
-    ]) as any[]
-    const allUsers = (allRes.data?.records ?? []) as any[]
-    const assignedUsers = (roleRes.data ?? []) as any[]
-    const assignedIds = new Set(assignedUsers.map((u: any) => String(u.id)))
+    ])
+    const allUsers = allRes.data?.records ?? []
+    const assignedUsers = roleRes.data ?? []
+    const assignedIds = new Set(assignedUsers.map((u) => String(u.id)))
 
-    allUserOptions.value = allUsers.map((u: any) => ({
+    allUserOptions.value = allUsers.map((u) => ({
       label: `${u.nickname} (${u.username})`,
       value: String(u.id),
     }))
     for (const u of assignedUsers) {
       const uid = String(u.id)
-      if (!allUserOptions.value.some((o: any) => o.value === uid)) {
+      if (!allUserOptions.value.some(o => o.value === uid)) {
         allUserOptions.value.push({ label: `${u.nickname} (${u.username})`, value: uid })
       }
     }
@@ -277,22 +254,26 @@ async function handleUserSearch(query: string) {
   if (!query.trim()) {
     return
   }
+  userSearchAbort?.abort()
+  userSearchAbort = createAbortController()
   userSearchLoading.value = true
   try {
-    const res: any = await getUserList({ pageNum: 1, pageSize: 50, username: query })
-    const records = (res.data?.records ?? []) as any[]
-    const newOptions = records.map((u: any) => ({
+    const res = await getUserList({ pageNum: 1, pageSize: 50, username: query } as PageParams, { signal: userSearchAbort.signal })
+    const records = res.data?.records ?? []
+    const newOptions = records.map((u) => ({
       label: `${u.nickname} (${u.username})`,
       value: String(u.id),
     }))
-    const existingIds = new Set(allUserOptions.value.map((o: any) => o.value))
+    const existingIds = new Set(allUserOptions.value.map(o => o.value))
     for (const opt of newOptions) {
       if (!existingIds.has(opt.value)) {
         allUserOptions.value.push(opt)
       }
     }
-  } catch {
-    /* ignore */
+  } catch (e: unknown) {
+    if (!isAbortError(e)) {
+      message.error((e as Error).message || '搜索失败')
+    }
   } finally {
     userSearchLoading.value = false
   }
@@ -303,10 +284,14 @@ async function handleUserSubmit() {
   try {
     await assignRoleUsers(userRoleId.value, selectedUserIds.value)
     message.success('用户分配成功'); userDialogVisible.value = false
-  } catch (e: any) { message.error(e.message || '分配失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '分配失败') }
 }
 
 onMounted(() => fetchData())
+
+onBeforeUnmount(() => {
+  userSearchAbort?.abort()
+})
 </script>
 
 <template>
@@ -325,7 +310,7 @@ onMounted(() => fetchData())
         <n-form-item>
           <n-space>
             <n-button type="primary" @click="handleSearch"><template #icon><n-icon :component="SearchOutline" /></template>搜索</n-button>
-            <n-button @click="handleReset"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
+            <n-button @click="handleReset()"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
           </n-space>
         </n-form-item>
       </n-form>
@@ -345,8 +330,8 @@ onMounted(() => fetchData())
         </n-space>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
-        :row-key="(row: any) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
-        @update:checked-row-keys="(keys: any[]) => selectedIds = keys"
+        :row-key="(row: SysRole) => row.id" :checked-row-keys="selectedIds" striped size="small" remote
+        @update:checked-row-keys="(keys: (string | number)[]) => selectedIds = keys as string[]"
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
 
@@ -362,7 +347,7 @@ onMounted(() => fetchData())
           <n-input-number v-model:value="formData.roleSort" :min="0" style="width: 100%" />
         </n-form-item>
         <n-form-item label="数据范围" path="dataScope">
-          <n-select v-model:value="formData.dataScope" :options="DATA_SCOPE_OPTIONS as any" placeholder="请选择数据范围" />
+          <n-select v-model:value="formData.dataScope" :options="DATA_SCOPE_OPTIONS as unknown as SelectOption[]" placeholder="请选择数据范围" />
         </n-form-item>
         <n-form-item v-if="isCustomScope" label="授权部门" path="deptIds">
           <n-tree

@@ -1,26 +1,25 @@
-import {get, post} from '@/api/request'
+import { get, post } from '@/api/request'
+import type { ApiResponse } from '@/api/types'
+import type { AxiosRequestConfig } from 'axios'
 
 export interface TableInfo {
   tableName: string
   tableComment: string
   className: string
+  columns: ColumnInfo[]
   createTime: string
 }
 
 export interface ColumnInfo {
   columnName: string
   columnComment: string
-  columnType: string
   javaType: string
   javaField: string
   isPk: boolean
   isRequired: boolean
-  isInsert: boolean
-  isEdit: boolean
-  isList: boolean
-  isQuery: boolean
-  htmlType: string
-  dictType: string
+  isBaseField: boolean
+  sqlType: string
+  isIndexable: boolean
 }
 
 export interface GenRequest {
@@ -32,20 +31,20 @@ export interface GenRequest {
   genMigration?: boolean
 }
 
-export function getTableList() {
-  return get<TableInfo[]>('/generator/tables')
+export function getTableList(config?: AxiosRequestConfig) {
+  return get<ApiResponse<TableInfo[]>>('/generator/tables', undefined, config)
 }
 
 export function getTableColumns(tableName: string) {
-  return get<ColumnInfo[]>(`/generator/columns/${tableName}`)
+  return get<ApiResponse<ColumnInfo[]>>(`/generator/columns/${tableName}`)
 }
 
 export function previewCode(tableName: string, data: GenRequest) {
-  return post<Record<string, string>>(`/generator/preview/${tableName}`, data)
+  return post<ApiResponse<Record<string, string>>>(`/generator/preview/${tableName}`, data)
 }
 
 export function batchPreviewCode(data: GenRequest) {
-  return post<Record<string, Record<string, string>>>('/generator/batch-preview', data)
+  return post<ApiResponse<Record<string, Record<string, string>>>>('/generator/batch-preview', data)
 }
 
 export function downloadCode(tableName: string, data: GenRequest) {

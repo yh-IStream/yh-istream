@@ -19,6 +19,12 @@ import java.util.List;
 
 import static com.istream.common.constant.Constants.DICT_MAP_KEY;
 
+/**
+ * 字典类型服务实现
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Service
 @RequiredArgsConstructor
 public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDictType> implements SysDictTypeService {

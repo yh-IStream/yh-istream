@@ -1,26 +1,33 @@
 <script setup lang="ts">
 import { SearchOutline, RefreshOutline, TrashOutline, DownloadOutline } from '@vicons/ionicons5'
-import { getOperLogList, clearOperLog, exportOperLog } from '@/api/modules/monitor'
+import { getOperLogList, clearOperLog, exportOperLog, type SysOperLog } from '@/api/modules/monitor'
+import type { SelectOption } from 'naive-ui'
 import { SUCCESS_OPTIONS } from '@/constants'
 import { useDict } from '@/composables/useDict'
+import { useTable } from '@/composables/useTable'
+import { useExport } from '@/composables/useExport'
 
 const message = useMessage()
-const { pagination, resetPage, setPage, setPageSize } = usePagination()
 const { renderSuccessTag } = useStatusRender()
 const { useDictTag } = useDict()
 const { render: renderBusinessTypeTag } = useDictTag('sys_oper_type', '未知')
 const { loadDict } = useDict()
+const { downloadExcel } = useExport()
 
-const loading = ref(false)
-const tableData = ref<any[]>([])
 const searchForm = reactive({ title: '', businessType: null as number | null, status: null as number | null })
+const searchDefaults = { title: '', businessType: null as number | null, status: null as number | null }
+const { loading, tableData, pagination, fetchData, handleSearch, handleReset, handlePageChange, handlePageSizeChange } = useTable<SysOperLog, typeof searchForm>({
+  api: getOperLogList,
+  searchForm,
+  searchDefaults,
+})
 
-const businessTypeOptions = ref<{ label: string; value: any }[]>([{ label: '全部', value: null }])
+const businessTypeOptions = ref<SelectOption[]>([{ label: '全部', value: undefined }])
 
 onMounted(async () => {
   const list = await loadDict('sys_oper_type')
   businessTypeOptions.value = [
-    { label: '全部', value: null },
+    { label: '全部', value: undefined },
     ...list.map(item => ({ label: item.label, value: Number(item.value) })),
   ]
   fetchData()
@@ -30,7 +37,7 @@ const columns = [
   { title: '操作标题', key: 'title', width: 160 },
   {
     title: '业务类型', key: 'businessType', width: 100, align: 'center' as const,
-    render: (row: any) => renderBusinessTypeTag(row.businessType),
+    render: (row: SysOperLog) => renderBusinessTypeTag(row.businessType),
   },
   { title: '请求方法', key: 'requestMethod', width: 100 },
   { title: '请求URL', key: 'operUrl', width: 200, ellipsis: { tooltip: true } },
@@ -39,59 +46,28 @@ const columns = [
   { title: '操作地点', key: 'operLocation', width: 140 },
   {
     title: '状态', key: 'status', width: 80, align: 'center' as const,
-    render: (row: any) => renderSuccessTag(row.status),
+    render: (row: SysOperLog) => renderSuccessTag(row.status),
   },
   { title: '操作时间', key: 'operTime', width: 170 },
   {
     title: '操作', key: 'actions', width: 100, fixed: 'right' as const,
-    render: (row: any) => h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => showDetail(row) }, { default: () => '详情' }),
+    render: (row: SysOperLog) => h(NButton, { size: 'tiny', quaternary: true, type: 'info', onClick: () => showDetail(row) }, { default: () => '详情' }),
   },
 ]
 
-async function fetchData() {
-  loading.value = true
-  try {
-    const params: any = { pageNum: pagination.page, pageSize: pagination.pageSize }
-    if (searchForm.title) params.title = searchForm.title
-    if (searchForm.businessType !== null) params.businessType = searchForm.businessType
-    if (searchForm.status !== null) params.status = searchForm.status
-    const res: any = await getOperLogList(params)
-    tableData.value = res.data?.records ?? []
-    pagination.itemCount = res.data?.total ?? 0
-  } catch (e: any) { message.error(e.message || '查询失败') }
-  finally { loading.value = false }
-}
-
-function handleSearch() { resetPage(); fetchData() }
-function handleReset() { searchForm.title = ''; searchForm.businessType = null; searchForm.status = null; resetPage(); fetchData() }
-function handlePageChange(page: number) { setPage(page); fetchData() }
-function handlePageSizeChange(size: number) { setPageSize(size); fetchData() }
-
 async function handleClear() {
   try { await clearOperLog(); message.success('清空成功'); fetchData() }
-  catch (e: any) { message.error(e.message || '清空失败') }
+  catch (e: unknown) { message.error((e as Error).message || '清空失败') }
 }
 
 async function handleExport() {
-  try {
-    const res: any = await exportOperLog()
-    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = '操作日志.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('导出成功')
-  } catch (e: any) {
-    message.error(e.message || '导出失败')
-  }
+  await downloadExcel(exportOperLog, '操作日志.xlsx')
 }
 
 const detailVisible = ref(false)
-const detailData = ref<any>({})
+const detailData = ref<SysOperLog>({} as SysOperLog)
 
-function showDetail(row: any) {
+function showDetail(row: SysOperLog) {
   detailData.value = row
   detailVisible.value = true
 }
@@ -115,7 +91,7 @@ function showDetail(row: any) {
         <n-form-item>
           <n-space>
             <n-button type="primary" @click="handleSearch"><template #icon><n-icon :component="SearchOutline" /></template>搜索</n-button>
-            <n-button @click="handleReset"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
+            <n-button @click="handleReset()"><template #icon><n-icon :component="RefreshOutline" /></template>重置</n-button>
           </n-space>
         </n-form-item>
       </n-form>
@@ -133,7 +109,7 @@ function showDetail(row: any) {
         </n-button>
       </div>
       <n-data-table :columns="columns" :data="tableData" :loading="loading" :pagination="pagination"
-        :row-key="(row: any) => row.id" striped size="small" remote
+        :row-key="(row: SysOperLog) => row.id" striped size="small" remote
         @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
     </div>
 

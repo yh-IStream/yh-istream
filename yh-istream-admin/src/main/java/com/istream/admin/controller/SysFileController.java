@@ -34,6 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 文件管理控制器
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Slf4j
 @Tag(name = "文件管理")
 @RestController

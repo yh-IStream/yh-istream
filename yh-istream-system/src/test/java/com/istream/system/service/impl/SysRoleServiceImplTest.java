@@ -3,7 +3,7 @@ package com.istream.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.istream.common.model.dto.SysRoleQuery;
+import com.istream.common.model.query.SysRoleQuery;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.options.KeysScanOptions;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
@@ -69,7 +70,7 @@ class SysRoleServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        sysRoleService = new SysRoleServiceImpl(sysRoleMenuMapper, sysUserRoleMapper, sysMenuMapper, redissonClient);
+//        sysRoleService = new SysRoleServiceImpl(sysRoleMenuMapper, sysUserRoleMapper, sysMenuMapper, redissonClient);
         ReflectionTestUtils.setField(sysRoleService, "baseMapper", sysRoleMapper);
         when(redissonClient.getBucket(anyString())).thenReturn(rBucket);
         when(rBucket.delete()).thenReturn(true);

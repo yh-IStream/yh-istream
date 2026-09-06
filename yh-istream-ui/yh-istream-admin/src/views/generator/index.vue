@@ -6,12 +6,14 @@ import {
   getTableList, previewCode, downloadCode, batchPreviewCode, batchDownloadCode,
   type TableInfo, type GenRequest,
 } from '@/api/modules/generator'
+import { useExport } from '@/composables/useExport'
+import { useTreeData } from '@/composables/useTreeData'
 
 const message = useMessage()
+const { downloadFile } = useExport()
+const { loading, treeData: tableList, fetchData: fetchTables } = useTreeData<TableInfo>({ api: getTableList })
 
 // ==================== 状态 ====================
-const loading = ref(false)
-const tableList = ref<TableInfo[]>([])
 const selectedTable = ref<string>('')
 const keyword = ref('')
 
@@ -46,15 +48,6 @@ const filteredTables = computed(() => {
 const previewFiles = computed(() => Object.keys(previewData.value))
 
 // ==================== 方法 ====================
-async function fetchTables() {
-  loading.value = true
-  try {
-    const res: any = await getTableList()
-    tableList.value = res.data ?? []
-  } catch (e: any) { message.error(e.message || '获取表列表失败') }
-  finally { loading.value = false }
-}
-
 async function handlePreview() {
   if (!selectedTable.value) {
     message.warning('请先选择数据表')
@@ -62,12 +55,12 @@ async function handlePreview() {
   }
   previewLoading.value = true
   try {
-    const res: any = await previewCode(selectedTable.value, genConfig)
+    const res = await previewCode(selectedTable.value, genConfig)
     previewData.value = res.data ?? {}
     if (previewFiles.value.length > 0) {
       activeFile.value = previewFiles.value[0]
     }
-  } catch (e: any) { message.error(e.message || '预览失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '预览失败') }
   finally { previewLoading.value = false }
 }
 
@@ -76,17 +69,7 @@ async function handleDownload() {
     message.warning('请先选择数据表')
     return
   }
-  try {
-    const res = await downloadCode(selectedTable.value, genConfig)
-    const blob = new Blob([res as any], { type: 'application/zip' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${selectedTable.value}.zip`
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('下载成功')
-  } catch (e: any) { message.error(e.message || '下载失败') }
+  await downloadFile(() => downloadCode(selectedTable.value, genConfig), `${selectedTable.value}.zip`, 'application/zip')
 }
 
 async function handleBatchPreview() {
@@ -96,7 +79,7 @@ async function handleBatchPreview() {
   }
   previewLoading.value = true
   try {
-    const res: any = await batchPreviewCode({
+    const res = await batchPreviewCode({
       ...genConfig,
       tableNames: selectedTables.value,
     })
@@ -105,7 +88,7 @@ async function handleBatchPreview() {
     if (tableKeys.length > 0) {
       batchActiveTab.value = tableKeys[0]
     }
-  } catch (e: any) { message.error(e.message || '批量预览失败') }
+  } catch (e: unknown) { message.error((e as Error).message || '批量预览失败') }
   finally { previewLoading.value = false }
 }
 
@@ -114,20 +97,7 @@ async function handleBatchDownload() {
     message.warning('请先选择数据表')
     return
   }
-  try {
-    const res = await batchDownloadCode({
-      ...genConfig,
-      tableNames: selectedTables.value,
-    })
-    const blob = new Blob([res as any], { type: 'application/zip' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'generator-output.zip'
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('批量下载成功')
-  } catch (e: any) { message.error(e.message || '批量下载失败') }
+  await downloadFile(() => batchDownloadCode({ ...genConfig, tableNames: selectedTables.value }), 'generator-output.zip', 'application/zip')
 }
 
 function getFileExtension(filename: string): string {
@@ -210,7 +180,7 @@ onMounted(() => fetchTables())
           max-height="500"
           size="small"
           striped
-          @update:checked-row-keys="(keys: any[]) => selectedTables = keys"
+          @update:checked-row-keys="(keys: (string | number)[]) => selectedTables = keys as string[]"
         />
       </div>
 
