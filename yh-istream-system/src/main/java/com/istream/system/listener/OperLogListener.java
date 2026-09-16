@@ -33,7 +33,7 @@ public class OperLogListener {
      *
      * @param event 操作日志事件
      */
-    @Async
+    @Async("asyncExecutor")
     @EventListener
     public void handleOperLog(OperLogEvent event) {
         SysOperLog logEntry = convertToEntity(event);

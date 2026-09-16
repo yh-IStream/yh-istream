@@ -10,17 +10,13 @@ import java.util.concurrent.TimeUnit;
  * IP 归属地解析工具类
  *
  * <p>基于 ip2region 离线库，支持将 IP 地址解析为"国家|区域|省份|城市|ISP"格式。</p>
- *
- * <p>使用前需将 {@code ip2region.xdb} 文件放入 {@code src/main/resources/ip2region/} 目录。
- * 下载地址：<a href="https://github.com/lionsoul2014/ip2region">ip2region GitHub</a></p>
- *
  * <p>使用示例：</p>
  * <pre>{@code
  *   String region = IpRegionUtils.parseRegion("120.24.78.130");
  *   // 返回: "中国|广东省|深圳市"
  * }</pre>
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Slf4j

@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
+import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
-import com.istream.common.model.query.SysRoleQuery;
+import com.istream.system.helper.UserCacheHelper;
+import com.istream.system.model.query.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
 import com.istream.system.entity.SysRoleDept;
@@ -20,7 +22,6 @@ import com.istream.system.mapper.SysMenuMapper;
 import com.istream.system.mapper.SysUserRoleMapper;
 import com.istream.system.service.SysRoleService;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,9 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
-import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
 /**
  * 角色管理服务实现
@@ -48,7 +47,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private final SysRoleDeptMapper sysRoleDeptMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysMenuMapper sysMenuMapper;
-    private final RedissonClient redissonClient;
+    private final UserCacheHelper userCacheHelper;
 
     @Override
     public IPage<SysRole> page(SysRoleQuery query) {
@@ -56,11 +55,34 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    public List<SysRole> listAllEnabled() {
+        return list(new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
+                .eq(SysRole::getDelFlag, Constants.DEL_FLAG_NORMAL)
+                .orderByAsc(SysRole::getRoleSort));
+    }
+
+    @Override
+    public boolean existsByRoleKey(String roleKey, Long excludeId) {
+        LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getRoleKey, roleKey);
+        if (excludeId != null) {
+            wrapper.ne(SysRole::getId, excludeId);
+        }
+        return count(wrapper) > 0;
+    }
+
+    @Override
     public boolean changeStatus(Long roleId, Integer status) {
         SysRole role = new SysRole();
         role.setId(roleId);
         role.setStatus(status);
-        return updateById(role);
+        boolean result = updateById(role);
+        if (result) {
+            List<Long> userIds = getAffectedUserIds(roleId);
+            userCacheHelper.evictAllBatch(userIds);
+        }
+        return result;
     }
 
     @Override
@@ -68,7 +90,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         List<SysRoleMenu> list = sysRoleMenuMapper.selectList(
                 new LambdaQueryWrapper<SysRoleMenu>()
                         .eq(SysRoleMenu::getRoleId, roleId));
-        return list.stream().map(SysRoleMenu::getMenuId).collect(Collectors.toList());
+        return list.stream().map(SysRoleMenu::getMenuId).toList();
     }
 
     @Override
@@ -92,26 +114,35 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
         }
         List<Long> userIds = getAffectedUserIds(roleId);
-        clearCacheBatch(userIds);
+        userCacheHelper.evictAllBatch(userIds);
     }
 
     private Set<Long> expandMenuIds(List<Long> menuIds) {
         Set<Long> result = new HashSet<>(menuIds);
-        Set<Long> currentIds = new HashSet<>(menuIds);
-        Set<Long> allCollected = new HashSet<>(menuIds);
 
+        List<SysMenu> allMenus = sysMenuMapper.selectList(
+                new LambdaQueryWrapper<SysMenu>()
+                        .eq(SysMenu::getStatus, StatusEnum.ENABLED.getCode())
+                        .select(SysMenu::getId, SysMenu::getParentId));
+
+        Map<Long, List<Long>> parentChildMap = allMenus.stream()
+                .collect(Collectors.groupingBy(SysMenu::getParentId,
+                        Collectors.mapping(SysMenu::getId, Collectors.toList())));
+
+        Set<Long> currentIds = new HashSet<>(menuIds);
         while (!currentIds.isEmpty()) {
-            List<SysMenu> children = sysMenuMapper.selectList(
-                    new LambdaQueryWrapper<SysMenu>()
-                            .eq(SysMenu::getStatus, 0)
-                            .in(SysMenu::getParentId, currentIds));
-            currentIds.clear();
-            for (SysMenu child : children) {
-                if (allCollected.add(child.getId())) {
-                    currentIds.add(child.getId());
-                    result.add(child.getId());
+            Set<Long> next = new HashSet<>();
+            for (Long id : currentIds) {
+                List<Long> children = parentChildMap.get(id);
+                if (children != null) {
+                    for (Long childId : children) {
+                        if (result.add(childId)) {
+                            next.add(childId);
+                        }
+                    }
                 }
             }
+            currentIds = next;
         }
         return result;
     }
@@ -129,7 +160,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 .eq(SysUserRole::getRoleId, (Long) id));
         boolean result = super.removeById(id);
         if (result) {
-            clearCacheBatch(userIds);
+            userCacheHelper.evictAllBatch(userIds);
         }
         return result;
     }
@@ -148,7 +179,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         List<Long> allUserIds = sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>()
                         .in(SysUserRole::getRoleId, list))
-                .stream().map(SysUserRole::getUserId).collect(Collectors.toList());
+                .stream().map(SysUserRole::getUserId).toList();
         sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
                 .in(SysRoleMenu::getRoleId, list));
         sysRoleDeptMapper.delete(new LambdaQueryWrapper<SysRoleDept>()
@@ -157,7 +188,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 .in(SysUserRole::getRoleId, list));
         boolean result = super.removeByIds(list);
         if (result) {
-            clearCacheBatch(allUserIds);
+            userCacheHelper.evictAllBatch(allUserIds);
         }
         return result;
     }
@@ -168,7 +199,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         boolean result = super.updateById(entity);
         if (result) {
             List<Long> userIds = getAffectedUserIds(entity.getId());
-            clearCacheBatch(userIds);
+            userCacheHelper.evictAllBatch(userIds);
         }
         return result;
     }
@@ -177,14 +208,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         return sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>()
                         .eq(SysUserRole::getRoleId, roleId))
-                .stream().map(SysUserRole::getUserId).collect(Collectors.toList());
-    }
-
-    private void clearCacheBatch(Collection<Long> userIds) {
-        for (Long userId : userIds) {
-            redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
-            redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
-        }
+                .stream().map(SysUserRole::getUserId).toList();
     }
 
     /**
@@ -211,6 +235,13 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
         return sysUserRoleMapper.selectCount(new LambdaQueryWrapper<SysUserRole>()
                 .in(SysUserRole::getRoleId, roleIds)) > 0;
+    }
+
+    @Override
+    public IPage<SysRole> pageExport(long pageNum, long pageSize) {
+        Page<SysRole> page = new Page<>(pageNum, pageSize);
+        return baseMapper.selectPage(page, new LambdaQueryWrapper<SysRole>()
+                .orderByDesc(SysRole::getCreateTime));
     }
 
     @Override
@@ -245,10 +276,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         Set<Long> affected = new HashSet<>();
         affected.addAll(toAdd);
         affected.addAll(toRemove);
-        for (Long userId : affected) {
-            redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
-            redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
-        }
+        userCacheHelper.evictAllBatch(affected);
     }
 
     @Override
@@ -273,6 +301,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
         }
         List<Long> userIds = getAffectedUserIds(roleId);
-        clearCacheBatch(userIds);
+        userCacheHelper.evictAllBatch(userIds);
     }
 }

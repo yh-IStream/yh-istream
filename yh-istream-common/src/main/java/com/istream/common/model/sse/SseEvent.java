@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 /**
  * SSE 实时推送事件
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-20
  */
 @Data

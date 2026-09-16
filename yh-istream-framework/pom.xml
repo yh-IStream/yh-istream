@@ -36,10 +36,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
 
         <!-- Sa-Token 权限认证 -->
         <dependency>
@@ -56,11 +52,6 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
-        <!-- 显式声明 redisson 核心版本，覆盖 sa-token-redisson 传递的旧版本 -->
-<!--        <dependency>-->
-<!--            <groupId>org.redisson</groupId>-->
-<!--            <artifactId>redisson</artifactId>-->
-<!--        </dependency>-->
 
         <!-- MyBatis-Plus -->
         <dependency>
@@ -88,12 +79,6 @@
         <dependency>
             <groupId>org.lionsoul</groupId>
             <artifactId>ip2region</artifactId>
-        </dependency>
-
-        <!-- EasyExcel 通用导出 -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>easyexcel</artifactId>
         </dependency>
 
         <!-- Lombok -->

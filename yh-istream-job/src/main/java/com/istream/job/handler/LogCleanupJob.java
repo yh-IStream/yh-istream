@@ -17,11 +17,11 @@ import java.time.LocalDateTime;
 /**
  * 日志清理任务
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Slf4j
-//@Component
+@Component
 @RequiredArgsConstructor
 public class LogCleanupJob {
 

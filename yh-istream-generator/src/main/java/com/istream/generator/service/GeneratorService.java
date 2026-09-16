@@ -3,9 +3,11 @@ package com.istream.generator.service;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import com.istream.generator.vo.ColumnInfo;
-import com.istream.generator.dto.GenRequest;
-import com.istream.generator.vo.TableInfo;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
+import com.istream.generator.model.dto.GenRequest;
+import com.istream.generator.model.vo.ColumnInfo;
+import com.istream.generator.model.vo.TableInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.VelocityContext;
@@ -138,7 +140,7 @@ public class GeneratorService {
             }
         } catch (Exception e) {
             log.error("查询表信息失败", e);
-            throw new RuntimeException("查询表信息失败: " + e.getMessage());
+            throw new BusinessException(ResultCode.ERROR, "查询表信息失败", e);
         }
         return tables;
     }
@@ -181,7 +183,7 @@ public class GeneratorService {
             }
         } catch (Exception e) {
             log.error("查询列信息失败: {}", tableName, e);
-            throw new RuntimeException("查询列信息失败: " + e.getMessage());
+            throw new BusinessException(ResultCode.ERROR, "查询列信息失败", e);
         }
         return columns;
     }

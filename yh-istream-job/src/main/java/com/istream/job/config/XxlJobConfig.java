@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * XXL-Job 执行器配置
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Slf4j

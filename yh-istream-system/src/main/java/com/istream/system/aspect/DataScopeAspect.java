@@ -2,9 +2,11 @@ package com.istream.system.aspect;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.istream.common.annotation.DataScope;
+import com.istream.common.constant.Constants;
 import com.istream.common.enums.DataScopeEnum;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.model.query.BaseQuery;
+import com.istream.framework.cache.CacheService;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.system.entity.SysDept;
 import com.istream.system.entity.SysRole;
@@ -23,6 +25,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +61,9 @@ public class DataScopeAspect {
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysRoleDeptMapper sysRoleDeptMapper;
     private final SysDeptMapper sysDeptMapper;
+    private final CacheService cacheService;
+
+    private static final Duration DATA_SCOPE_CACHE_TTL = Duration.ofMinutes(10);
 
     /**
      * SQL 别名白名单，仅允许这些别名参与数据权限 SQL 拼接
@@ -64,6 +73,20 @@ public class DataScopeAspect {
     private static final Pattern ALIAS_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]{0,30}$");
 
     private static final Pattern ANCESTORS_PATTERN = Pattern.compile("^[0-9,]*$");
+
+    /**
+     * 用户数据权限缓存对象（可序列化存入 Redis）
+     */
+    private record UserDataScopeCache(
+            Set<Long> allAccessRoleIds,
+            Set<Long> deptAndChildRoleIds,
+            Set<Long> deptRoleIds,
+            Map<Long, List<Long>> customDeptIdsByRole,
+            Set<Long> selfRoleIds,
+            Long userDeptId,
+            String userDeptAncestors
+    ) implements Serializable {
+    }
 
     /**
      * 环绕通知：注入数据权限 SQL 条件
@@ -86,15 +109,10 @@ public class DataScopeAspect {
             return point.proceed();
         }
 
-        SysUser user = sysUserMapper.selectById(userId);
-        if (user == null) {
-            return point.proceed();
-        }
-
         String deptAlias = validateAlias(dataScope.deptAlias(), "deptAlias");
         String userAlias = validateAlias(dataScope.userAlias(), "userAlias");
 
-        String sql = buildDataScopeSql(user, deptAlias, userAlias);
+        String sql = buildDataScopeSql(userId, deptAlias, userAlias);
         if (sql != null) {
             injectParams(point.getArgs(), sql);
         }
@@ -103,10 +121,6 @@ public class DataScopeAspect {
 
     /**
      * 校验 SQL 别名是否合法
-     *
-     * @param alias     待校验别名
-     * @param paramName 参数名称（用于日志）
-     * @return 校验通过的别名
      */
     private String validateAlias(String alias, String paramName) {
         if (alias == null || alias.isEmpty()) {
@@ -119,9 +133,83 @@ public class DataScopeAspect {
         return alias;
     }
 
-    private String buildDataScopeSql(SysUser user, String deptAlias, String userAlias) {
+    /**
+     * 构建数据权限 SQL（优先从缓存读取，缓存未命中时查询数据库并回填）
+     */
+    private String buildDataScopeSql(Long userId, String deptAlias, String userAlias) {
+        UserDataScopeCache cache = getOrLoadCache(userId);
+        if (cache == null) {
+            return null;
+        }
+
+        // 拥有全部数据权限的角色 → 不加任何限制
+        if (!cache.allAccessRoleIds.isEmpty()) {
+            return null;
+        }
+
+        StringJoiner sqlJoiner = new StringJoiner(" OR ");
+
+        // DEPT_AND_CHILD：本级 + 所有子孙部门
+        for (Long roleId : cache.deptAndChildRoleIds) {
+            appendDeptAndChildScopeCached(sqlJoiner, cache, deptAlias);
+        }
+        // DEPT：仅本部门
+        for (Long roleId : cache.deptRoleIds) {
+            appendDeptScope(sqlJoiner, cache.userDeptId, deptAlias);
+        }
+        // CUSTOM：指定部门
+        for (Long roleId : cache.customDeptIdsByRole.keySet()) {
+            List<Long> deptIds = cache.customDeptIdsByRole.get(roleId);
+            if (deptIds != null && !deptIds.isEmpty()) {
+                String inClause = deptIds.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(",", "(", ")"));
+                sqlJoiner.add(deptAlias + ".id IN " + inClause);
+            }
+        }
+        // SELF：仅本人数据
+        if (!cache.selfRoleIds.isEmpty()) {
+            sqlJoiner.add(userAlias + ".id = " + userId);
+        }
+
+        String scopeSql = sqlJoiner.toString();
+        if (scopeSql.isEmpty()) {
+            return null;
+        }
+        return " AND (" + scopeSql + ")";
+    }
+
+    /**
+     * 从缓存或数据库加载用户数据权限信息
+     */
+    private UserDataScopeCache getOrLoadCache(Long userId) {
+        String cacheKey = Constants.DATA_SCOPE_CACHE_PREFIX + userId;
+        UserDataScopeCache cache = cacheService.get(cacheKey);
+        if (cache != null) {
+            return cache;
+        }
+
+        cache = loadFromDb(userId);
+        if (cache != null) {
+            cacheService.set(cacheKey, cache, DATA_SCOPE_CACHE_TTL);
+        }
+        return cache;
+    }
+
+    /**
+     * 从数据库加载用户数据权限信息（缓存未命中时调用）
+     *
+     * @param userId 用户ID
+     * @return 用户数据权限缓存对象，用户不存在或无角色时返回 null
+     */
+    private UserDataScopeCache loadFromDb(Long userId) {
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user == null) {
+            return null;
+        }
+
         List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
-                new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, user.getId()));
+                new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
         if (userRoles.isEmpty()) {
             return null;
         }
@@ -136,69 +224,74 @@ public class DataScopeAspect {
             return null;
         }
 
-        StringJoiner sqlJoiner = new StringJoiner(" OR ");
-        boolean hasFullAccess = false;
+        Set<Long> allAccessRoleIds = new HashSet<>();
+        Set<Long> deptAndChildRoleIds = new HashSet<>();
+        Set<Long> deptRoleIds = new HashSet<>();
+        Map<Long, List<Long>> customDeptIdsByRole = new HashMap<>();
+        Set<Long> selfRoleIds = new HashSet<>();
 
         for (SysUserRole ur : userRoles) {
             SysRole role = roleMap.get(ur.getRoleId());
             if (role == null) {
                 continue;
             }
-
             DataScopeEnum scope = DataScopeEnum.of(role.getDataScope());
             switch (scope) {
-                case ALL -> hasFullAccess = true;
-                case CUSTOM -> appendCustomScope(sqlJoiner, role.getId(), deptAlias);
-                case DEPT -> appendDeptScope(sqlJoiner, user.getDeptId(), deptAlias);
-                case DEPT_AND_CHILD -> appendDeptAndChildScope(sqlJoiner, user.getDeptId(), deptAlias);
-                case SELF -> sqlJoiner.add(userAlias + ".id = " + user.getId());
+                case ALL -> allAccessRoleIds.add(role.getId());
+                case DEPT_AND_CHILD -> deptAndChildRoleIds.add(role.getId());
+                case DEPT -> deptRoleIds.add(role.getId());
+                case CUSTOM -> {
+                    List<Long> deptIds = sysRoleDeptMapper.selectDeptIdsByRoleId(role.getId());
+                    if (!deptIds.isEmpty()) {
+                        customDeptIdsByRole.put(role.getId(), deptIds);
+                    }
+                }
+                case SELF -> selfRoleIds.add(role.getId());
             }
         }
 
-        if (hasFullAccess) {
-            return null;
+        String userDeptAncestors = null;
+        if (!deptAndChildRoleIds.isEmpty() && user.getDeptId() != null) {
+            SysDept dept = sysDeptMapper.selectById(user.getDeptId());
+            if (dept != null) {
+                String ancestors = dept.getAncestors();
+                if (ancestors != null && ANCESTORS_PATTERN.matcher(ancestors).matches()) {
+                    userDeptAncestors = ancestors;
+                }
+            }
         }
 
-        String scopeSql = sqlJoiner.toString();
-        if (scopeSql.isEmpty()) {
-            return null;
-        }
-
-        return " AND (" + scopeSql + ")";
+        return new UserDataScopeCache(allAccessRoleIds, deptAndChildRoleIds,
+                deptRoleIds, customDeptIdsByRole, selfRoleIds,
+                user.getDeptId(), userDeptAncestors);
     }
 
-    private void appendCustomScope(StringJoiner sqlJoiner, Long roleId, String deptAlias) {
-        List<Long> deptIds = sysRoleDeptMapper.selectDeptIdsByRoleId(roleId);
-        if (deptIds.isEmpty()) {
-            return;
-        }
-        String inClause = deptIds.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining(",", "(", ")"));
-        sqlJoiner.add(deptAlias + ".id IN " + inClause);
+    /**
+     * 清除指定用户的数据权限缓存
+     *
+     * @param userId 用户ID
+     * @since 2026-09-12
+     */
+    public void evictCache(Long userId) {
+        cacheService.delete(Constants.DATA_SCOPE_CACHE_PREFIX + userId);
     }
 
-    private void appendDeptScope(StringJoiner sqlJoiner, Long deptId, String deptAlias) {
-        if (deptId != null) {
-            sqlJoiner.add(deptAlias + ".id = " + deptId);
-        }
-    }
-
-    private void appendDeptAndChildScope(StringJoiner sqlJoiner, Long deptId, String deptAlias) {
+    private void appendDeptAndChildScopeCached(StringJoiner sqlJoiner, UserDataScopeCache cache, String deptAlias) {
+        Long deptId = cache.userDeptId;
         if (deptId == null) {
             return;
         }
-        SysDept dept = sysDeptMapper.selectById(deptId);
-        String ancestors = dept != null ? dept.getAncestors() : null;
-        if (ancestors != null && !ANCESTORS_PATTERN.matcher(ancestors).matches()) {
-            log.warn("Invalid ancestors format for deptId={}, fallback to dept scope only", deptId);
-            ancestors = null;
-        }
-        if (ancestors != null && !ancestors.isEmpty()) {
+        if (cache.userDeptAncestors != null && !cache.userDeptAncestors.isEmpty()) {
             sqlJoiner.add(deptAlias
                     + ".id IN (SELECT id FROM sys_dept WHERE FIND_IN_SET(" + deptId + ", ancestors) > 0"
                     + " OR id = " + deptId + ")");
         } else {
+            sqlJoiner.add(deptAlias + ".id = " + deptId);
+        }
+    }
+
+    private void appendDeptScope(StringJoiner sqlJoiner, Long deptId, String deptAlias) {
+        if (deptId != null) {
             sqlJoiner.add(deptAlias + ".id = " + deptId);
         }
     }

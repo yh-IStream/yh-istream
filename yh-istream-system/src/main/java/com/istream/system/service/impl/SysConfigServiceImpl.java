@@ -1,13 +1,16 @@
 package com.istream.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.istream.system.model.query.SysConfigQuery;
 import com.istream.system.entity.SysConfig;
 import com.istream.system.mapper.SysConfigMapper;
 import com.istream.system.service.SysConfigService;
+import com.istream.framework.cache.CacheService;
+import com.istream.framework.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,16 +28,36 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> implements SysConfigService {
 
-    private final RedissonClient redissonClient;
+    private final CacheService cacheService;
 
     private static final String CONFIG_KEY_PREFIX = "config:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     @Override
+    public IPage<SysConfig> page(SysConfigQuery query) {
+        Page<SysConfig> page = new Page<>(query.getPageNum(), query.getPageSize());
+        return baseMapper.selectPage(page, new LambdaQueryWrapper<SysConfig>()
+                .like(query.getConfigName() != null && !query.getConfigName().isEmpty(),
+                        SysConfig::getConfigName, SqlUtils.escapeLike(query.getConfigName()))
+                .like(query.getConfigKey() != null && !query.getConfigKey().isEmpty(),
+                        SysConfig::getConfigKey, SqlUtils.escapeLike(query.getConfigKey()))
+                .orderByDesc(SysConfig::getCreateTime));
+    }
+
+    @Override
+    public boolean existsByConfigKey(String configKey, Long excludeId) {
+        LambdaQueryWrapper<SysConfig> wrapper = new LambdaQueryWrapper<SysConfig>()
+                .eq(SysConfig::getConfigKey, configKey);
+        if (excludeId != null) {
+            wrapper.ne(SysConfig::getId, excludeId);
+        }
+        return count(wrapper) > 0;
+    }
+
+    @Override
     public String getConfigValueByKey(String configKey) {
         String cacheKey = CONFIG_KEY_PREFIX + configKey;
-        RBucket<String> bucket = redissonClient.getBucket(cacheKey);
-        String cached = bucket.get();
+        String cached = cacheService.get(cacheKey);
         if (cached != null) {
             return cached;
         }
@@ -42,7 +65,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
                 .eq(SysConfig::getConfigKey, configKey));
         String value = config != null ? config.getConfigValue() : null;
         if (value != null) {
-            bucket.set(value, CACHE_TTL);
+            cacheService.set(cacheKey, value, CACHE_TTL);
         }
         return value;
     }
@@ -67,7 +90,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     @Transactional(rollbackFor = Exception.class)
     public boolean removeById(Serializable id) {
         boolean result = super.removeById(id);
-        clearConfigCache();
+        if (result) {
+            clearConfigCache();
+        }
         return result;
     }
 
@@ -83,6 +108,6 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
 
     @Override
     public void clearConfigCache() {
-        redissonClient.getKeys().deleteByPattern(CONFIG_KEY_PREFIX + "*");
+        cacheService.deleteByPattern(CONFIG_KEY_PREFIX + "*");
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 接口限流切面
@@ -25,7 +26,7 @@ import java.time.Duration;
  * <p>执行顺序：@Order(0)，在 {@link OperLogAspect} 之前执行，
  * 确保被限流的请求不会产生操作日志。</p>
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Slf4j
@@ -39,12 +40,18 @@ public class RateLimitAspect {
 
     private final RedissonClient redissonClient;
 
+    private final ConcurrentHashMap<String, Boolean> initializedKeys = new ConcurrentHashMap<>();
+
     @Around("@annotation(rateLimit)")
     public Object around(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
         String key = buildKey(joinPoint, rateLimit);
+        String fullKey = RATE_LIMITER_KEY_PREFIX + key;
 
-        RRateLimiter rateLimiter = redissonClient.getRateLimiter(RATE_LIMITER_KEY_PREFIX + key);
-        rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
+        RRateLimiter rateLimiter = redissonClient.getRateLimiter(fullKey);
+        initializedKeys.computeIfAbsent(fullKey, k -> {
+            rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
+            return Boolean.TRUE;
+        });
 
         if (rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()))) {
             return joinPoint.proceed();

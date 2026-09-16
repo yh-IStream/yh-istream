@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 管理客户端 SSE 连接，支持广播和单播。每30秒发送心跳保活，
  * 连接超时或异常时自动清理。
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-20
  */
 @Slf4j

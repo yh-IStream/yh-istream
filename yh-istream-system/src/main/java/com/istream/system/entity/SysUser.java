@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -70,9 +71,9 @@ public class SysUser extends BaseEntity {
 
     @ExcelIgnore
     @TableField(exist = false)
-    private java.util.List<SysRole> roles;
+    private List<SysRole> roles;
 
     @ExcelIgnore
     @TableField(exist = false)
-    private java.util.List<Long> roleIds;
+    private List<Long> roleIds;
 }

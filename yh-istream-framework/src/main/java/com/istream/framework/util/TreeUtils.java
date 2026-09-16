@@ -1,7 +1,6 @@
 package com.istream.framework.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ import java.util.function.Function;
  *
  * <p>将扁平列表转换为树形结构，适用于菜单、部门等具有父子关系的数据。</p>
  *
- * <h3>设计要点</h3>
+ * <h3>设计</h3>
  * <ul>
  *   <li><b>职责分离</b>：根节点识别与子节点查找使用独立的数据结构，避免 {@code id=0} 与根节点标记
  *       {@code parentId=0} 发生语义碰撞</li>
@@ -76,11 +75,14 @@ public final class TreeUtils {
             }
         }
 
-        // ========== 阶段2：为所有节点分配 children ==========
+        // ========== 阶段2：为有子节点的节点分配 children ==========
+        // 仅当节点拥有子节点时才调用 setter；叶子节点保留实体初始的空 ArrayList，
+        // 避免用 Collections.emptyList() 覆盖导致不可变列表异常
         for (T node : allNodes) {
-            Long nodeId = idGetter.apply(node);
-            List<T> children = childrenByParentId.getOrDefault(nodeId, Collections.emptyList());
-            childrenSetter.accept(node, children);
+            List<T> children = childrenByParentId.get(idGetter.apply(node));
+            if (children != null) {
+                childrenSetter.accept(node, children);
+            }
         }
 
         return roots;

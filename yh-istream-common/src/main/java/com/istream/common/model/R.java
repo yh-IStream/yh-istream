@@ -10,7 +10,11 @@ import java.io.Serializable;
 /**
  * 统一响应体
  *
+ * <p>封装 HTTP 响应的状态码、消息和数据，提供静态工厂方法快速构建响应。</p>
+ *
  * @param <T> 数据泛型
+ * @author istream
+ * @since 2026-08-17
  */
 @Data
 @NoArgsConstructor

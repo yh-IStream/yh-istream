@@ -5,6 +5,12 @@ import lombok.Getter;
 
 /**
  * 业务异常
+ *
+ * <p>用于业务逻辑中可预期的错误场景，携带错误码和消息，
+ * 由 {@link com.istream.framework.web.GlobalExceptionHandler} 统一拦截并转换为标准响应体。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Getter
 public class BusinessException extends RuntimeException {
@@ -30,6 +36,11 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(ResultCode resultCode, String message) {
         super(message);
+        this.code = resultCode.getCode();
+    }
+
+    public BusinessException(ResultCode resultCode, String message, Throwable cause) {
+        super(message, cause);
         this.code = resultCode.getCode();
     }
 }

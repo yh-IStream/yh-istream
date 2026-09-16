@@ -2,14 +2,18 @@ package com.istream.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.istream.system.model.query.SysDictTypeQuery;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.entity.SysDictType;
 import com.istream.system.mapper.SysDictDataMapper;
 import com.istream.system.mapper.SysDictTypeMapper;
 import com.istream.system.service.SysDictTypeService;
+import com.istream.framework.cache.CacheService;
+import com.istream.framework.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +34,28 @@ import static com.istream.common.constant.Constants.DICT_MAP_KEY;
 public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDictType> implements SysDictTypeService {
 
     private final SysDictDataMapper sysDictDataMapper;
-    private final RedissonClient redissonClient;
+    private final CacheService cacheService;
+
+    @Override
+    public IPage<SysDictType> page(SysDictTypeQuery query) {
+        Page<SysDictType> page = new Page<>(query.getPageNum(), query.getPageSize());
+        return baseMapper.selectPage(page, new LambdaQueryWrapper<SysDictType>()
+                .like(query.getDictName() != null && !query.getDictName().isEmpty(),
+                        SysDictType::getDictName, SqlUtils.escapeLike(query.getDictName()))
+                .like(query.getDictType() != null && !query.getDictType().isEmpty(),
+                        SysDictType::getDictType, SqlUtils.escapeLike(query.getDictType()))
+                .orderByDesc(SysDictType::getCreateTime));
+    }
+
+    @Override
+    public boolean existsByDictType(String dictType, Long excludeId) {
+        LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<SysDictType>()
+                .eq(SysDictType::getDictType, dictType);
+        if (excludeId != null) {
+            wrapper.ne(SysDictType::getId, excludeId);
+        }
+        return count(wrapper) > 0;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -87,6 +112,6 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
     }
 
     private void clearDictCache() {
-        redissonClient.getBucket(DICT_MAP_KEY).delete();
+        cacheService.delete(DICT_MAP_KEY);
     }
 }

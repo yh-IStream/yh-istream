@@ -8,15 +8,26 @@
         FROM sys_role
         WHERE del_flag = 0
         <if test="query.roleName != null and query.roleName != ''">
-            AND role_name LIKE CONCAT('%', #{query.roleName}, '%')
+            <bind name="escapedRoleName" value="@com.istream.framework.util.SqlUtils@escapeLike(query.roleName)"/>
+            AND role_name LIKE CONCAT('%', #{escapedRoleName}, '%') ESCAPE '\\'
         </if>
         <if test="query.roleKey != null and query.roleKey != ''">
-            AND role_key LIKE CONCAT('%', #{query.roleKey}, '%')
+            <bind name="escapedRoleKey" value="@com.istream.framework.util.SqlUtils@escapeLike(query.roleKey)"/>
+            AND role_key LIKE CONCAT('%', #{escapedRoleKey}, '%') ESCAPE '\\'
         </if>
         <if test="query.status != null">
             AND status = #{query.status}
         </if>
         ORDER BY role_sort ASC
+    </select>
+
+    <select id="selectRoleKeysByUserId" resultType="java.lang.String">
+        SELECT r.role_key FROM sys_role r
+        INNER JOIN sys_user_role ur ON r.id = ur.role_id
+        WHERE ur.user_id = #{userId}
+          AND r.del_flag = 0
+          AND r.status = 0
+        ORDER BY r.role_sort
     </select>
 
 </mapper>

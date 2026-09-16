@@ -3,13 +3,18 @@ package com.istream.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
+import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
 import com.istream.framework.util.TreeUtils;
 import com.istream.system.entity.SysDept;
 import com.istream.system.entity.SysUser;
+import com.istream.system.entity.SysUserRole;
+import com.istream.system.helper.UserCacheHelper;
 import com.istream.system.mapper.SysDeptMapper;
 import com.istream.system.mapper.SysUserMapper;
+import com.istream.system.mapper.SysUserRoleMapper;
 import com.istream.system.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,15 +36,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> implements SysDeptService {
 
-    private static final long ROOT_PARENT_ID = 0L;
     private static final String ROOT_ANCESTORS = "0";
 
     private final SysUserMapper sysUserMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
+    private final UserCacheHelper userCacheHelper;
 
     @Override
     public List<SysDept> listDeptTree() {
         List<SysDept> allDepts = list(new LambdaQueryWrapper<SysDept>()
-                .eq(SysDept::getStatus, 0)
+                .eq(SysDept::getStatus, StatusEnum.ENABLED.getCode())
                 .orderByAsc(SysDept::getOrderNum));
         return TreeUtils.build(allDepts, SysDept::getId, SysDept::getParentId,
                 SysDept::setChildren);
@@ -86,7 +92,11 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
             entity.setAncestors(newAncestors);
             updateChildrenAncestors(entity.getId(), newAncestors);
         }
-        return super.updateById(entity);
+        boolean result = super.updateById(entity);
+        if (result) {
+            evictDataScopeCacheForDeptUsers(entity.getId());
+        }
+        return result;
     }
 
     @Override
@@ -94,10 +104,10 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
     public boolean removeById(Serializable id) {
         Long deptId = (Long) id;
         if (hasChildren(deptId)) {
-            throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "存在子部门，不允许删除");
+            throw new BusinessException(ResultCode.DEPT_HAS_CHILDREN);
         }
         if (hasUsers(deptId)) {
-            throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "部门下存在用户，不允许删除");
+            throw new BusinessException(ResultCode.DEPT_HAS_USERS);
         }
         return super.removeById(id);
     }
@@ -108,10 +118,10 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
         for (Object id : list) {
             Long deptId = (Long) id;
             if (hasChildren(deptId)) {
-                throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "存在子部门，不允许删除");
+                throw new BusinessException(ResultCode.DEPT_HAS_CHILDREN);
             }
             if (hasUsers(deptId)) {
-                throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "部门下存在用户，不允许删除");
+                throw new BusinessException(ResultCode.DEPT_HAS_USERS);
             }
         }
         return super.removeByIds(list);
@@ -156,12 +166,13 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
      * @return 祖级列表字符串，如 "0,1,100"
      */
     private String buildAncestors(Long parentId) {
-        if (parentId == null || parentId == ROOT_PARENT_ID) {
+        if (parentId == null || parentId.equals(Constants.ROOT_PARENT_ID)) {
             return ROOT_ANCESTORS;
         }
         SysDept parent = getById(parentId);
         if (parent == null) {
-            return ROOT_ANCESTORS;
+            throw new BusinessException(ResultCode.DEPT_NOT_EXIST.getCode(),
+                    "父部门不存在: " + parentId);
         }
         String parentAncestors = parent.getAncestors();
         if (parentAncestors == null || parentAncestors.isEmpty()) {
@@ -185,6 +196,26 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
                     .eq(SysDept::getId, child.getId())
                     .set(SysDept::getAncestors, childNewAncestors));
             updateChildrenAncestors(child.getId(), childNewAncestors);
+        }
+    }
+
+    /**
+     * 清除部门下所有用户的数据权限缓存
+     *
+     * <p>部门变更（如 ancestors 调整）会影响数据权限 SQL 的拼接结果，
+     * 须清除关联用户的权限缓存、角色缓存和数据权限缓存。</p>
+     *
+     * @param deptId 部门ID
+     * @since 2026-09-13
+     */
+    private void evictDataScopeCacheForDeptUsers(Long deptId) {
+        List<Long> userIds = sysUserMapper.selectList(
+                new LambdaQueryWrapper<SysUser>()
+                        .eq(SysUser::getDeptId, deptId)
+                        .select(SysUser::getId))
+                .stream().map(SysUser::getId).toList();
+        if (!userIds.isEmpty()) {
+            userCacheHelper.evictAllBatch(userIds);
         }
     }
 }

@@ -12,15 +12,15 @@
 
 ## 项目简介
 
-采用前后端分离架构，内置 RBAC 权限管理、数据权限、代码生成器、操作日志、登录日志、文件存储、定时任务等核心功能。
+采用前后端分离架构的企业级快速开发框架，内置 RBAC 权限管理、数据权限、代码生成器、操作日志、登录日志、文件存储、定时任务等核心功能。后端基于 Spring Boot 4 + MyBatis-Plus + Sa-Token，前端基于 Vue 3 + TypeScript + Naive UI，开箱即用。
 
 ### 在线预览
 
 ![登录页](https://raw.gitcode.com/IStream/image/raw/image/yh-is/%E7%99%BB%E5%BD%95.png)
 
-![用户管理](https://raw.gitcode.com/IStream/image/raw/image/yh-is//%E7%94%A8%E6%88%B7.png)
+![用户管理](https://raw.gitcode.com/IStream/image/raw/image/yh-is/%E7%94%A8%E6%88%B7.png)
 
-![字典](https://raw.gitcode.com/IStream/image/raw/image/yh-is//%E5%AD%97%E5%85%B8.png)
+![字典](https://raw.gitcode.com/IStream/image/raw/image/yh-is/%E5%AD%97%E5%85%B8.png)
 
 ---
 
@@ -37,9 +37,48 @@
 | **SSE 实时推送** | 基于 Server-Sent Events 的实时消息推送 |
 | **文件存储** | 本地存储 / MinIO / 阿里云 OSS 可切换，统一接口 |
 | **Excel 导入导出** | 基于 EasyExcel，支持大数据量流式导出 |
-| **密码加密** | BCrypt 加密|
+| **密码加密** | Hutool BCrypt 加密 |
 | **Docker 部署** | 提供 Dockerfile + docker-compose，一键容器化部署 |
 | **CI/CD** | GitHub Actions 自动构建测试 + JaCoCo 覆盖率上报 |
+
+---
+
+## 技术栈
+
+### 后端
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Spring Boot | 4.1.0 | 核心框架 |
+| MyBatis-Plus | 3.5.17 | ORM 框架，Lambda 查询 |
+| Sa-Token | 1.46.0 | 轻量权限认证框架 |
+| Redisson | 4.7.0 | 分布式锁、限流、缓存 |
+| Hutool | 5.8.47 | 工具集（BCrypt、IO、日期等） |
+| MapStruct | 1.6.3 | 对象映射 |
+| EasyExcel | 4.0.3 | Excel 导入导出 |
+| XXL-Job | 3.4.2 | 分布式定时任务 |
+| Knife4j | 5.2.3 | API 文档（Swagger 增强） |
+| Flyway | - | 数据库版本迁移 |
+| MySQL | 9.7.2 | 主数据库（兼容 PostgreSQL） |
+| Redis | 7.0+ | 缓存 / 会话存储 |
+
+### 前端
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Vue | 3.5.x | 渐进式框架，Composition API |
+| TypeScript | 6.0.x | 类型安全 |
+| Naive UI | 2.45.x | Vue 3 组件库 |
+| Vite | 8.2.x | 构建工具 |
+| Pinia | 4.0.x | 状态管理 |
+| Vue Router | 5.2.x | 路由（基于文件路由） |
+| UnoCSS | 66.7.x | 原子化 CSS 引擎 |
+
+---
+
+### 文件路由
+
+基于 `vue-router/vite` 插件，`src/views` 目录结构即路由结构，无需手动配置路由表。
 
 ---
 
@@ -68,18 +107,18 @@ cd yh-istream
 
 ```bash
 # SQL 文件位于
-yh-istream-admin/src/main/resources/db/migration/V1_init_schema1.sql
+yh-istream-system/src/main/resources/db/migration/V1_init_schema1.sql
 ```
 
-### 3. 启动后端（需要先启动redis）
+### 3. 启动后端（需要先启动 Redis）
 
 ```bash
-# 修改数据库连接信息
-vim yh-istream-admin/src/main/resources/application-dev.yml
+# 修改数据库连接信息（默认端口 3307，按需调整）
+vim yh-istream-web/src/main/resources/application-dev.yml
 
 # 编译启动
 mvn clean compile
-mvn spring-boot:run -pl yh-istream-admin
+mvn spring-boot:run -pl yh-istream-web
 ```
 
 后端启动成功后访问：`http://localhost:8080/api/v1`
@@ -89,7 +128,7 @@ API 文档访问：`http://localhost:8080/api/v1/doc.html`
 ### 4. 启动前端
 
 ```bash
-cd yh-istream-ui/yh-istream-admin
+cd yh-istream-ui/yh-istream-web
 
 # 安装依赖
 npm install
@@ -113,16 +152,16 @@ npm run dev
 ### 一键启动（推荐）
 
 ```bash
-# 使用 docker-compose 启动全部服务（MySQL + Redis + App）
+# 使用 docker-compose 启动全部服务（MySQL 9.2 + Redis 7.4 + App）
 docker-compose up -d
 ```
 
 ### 自定义环境变量
 
 ```bash
-# 创建 .env 文件
-MYSQL_ROOT_PASSWORD=your_password
-REDIS_PASSWORD=your_redis_password
+# 复制模板并修改
+cp .env.example .env
+vim .env
 ```
 
 ### 单独构建后端镜像
@@ -131,9 +170,26 @@ REDIS_PASSWORD=your_redis_password
 # 先打包
 mvn clean package -DskipTests
 
-# 构建镜像
+# 构建镜像（基于 Eclipse Temurin JRE 21 + ZGC）
 docker build -t yh-istream:latest .
 ```
+
+---
+
+## 内置功能
+
+| 模块 | 功能 | 说明 |
+|------|------|------|
+| **系统管理** | 用户管理 | 用户增删改查、分配角色、重置密码、导入导出 |
+| | 角色管理 | 角色增删改查、分配菜单权限、分配数据权限、分配用户 |
+| | 菜单管理 | 菜单/目录/按钮三级管理，树形展示 |
+| | 部门管理 | 部门树形管理，支持数据权限隔离 |
+| | 字典管理 | 字典类型 + 字典数据管理，前端字典驱动渲染 |
+| | 参数配置 | 系统参数键值对管理 |
+| | 文件管理 | 文件上传/下载/预览，支持本地/MinIO/OSS |
+| **系统监控** | 操作日志 | 操作日志查询，支持 Excel 导出 |
+| | 登录日志 | 登录行为记录，IP 归属地解析 |
+| **开发工具** | 代码生成 | 在线预览 / 批量生成 / 下载代码 |
 
 ---
 

@@ -19,7 +19,7 @@ import java.lang.annotation.Target;
  *   public R<LoginDTO> login(@RequestBody LoginRequest request) { ... }
  * }</pre>
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
 @Documented

@@ -1,24 +1,24 @@
 package com.istream.system.converter;
 
-import com.istream.common.model.dto.SysUserDTO;
+import com.istream.system.model.dto.SysUserDTO;
 import com.istream.common.converter.BaseConverter;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * SysUser ↔ SysUserDTO 转换器
  *
- * @author isteam
+ * @author istream
  * @since 2026-08-17
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
 
     @Override
@@ -31,12 +31,6 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
     @Mapping(target = "dept", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "password", ignore = true)
-    @Mapping(target = "loginFailCount", ignore = true)
-    @Mapping(target = "createBy", ignore = true)
-    @Mapping(target = "updateBy", ignore = true)
-    @Mapping(target = "updateTime", ignore = true)
-    @Mapping(target = "delFlag", ignore = true)
-    @Mapping(target = "remark", ignore = true)
     SysUser toEntity(SysUserDTO dto);
 
     @Named("mapRoleNames")
@@ -46,7 +40,7 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
         }
         return roles.stream()
                 .map(SysRole::getRoleName)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Named("mapRoleIds")
@@ -56,6 +50,6 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
         }
         return roles.stream()
                 .map(role -> String.valueOf(role.getId()))
-                .collect(Collectors.toList());
+                .toList();
     }
 }

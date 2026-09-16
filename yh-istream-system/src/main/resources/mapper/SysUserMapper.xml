@@ -11,13 +11,16 @@
         LEFT JOIN sys_dept d ON u.dept_id = d.id AND d.del_flag = 0
         WHERE u.del_flag = 0
         <if test="query.username != null and query.username != ''">
-            AND u.username LIKE CONCAT('%', #{query.username}, '%')
+            <bind name="escapedUsername" value="@com.istream.framework.util.SqlUtils@escapeLike(query.username)"/>
+            AND u.username LIKE CONCAT('%', #{escapedUsername}, '%') ESCAPE '\\'
         </if>
         <if test="query.nickname != null and query.nickname != ''">
-            AND u.nickname LIKE CONCAT('%', #{query.nickname}, '%')
+            <bind name="escapedNickname" value="@com.istream.framework.util.SqlUtils@escapeLike(query.nickname)"/>
+            AND u.nickname LIKE CONCAT('%', #{escapedNickname}, '%') ESCAPE '\\'
         </if>
         <if test="query.phone != null and query.phone != ''">
-            AND u.phone LIKE CONCAT('%', #{query.phone}, '%')
+            <bind name="escapedPhone" value="@com.istream.framework.util.SqlUtils@escapeLike(query.phone)"/>
+            AND u.phone LIKE CONCAT('%', #{escapedPhone}, '%') ESCAPE '\\'
         </if>
         <if test="query.status != null">
             AND u.status = #{query.status}
@@ -38,6 +41,17 @@
             AND u.create_time &lt;= #{query.endTime}
         </if>
         ${query.params.dataScope}
+        ORDER BY u.create_time DESC
+    </select>
+
+    <select id="selectUsersByRoleId" resultType="com.istream.system.entity.SysUser">
+        SELECT u.id, u.dept_id, u.username, u.nickname, u.email, u.phone, u.gender,
+               u.avatar, u.status, u.login_ip, u.login_date, u.login_count, u.login_fail_count, u.pwd_reset_time,
+               u.create_by, u.create_time, u.update_by, u.update_time, u.del_flag, u.remark
+        FROM sys_user u
+        INNER JOIN sys_user_role ur ON u.id = ur.user_id
+        WHERE ur.role_id = #{roleId}
+          AND u.del_flag = 0
         ORDER BY u.create_time DESC
     </select>
 

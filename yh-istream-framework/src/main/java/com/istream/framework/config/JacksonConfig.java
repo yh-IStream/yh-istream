@@ -10,9 +10,6 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
  * Jackson 全局配置
  * <p>
  * 将 Long 包装类型序列化为 JSON 字符串，防止 JavaScript 数字精度丢失。
- * 本项目使用 MyBatis-Plus ASSIGN_ID 策略生成 Snowflake 雪花 ID（19 位），
- * JavaScript 的 number 类型（IEEE 754 双精度）只能精确表示 2^53-1 以内的整数，
- * 超出范围的 ID 会被截断，导致前后端数据不一致。
  * <p>
  * 仅注册 Long.class（包装类型），不注册 Long.TYPE（原始类型）。
  * 原因：实体 ID 字段均为 Long 包装类型，需要转为 String 防精度丢失；

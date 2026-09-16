@@ -9,8 +9,12 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.annotation.DataScope;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
+import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
-import com.istream.common.model.query.SysUserQuery;
+import com.istream.system.helper.UserCacheHelper;
+import com.istream.system.model.dto.SysUserCreateDTO;
+import com.istream.system.model.dto.SysUserUpdateDTO;
+import com.istream.system.model.query.SysUserQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import com.istream.system.entity.SysUserRole;
@@ -19,7 +23,6 @@ import com.istream.system.mapper.SysUserMapper;
 import com.istream.system.mapper.SysUserRoleMapper;
 import com.istream.system.service.SysUserService;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +30,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.istream.common.constant.Constants.PERM_CACHE_PREFIX;
-import static com.istream.common.constant.Constants.ROLE_CACHE_PREFIX;
 
 /**
  * 用户管理服务实现
@@ -46,7 +47,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysRoleMapper sysRoleMapper;
-    private final RedissonClient redissonClient;
+    private final UserCacheHelper userCacheHelper;
 
     @Override
     public SysUser getByUsername(String username) {
@@ -62,15 +63,23 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createUser(SysUser user) {
-        if (getByUsername(user.getUsername()) != null) {
-            throw new BusinessException(ResultCode.DATA_DUPLICATE.getCode(), "用户名已存在");
+    public void createUser(SysUserCreateDTO dto) {
+        if (getByUsername(dto.getUsername()) != null) {
+            throw new BusinessException(ResultCode.USER_USERNAME_DUPLICATE);
         }
-        user.setId(null);
-        user.setPassword(BCrypt.hashpw(user.getPassword()));
+        SysUser user = new SysUser();
+        user.setUsername(dto.getUsername());
+        user.setPassword(BCrypt.hashpw(dto.getPassword()));
+        user.setNickname(dto.getNickname());
+        user.setDeptId(dto.getDeptId());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user.setGender(dto.getGender());
+        user.setStatus(dto.getStatus() != null ? dto.getStatus() : StatusEnum.ENABLED.getCode());
+        user.setRemark(dto.getRemark());
         save(user);
-        if (user.getRoleIds() != null && !user.getRoleIds().isEmpty()) {
-            assignRoles(user.getId(), user.getRoleIds());
+        if (dto.getRoleIds() != null && !dto.getRoleIds().isEmpty()) {
+            assignRoles(user.getId(), dto.getRoleIds());
         } else {
             assignDefaultRole(user.getId());
         }
@@ -79,7 +88,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private void assignDefaultRole(Long userId) {
         SysRole defaultRole = sysRoleMapper.selectOne(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleKey, Constants.DEFAULT_ROLE_KEY)
-                .eq(SysRole::getStatus, 0));
+                .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
+                .eq(SysRole::getDelFlag, Constants.DEL_FLAG_NORMAL));
         if (defaultRole != null) {
             SysUserRole ur = new SysUserRole();
             ur.setUserId(userId);
@@ -90,26 +100,25 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateUser(SysUser user) {
-        if (user.getId() == null) {
-            throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "用户ID不能为空");
+    public void updateUser(SysUserUpdateDTO dto) {
+        if (dto.getId() == null) {
+            throw new BusinessException(ResultCode.USER_ID_REQUIRED);
         }
-        SysUser exist = getByUsername(user.getUsername());
-        if (exist != null && !exist.getId().equals(user.getId())) {
-            throw new BusinessException(ResultCode.DATA_DUPLICATE.getCode(), "用户名已存在");
+        SysUser exist = getByUsername(dto.getUsername());
+        if (exist != null && !exist.getId().equals(dto.getId())) {
+            throw new BusinessException(ResultCode.USER_USERNAME_DUPLICATE);
         }
         update(new LambdaUpdateWrapper<SysUser>()
-                .set(SysUser::getDeptId, user.getDeptId())
-                .set(SysUser::getUsername, user.getUsername())
-                .set(SysUser::getNickname, user.getNickname())
-                .set(SysUser::getEmail, user.getEmail())
-                .set(SysUser::getPhone, user.getPhone())
-                .set(SysUser::getGender, user.getGender())
-                .set(SysUser::getAvatar, user.getAvatar())
-                .set(SysUser::getStatus, user.getStatus())
-                .set(SysUser::getRemark, user.getRemark())
-                .eq(SysUser::getId, user.getId()));
-        clearUserCache(user.getId());
+                .set(SysUser::getDeptId, dto.getDeptId())
+                .set(SysUser::getUsername, dto.getUsername())
+                .set(SysUser::getNickname, dto.getNickname())
+                .set(SysUser::getEmail, dto.getEmail())
+                .set(SysUser::getPhone, dto.getPhone())
+                .set(SysUser::getGender, dto.getGender())
+                .set(SysUser::getStatus, dto.getStatus())
+                .set(SysUser::getRemark, dto.getRemark())
+                .eq(SysUser::getId, dto.getId()));
+        userCacheHelper.evictAll(dto.getId());
     }
 
     @Override
@@ -118,21 +127,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, userId));
         if (roleIds != null && !roleIds.isEmpty()) {
+            Set<Long> distinctRoleIds = new HashSet<>(roleIds);
             List<SysRole> validRoles = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
-                    .in(SysRole::getId, roleIds)
-                    .eq(SysRole::getStatus, 0)
-                    .eq(SysRole::getDelFlag, 0));
-            if (validRoles.size() != new java.util.HashSet<>(roleIds).size()) {
-                throw new BusinessException(ResultCode.PARAM_VALID_ERROR.getCode(), "存在无效的角色ID");
+                    .in(SysRole::getId, distinctRoleIds)
+                    .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
+                    .eq(SysRole::getDelFlag, Constants.DEL_FLAG_NORMAL));
+            if (validRoles.size() != distinctRoleIds.size()) {
+                throw new BusinessException(ResultCode.USER_ROLE_INVALID);
             }
-            assignRoles(userId, roleIds);
+            assignRoles(userId, distinctRoleIds.stream().toList());
         }
-        clearUserCache(userId);
-    }
-
-    private void clearUserCache(Long userId) {
-        redissonClient.getBucket(PERM_CACHE_PREFIX + userId).delete();
-        redissonClient.getBucket(ROLE_CACHE_PREFIX + userId).delete();
+        userCacheHelper.evictAll(userId);
     }
 
     private void assignRoles(Long userId, List<Long> roleIds) {
@@ -165,21 +170,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         user.setStatus(status);
         boolean result = updateById(user);
         if (result) {
-            clearUserCache(userId);
+            userCacheHelper.evictAll(userId);
         }
         return result;
     }
 
     @Override
     public List<SysUser> getUsersByRoleId(Long roleId) {
-        List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
-                new LambdaQueryWrapper<SysUserRole>()
-                        .eq(SysUserRole::getRoleId, roleId));
-        if (userRoles.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Long> userIds = userRoles.stream().map(SysUserRole::getUserId).collect(Collectors.toList());
-        List<SysUser> users = listByIds(userIds);
+        List<SysUser> users = baseMapper.selectUsersByRoleId(roleId);
         users.forEach(u -> u.setPassword(null));
         return users;
     }
@@ -192,11 +190,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (userRoles.isEmpty()) {
             return Collections.emptyList();
         }
-        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
+        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).toList();
         return sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getId, roleIds)
-                .eq(SysRole::getStatus, 0)
-                .eq(SysRole::getDelFlag, 0));
+                .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
+                .eq(SysRole::getDelFlag, Constants.DEL_FLAG_NORMAL));
     }
 
     @Override
@@ -208,22 +206,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (userRoles.isEmpty()) {
             return;
         }
-        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
+        List<Long> roleIds = userRoles.stream().map(SysUserRole::getRoleId).toList();
         List<SysRole> validRoles = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getId, roleIds)
-                .eq(SysRole::getStatus, 0)
-                .eq(SysRole::getDelFlag, 0));
+                .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
+                .eq(SysRole::getDelFlag, Constants.DEL_FLAG_NORMAL));
 
         Set<Long> validRoleIds = validRoles.stream().map(SysRole::getId).collect(Collectors.toSet());
         List<Long> orphanedIds = roleIds.stream()
                 .filter(id -> !validRoleIds.contains(id))
                 .toList();
         if (!orphanedIds.isEmpty()) {
-            for (Long orphanedId : orphanedIds) {
-                sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                        .eq(SysUserRole::getUserId, userId)
-                        .eq(SysUserRole::getRoleId, orphanedId));
-            }
+            sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
+                    .eq(SysUserRole::getUserId, userId)
+                    .in(SysUserRole::getRoleId, orphanedIds));
         }
     }
 
@@ -233,7 +229,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         checkSuperAdmin(id);
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, id));
-        clearUserCache(id);
+        userCacheHelper.evictAll(id);
         return super.removeById(id);
     }
 
@@ -243,7 +239,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         @SuppressWarnings("unchecked")
         List<SysUser> users = listByIds((Collection<? extends Serializable>) list);
         for (SysUser user : users) {
-            if (Constants.SUPER_ADMIN_ROLE.equals(user.getUsername())) {
+            if (hasSuperAdminRole(user.getId())) {
                 throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
                         ResultCode.SUPER_ADMIN_PROTECT.getMsg());
             }
@@ -251,17 +247,21 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .in(SysUserRole::getUserId, list));
         for (Object id : list) {
-            clearUserCache((Long) id);
+            userCacheHelper.evictAll((Long) id);
         }
         return super.removeByIds(list);
     }
 
     private void checkSuperAdmin(Long userId) {
-        SysUser user = getById(userId);
-        if (user != null && Constants.SUPER_ADMIN_ROLE.equals(user.getUsername())) {
+        if (hasSuperAdminRole(userId)) {
             throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
                     ResultCode.SUPER_ADMIN_PROTECT.getMsg());
         }
+    }
+
+    private boolean hasSuperAdminRole(Long userId) {
+        return getRolesByUserId(userId).stream()
+                .anyMatch(role -> Constants.SUPER_ADMIN_ROLE.equals(role.getRoleKey()));
     }
 
     @Override
@@ -280,5 +280,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         update(new LambdaUpdateWrapper<SysUser>()
                 .set(SysUser::getLoginFailCount, failCount)
                 .eq(SysUser::getId, userId));
+    }
+
+    @Override
+    public IPage<SysUser> pageExport(long pageNum, long pageSize) {
+        Page<SysUser> page = new Page<>(pageNum, pageSize);
+        IPage<SysUser> result = baseMapper.selectPage(page, new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getDelFlag, Constants.DEL_FLAG_NORMAL)
+                .orderByDesc(SysUser::getCreateTime));
+        result.getRecords().forEach(user -> user.setPassword(null));
+        return result;
     }
 }

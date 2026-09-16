@@ -5,6 +5,12 @@ import lombok.Getter;
 
 /**
  * 通用响应状态码枚举
+ *
+ * <p>按错误类型分段编码：HTTP 标准(200-415)、业务错误(1xxxx)、数据校验(2xxxx)、
+ * 文件相关(3xxxx)、系统限制(4xxxx)、租户相关(5xxxx)。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Getter
 @AllArgsConstructor
@@ -47,6 +53,13 @@ public enum ResultCode {
     SUPER_ADMIN_PROTECT(20008, "超级管理员不允许删除"),
     DEPT_CYCLE_REFERENCE(20009, "上级部门不能是自己的子部门，存在循环引用"),
     MENU_CYCLE_REFERENCE(20010, "上级菜单不能是自己的子菜单，存在循环引用"),
+    USER_USERNAME_DUPLICATE(20011, "用户名已存在"),
+    USER_ID_REQUIRED(20012, "用户ID不能为空"),
+    USER_ROLE_INVALID(20013, "存在无效的角色ID"),
+    CAPTCHA_EXPIRED(20014, "验证码已过期"),
+    CAPTCHA_ERROR(20015, "验证码错误"),
+    DEPT_HAS_CHILDREN(20016, "存在子部门，不允许删除"),
+    DEPT_HAS_USERS(20017, "部门下存在用户，不允许删除"),
 
     /** 文件相关错误码（3xxxx） */
     FILE_UPLOAD_ERROR(30001, "文件上传失败"),
@@ -57,6 +70,12 @@ public enum ResultCode {
     /** 系统限制错误码（4xxxx） */
     RATE_LIMIT(40001, "请求过于频繁，请稍后再试"),
     REPEAT_SUBMIT(40002, "请勿重复提交"),
+
+    /** 租户相关错误码（5xxxx） */
+    TENANT_NOT_EXIST(50001, "租户不存在"),
+    TENANT_DISABLED(50002, "租户已被禁用"),
+    TENANT_EXPIRED(50003, "租户已过期"),
+    TENANT_ACCESS_DENIED(50004, "无权访问该租户资源"),
     ;
 
     private final Integer code;
