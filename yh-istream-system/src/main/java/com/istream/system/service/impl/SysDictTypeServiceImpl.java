@@ -37,6 +37,7 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
     private final CacheService cacheService;
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysDictType> page(SysDictTypeQuery query) {
         Page<SysDictType> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysDictType>()
@@ -48,6 +49,7 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByDictType(String dictType, Long excludeId) {
         LambdaQueryWrapper<SysDictType> wrapper = new LambdaQueryWrapper<SysDictType>()
                 .eq(SysDictType::getDictType, dictType);

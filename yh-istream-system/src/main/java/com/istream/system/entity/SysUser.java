@@ -67,7 +67,7 @@ public class SysUser extends BaseEntity {
 
     @ExcelProperty("部门")
     @TableField(exist = false)
-    private SysDept dept;
+    private String deptName;
 
     @ExcelIgnore
     @TableField(exist = false)

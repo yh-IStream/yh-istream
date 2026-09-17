@@ -10,7 +10,7 @@ WORKDIR /app
 RUN mkdir -p /data/uploads /data/logs \
     && chown -R appuser:appgroup /app /data
 
-COPY --chown=appuser:appgroup yh-istream-admin/target/*.jar app.jar
+COPY --chown=appuser:appgroup yh-istream-web/target/*.jar app.jar
 
 RUN chmod 500 app.jar
 

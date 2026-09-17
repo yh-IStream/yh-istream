@@ -50,12 +50,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final UserCacheHelper userCacheHelper;
 
     @Override
+    @Transactional(readOnly = true)
     public SysUser getByUsername(String username) {
         return getOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, username));
     }
 
     @Override
+    @Transactional(readOnly = true)
     @DataScope(deptAlias = "d", userAlias = "u")
     public IPage<SysUser> page(SysUserQuery query) {
         return baseMapper.selectUserPage(new Page<>(query.getPageNum(), query.getPageSize()), query);
@@ -176,6 +178,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysUser> getUsersByRoleId(Long roleId) {
         List<SysUser> users = baseMapper.selectUsersByRoleId(roleId);
         users.forEach(u -> u.setPassword(null));
@@ -183,6 +186,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysRole> getRolesByUserId(Long userId) {
         List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>()
@@ -240,8 +244,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         List<SysUser> users = listByIds((Collection<? extends Serializable>) list);
         for (SysUser user : users) {
             if (hasSuperAdminRole(user.getId())) {
-                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
-                        ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
             }
         }
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
@@ -254,8 +257,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     private void checkSuperAdmin(Long userId) {
         if (hasSuperAdminRole(userId)) {
-            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
-                    ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
         }
     }
 

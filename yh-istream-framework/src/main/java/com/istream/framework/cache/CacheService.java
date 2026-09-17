@@ -1,6 +1,7 @@
 package com.istream.framework.cache;
 
 import java.time.Duration;
+import java.util.Collection;
 
 /**
  * 统一缓存服务抽象层
@@ -44,6 +45,13 @@ public interface CacheService {
      * @param key 缓存键
      */
     void delete(String key);
+
+    /**
+     * 批量删除缓存
+     *
+     * @param keys 缓存键集合
+     */
+    void deleteBatch(Collection<String> keys);
 
     /**
      * 按模式批量删除缓存

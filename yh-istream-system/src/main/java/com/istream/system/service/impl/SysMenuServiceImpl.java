@@ -52,6 +52,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     private static final Duration PERM_CACHE_TTL = Duration.ofMinutes(30);
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> getPermissionsByUserId(Long userId) {
         String cacheKey = PERM_CACHE_PREFIX + userId;
         List<String> cached = cacheService.get(cacheKey);
@@ -64,6 +65,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysMenu> listMenuTree() {
         List<SysMenu> allMenus = list(new LambdaQueryWrapper<SysMenu>()
                 .eq(SysMenu::getStatus, StatusEnum.ENABLED.getCode())
@@ -74,6 +76,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysMenu> listAllMenuTree() {
         List<SysMenu> allMenus = list(new LambdaQueryWrapper<SysMenu>()
                 .eq(SysMenu::getStatus, StatusEnum.ENABLED.getCode())
@@ -83,6 +86,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysMenu> getCurrentUserMenuTree() {
         Long userId = SecurityUtils.requireLoginUserId();
 
@@ -239,8 +243,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
      */
     private void checkMenuCycleReference(Long menuId, Long parentId) {
         if (menuId.equals(parentId)) {
-            throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE.getCode(),
-                    ResultCode.MENU_CYCLE_REFERENCE.getMsg());
+            throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE);
         }
         List<SysMenu> allMenus = list(new LambdaQueryWrapper<SysMenu>()
                 .select(SysMenu::getId, SysMenu::getParentId));
@@ -255,8 +258,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         if (children != null) {
             for (Long childId : children) {
                 if (childId.equals(parentId)) {
-                    throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE.getCode(),
-                            ResultCode.MENU_CYCLE_REFERENCE.getMsg());
+                    throw new BusinessException(ResultCode.MENU_CYCLE_REFERENCE);
                 }
                 checkMenuCycleInMemory(parentChildMap, childId, parentId);
             }
@@ -264,12 +266,14 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasChildren(Long menuId) {
         return count(new LambdaQueryWrapper<SysMenu>()
                 .eq(SysMenu::getParentId, menuId)) > 0;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasRoles(Long menuId) {
         return sysRoleMenuMapper.selectCount(new LambdaQueryWrapper<SysRoleMenu>()
                 .eq(SysRoleMenu::getMenuId, menuId)) > 0;

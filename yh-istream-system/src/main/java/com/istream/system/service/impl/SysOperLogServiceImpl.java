@@ -10,6 +10,7 @@ import com.istream.system.mapper.SysOperLogMapper;
 import com.istream.system.service.SysOperLogService;
 import com.istream.framework.util.SqlUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOperLog> implements SysOperLogService {
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysOperLog> page(SysOperLogQuery query) {
         Page<SysOperLog> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysOperLog>()
@@ -39,12 +41,14 @@ public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOper
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countTodayOps(LocalDateTime todayStart) {
         return count(new LambdaQueryWrapper<SysOperLog>()
                 .ge(SysOperLog::getOperTime, todayStart));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysOperLog> pageExport(long pageNum, long pageSize) {
         Page<SysOperLog> page = new Page<>(pageNum, pageSize);
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysOperLog>()

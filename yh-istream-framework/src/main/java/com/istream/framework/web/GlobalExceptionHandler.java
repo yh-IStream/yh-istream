@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public R<Void> handleNotLoginException(NotLoginException e) {
-        log.warn("未登录: {}", e.getMessage(), e);
+        log.info("未登录: {}", e.getMessage());
         return R.fail(ResultCode.UNAUTHORIZED);
     }
 

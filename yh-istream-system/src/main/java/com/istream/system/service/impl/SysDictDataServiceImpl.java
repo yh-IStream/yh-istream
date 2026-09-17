@@ -39,6 +39,7 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysDictData> page(SysDictDataQuery query) {
         Page<SysDictData> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysDictData>()
@@ -50,6 +51,7 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, List<SysDictData>> getDictMap() {
         Map<String, List<SysDictData>> cached = cacheService.get(DICT_MAP_KEY);
         if (cached != null) {
@@ -102,6 +104,7 @@ public class SysDictDataServiceImpl extends ServiceImpl<SysDictDataMapper, SysDi
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysDictData> listByType(String dictType) {
         return list(new LambdaQueryWrapper<SysDictData>()
                 .eq(SysDictData::getDictType, dictType)

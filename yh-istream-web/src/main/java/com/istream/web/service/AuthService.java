@@ -157,7 +157,7 @@ public class AuthService {
         if (redisFailCount >= Constants.MAX_LOGIN_FAIL_COUNT) {
             long remain = cacheService.remainTimeToLive(failKey);
             long remainSeconds = remain > 0 ? remain / 1000 : 0;
-            throw new BusinessException(ResultCode.USER_PASSWORD_ERROR.getCode(),
+            throw new BusinessException(ResultCode.USER_PASSWORD_ERROR,
                     "账户已被锁定，请" + remainSeconds + "秒后重试");
         }
     }
@@ -173,7 +173,7 @@ public class AuthService {
         saveLoginInfo(loginDTO.getUsername(), clientIp, loginLocation, 1, "用户不存在");
 
         if (count >= Constants.MAX_LOGIN_FAIL_COUNT * 2) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST.getCode(),
+            throw new BusinessException(ResultCode.USER_NOT_EXIST,
                     "尝试次数过多，请稍后重试");
         }
         throw new BusinessException(ResultCode.USER_NOT_EXIST);
@@ -191,7 +191,7 @@ public class AuthService {
                 && user.getLoginFailCount() >= Constants.MAX_LOGIN_FAIL_COUNT) {
             cacheService.setCounter(failKey, user.getLoginFailCount().longValue(),
                     Duration.ofSeconds(Constants.LOGIN_LOCK_SECONDS));
-            throw new BusinessException(ResultCode.USER_PASSWORD_ERROR.getCode(),
+            throw new BusinessException(ResultCode.USER_PASSWORD_ERROR,
                     "账户已被锁定，请" + Constants.LOGIN_LOCK_SECONDS + "秒后重试");
         }
     }
@@ -207,7 +207,7 @@ public class AuthService {
             saveLoginInfo(username, clientIp, loginLocation, 1, "密码错误（第" + count + "次）");
 
             if (count >= Constants.MAX_LOGIN_FAIL_COUNT) {
-                throw new BusinessException(ResultCode.USER_PASSWORD_ERROR.getCode(),
+                throw new BusinessException(ResultCode.USER_PASSWORD_ERROR,
                         "密码错误次数过多，账户已锁定" + Constants.LOGIN_LOCK_SECONDS + "秒");
             }
             throw new BusinessException(ResultCode.USER_PASSWORD_ERROR);

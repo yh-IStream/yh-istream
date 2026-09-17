@@ -1,5 +1,6 @@
 package com.istream.web.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.model.R;
 import com.istream.web.model.vo.DashboardVO;
@@ -31,6 +32,7 @@ public class DashboardController {
     private final SysRoleService sysRoleService;
     private final SysOperLogService sysOperLogService;
 
+    @SaCheckLogin
     @Operation(summary = "获取仪表盘统计数据")
     @GetMapping("/stats")
     public R<DashboardVO> stats() {

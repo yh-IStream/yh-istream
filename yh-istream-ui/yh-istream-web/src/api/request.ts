@@ -3,6 +3,16 @@ import { useAuthStore } from '@/stores/auth'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
+export class ApiError extends Error {
+  constructor(
+    public code: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 const instance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
@@ -14,7 +24,7 @@ function handleUnauthorized(url?: string) {
     const authStore = useAuthStore()
     authStore.logout()
   }
-  return Promise.reject(new Error('登录已过期'))
+  return Promise.reject(new ApiError(401, '登录已过期'))
 }
 
 // 请求拦截器
@@ -47,10 +57,10 @@ instance.interceptors.response.use(
     }
 
     if (code >= 50001 && code <= 50099) {
-      return Promise.reject(new Error(msg || '租户访问异常'))
+      return Promise.reject(new ApiError(code, msg || '租户访问异常'))
     }
 
-    return Promise.reject(new Error(msg || '请求失败'))
+    return Promise.reject(new ApiError(code, msg || '请求失败'))
   },
   (error) => {
     if (error.response?.status === 401) {

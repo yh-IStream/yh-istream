@@ -50,11 +50,13 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private final UserCacheHelper userCacheHelper;
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysRole> page(SysRoleQuery query) {
         return baseMapper.selectRolePage(new Page<>(query.getPageNum(), query.getPageSize()), query);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysRole> listAllEnabled() {
         return list(new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getStatus, StatusEnum.ENABLED.getCode())
@@ -63,6 +65,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByRoleKey(String roleKey, Long excludeId) {
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleKey, roleKey);
@@ -74,6 +77,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
     @Override
     public boolean changeStatus(Long roleId, Integer status) {
+        checkSuperAdminRole(roleId);
         SysRole role = new SysRole();
         role.setId(roleId);
         role.setStatus(status);
@@ -86,6 +90,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Long> getMenuIdsByRoleId(Long roleId) {
         List<SysRoleMenu> list = sysRoleMenuMapper.selectList(
                 new LambdaQueryWrapper<SysRoleMenu>()
@@ -172,8 +177,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         List<SysRole> roles = listByIds((Collection<? extends Serializable>) list);
         for (SysRole role : roles) {
             if (Constants.SUPER_ADMIN_ROLE.equals(role.getRoleKey())) {
-                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
-                        ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
             }
         }
         List<Long> allUserIds = sysUserRoleMapper.selectList(
@@ -217,18 +221,19 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private void checkSuperAdminRole(Long roleId) {
         SysRole role = getById(roleId);
         if (role != null && Constants.SUPER_ADMIN_ROLE.equals(role.getRoleKey())) {
-            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT.getCode(),
-                    ResultCode.SUPER_ADMIN_PROTECT.getMsg());
+            throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
         }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasUsers(Long roleId) {
         return sysUserRoleMapper.selectCount(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getRoleId, roleId)) > 0;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasUsersAny(List<Long> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return false;
@@ -238,6 +243,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysRole> pageExport(long pageNum, long pageSize) {
         Page<SysRole> page = new Page<>(pageNum, pageSize);
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysRole>()
@@ -280,6 +286,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Long> getDeptIdsByRoleId(Long roleId) {
         return sysRoleDeptMapper.selectDeptIdsByRoleId(roleId);
     }

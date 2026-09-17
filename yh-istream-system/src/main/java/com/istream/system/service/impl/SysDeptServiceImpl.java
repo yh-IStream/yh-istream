@@ -43,6 +43,7 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
     private final UserCacheHelper userCacheHelper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<SysDept> listDeptTree() {
         List<SysDept> allDepts = list(new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getStatus, StatusEnum.ENABLED.getCode())
@@ -52,12 +53,14 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasChildren(Long deptId) {
         return count(new LambdaQueryWrapper<SysDept>()
                 .eq(SysDept::getParentId, deptId)) > 0;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasUsers(Long deptId) {
         return sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getDeptId, deptId)) > 0;
@@ -135,8 +138,7 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
      */
     private void checkCycleReference(Long deptId, Long newParentId) {
         if (deptId.equals(newParentId)) {
-            throw new BusinessException(ResultCode.DEPT_CYCLE_REFERENCE.getCode(),
-                    ResultCode.DEPT_CYCLE_REFERENCE.getMsg());
+            throw new BusinessException(ResultCode.DEPT_CYCLE_REFERENCE);
         }
         List<SysDept> allDepts = list(new LambdaQueryWrapper<SysDept>()
                 .select(SysDept::getId, SysDept::getParentId));
@@ -151,8 +153,7 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
         if (children != null) {
             for (Long childId : children) {
                 if (childId.equals(newParentId)) {
-                    throw new BusinessException(ResultCode.DEPT_CYCLE_REFERENCE.getCode(),
-                            ResultCode.DEPT_CYCLE_REFERENCE.getMsg());
+                    throw new BusinessException(ResultCode.DEPT_CYCLE_REFERENCE);
                 }
                 checkCycleInMemory(parentChildMap, childId, newParentId);
             }
@@ -171,7 +172,7 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
         }
         SysDept parent = getById(parentId);
         if (parent == null) {
-            throw new BusinessException(ResultCode.DEPT_NOT_EXIST.getCode(),
+            throw new BusinessException(ResultCode.DEPT_NOT_EXIST,
                     "父部门不存在: " + parentId);
         }
         String parentAncestors = parent.getAncestors();

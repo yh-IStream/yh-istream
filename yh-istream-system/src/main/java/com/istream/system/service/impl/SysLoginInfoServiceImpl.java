@@ -10,6 +10,7 @@ import com.istream.system.mapper.SysLoginInfoMapper;
 import com.istream.system.service.SysLoginInfoService;
 import com.istream.framework.util.SqlUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 登录日志服务实现
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class SysLoginInfoServiceImpl extends ServiceImpl<SysLoginInfoMapper, SysLoginInfo> implements SysLoginInfoService {
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysLoginInfo> page(SysLoginInfoQuery query) {
         Page<SysLoginInfo> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysLoginInfo>()
@@ -38,6 +40,7 @@ public class SysLoginInfoServiceImpl extends ServiceImpl<SysLoginInfoMapper, Sys
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysLoginInfo> pageExport(long pageNum, long pageSize) {
         Page<SysLoginInfo> page = new Page<>(pageNum, pageSize);
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysLoginInfo>()

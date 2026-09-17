@@ -1,9 +1,10 @@
-<h1 align="center">iStream 企业级智能流式快速开发框架</h1>
+<h1 align="center">iStream 企业级快速开发框架</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/JDK-21-orange" alt="JDK 21" />
   <img src="https://img.shields.io/badge/Spring%20Boot-4.1.0-green" alt="Spring Boot 4.1.0" />
   <img src="https://img.shields.io/badge/Vue-3.5-brightgreen" alt="Vue 3" />
+  <img src="https://img.shields.io/badge/TypeScript-6.0-blue" alt="TypeScript 6.0" />
   <img src="https://img.shields.io/badge/MySQL-9.x-blue" alt="MySQL 9" />
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="License" />
 </p>
@@ -12,7 +13,9 @@
 
 ## 项目简介
 
-采用前后端分离架构的企业级快速开发框架，内置 RBAC 权限管理、数据权限、代码生成器、操作日志、登录日志、文件存储、定时任务等核心功能。后端基于 Spring Boot 4 + MyBatis-Plus + Sa-Token，前端基于 Vue 3 + TypeScript + Naive UI，开箱即用。
+这是一个以**代码质量为第一优先级**的企业级快速开发框架。
+
+采用前后端分离架构，后端基于 Spring Boot 4 + MyBatis-Plus + Sa-Token + Redisson，前端基于 Vue 3 + TypeScript+ Naive UI + Vite。内置 RBAC 权限管理、SaaS 多租户、数据权限、代码生成器等核心功能，开箱即用。
 
 ### 在线预览
 
@@ -24,22 +27,58 @@
 
 ---
 
+## 设计理念
+
+### 🏗️ 架构精简
+
+- **7 个模块，职责清晰** — 不过度拆分，每个模块有明确的边界
+- **DTO/Entity 严格分离** — 编译期生成转换代码，Entity 禁止暴露给前端，杜绝字段泄露
+- **CacheService 统一缓存抽象** — 封装 Redisson，修改缓存策略只改一处
+- **Controller 零业务逻辑** — 分层严格，调试时跳转层级最少，改一处不用动全局
+
+### ⚡ 性能优化
+
+- **只读事务优化**
+- **缓存批量操作**
+- **编译期对象映射** — 零反射开销，对比运行时反射性能提升 10x+
+
+### 🌐 多租户零感知
+
+- **SQL 自动隔离** — MyBatis-Plus TenantLineInnerInterceptor 自动追加 `tenant_id` 条件，开发者无需手动处理
+- **上下文自动传递** — TenantFilter → TenantContext(ThreadLocal) → TenantLineHandlerImpl，请求级自动流转
+- **INSERT 自动填充** — MetaObjectHandler 自动填充 tenantId，无需业务代码感知
+- **零遗漏风险** — 框架级拦截，不存在忘记加过滤条件导致越权的可能
+
+
 ## 核心特性
+
+### 权限与安全
 
 | 特性 | 说明 |
 |------|------|
-| **RBAC 权限模型** | 用户-角色-菜单-部门四级权限，支持菜单权限 + 数据权限双重控制 |
-| **数据权限** | 基于注解 `@DataScope` 自动注入 SQL 条件，按部门层级隔离数据 |
+| **RBAC 权限模型** | 用户-角色-菜单-部门四级权限，菜单权限 + 数据权限双重控制 |
+| **SaaS 多租户** | MyBatis-Plus TenantLineInnerInterceptor 自动追加 `tenant_id` 条件，开发者零感知、零遗漏 |
+| **数据权限** | 基于注解 `@DataScope` + AOP 自动注入 SQL 条件，按部门层级隔离数据 |
+| **超级管理员保护** | 删除/禁用操作均校验 `checkSuperAdminRole()`，防止误操作 |
+| **接口限流** | 基于注解 `@RateLimit` + Redisson 分布式限流 |
+
+### 开发效率
+
+| 特性 | 说明 |
+|------|------|
 | **代码生成器** | 在线预览 / 批量生成 / 下载代码，一键生成 Entity-Mapper-Service-Controller 全套代码 |
+| **统一缓存抽象** | CacheService 接口封装 Redisson，支持 Pipeline 批量操作、模式匹配删除、原子计数器 |
+
+### 运维监控
+
+| 特性 | 说明 |
+|------|------|
 | **操作日志** | 基于注解 `@OperLog` + Spring Event 异步记录，支持 Excel 导出 |
 | **登录日志** | 自动记录登录行为，IP 归属地解析 |
-| **接口限流** | 基于注解 `@RateLimit` + Redisson 分布式限流 |
 | **SSE 实时推送** | 基于 Server-Sent Events 的实时消息推送 |
-| **文件存储** | 本地存储 / MinIO / 阿里云 OSS 可切换，统一接口 |
+| **文件存储** | 本地存储 / MinIO / 阿里云 OSS 可切换，统一 FileStorageService 接口 |
 | **Excel 导入导出** | 基于 EasyExcel，支持大数据量流式导出 |
-| **密码加密** | Hutool BCrypt 加密 |
-| **Docker 部署** | 提供 Dockerfile + docker-compose，一键容器化部署 |
-| **CI/CD** | GitHub Actions 自动构建测试 + JaCoCo 覆盖率上报 |
+| **分布式定时任务** | XXL-Job 集成，支持可视化任务调度 |
 
 ---
 
@@ -50,7 +89,7 @@
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | Spring Boot | 4.1.0 | 核心框架 |
-| MyBatis-Plus | 3.5.17 | ORM 框架，Lambda 查询 |
+| MyBatis-Plus | 3.5.17 | ORM 框架 |
 | Sa-Token | 1.46.0 | 轻量权限认证框架 |
 | Redisson | 4.7.0 | 分布式锁、限流、缓存 |
 | Hutool | 5.8.47 | 工具集（BCrypt、IO、日期等） |
@@ -58,7 +97,7 @@
 | EasyExcel | 4.0.3 | Excel 导入导出 |
 | XXL-Job | 3.4.2 | 分布式定时任务 |
 | Knife4j | 5.2.3 | API 文档（Swagger 增强） |
-| Flyway | - | 数据库版本迁移 |
+| Flyway | — | 数据库版本迁移（仅 V1 初始化） |
 | MySQL | 9.7.2 | 主数据库（兼容 PostgreSQL） |
 | Redis | 7.0+ | 缓存 / 会话存储 |
 
@@ -74,11 +113,26 @@
 | Vue Router | 5.2.x | 路由（基于文件路由） |
 | UnoCSS | 66.7.x | 原子化 CSS 引擎 |
 
----
-
 ### 文件路由
 
 基于 `vue-router/vite` 插件，`src/views` 目录结构即路由结构，无需手动配置路由表。
+
+---
+
+## 项目结构
+
+```
+yh-istream
+├── yh-istream-common        # 通用模块：异常、枚举、注解、基础模型
+├── yh-istream-framework     # 框架模块：安全、缓存、租户、AOP、全局异常处理
+├── yh-istream-system        # 系统模块：用户/角色/菜单/部门/字典/日志等核心业务
+├── yh-istream-web           # Web 模块：Controller、认证、Dashboard
+├── yh-istream-generator     # 代码生成器模块
+├── yh-istream-job           # 定时任务模块（XXL-Job）
+├── yh-istream-file          # 文件存储模块（本地/MinIO/OSS）
+└── yh-istream-ui            # 前端
+    └── yh-istream-web       # Vue 3 + TypeScript + Naive UI
+```
 
 ---
 
@@ -103,7 +157,7 @@ cd yh-istream
 
 ### 2. 初始化数据库
 
-项目使用 Flyway 自动迁移，启动后端时自动创建表结构(自行修改数据库端口)。也可手动执行：
+项目使用 Flyway 自动迁移，启动后端时自动创建表结构（自行修改数据库端口）。也可手动执行：
 
 ```bash
 # SQL 文件位于
@@ -141,9 +195,9 @@ npm run dev
 
 ### 5. 默认账号
 
-| 账号 | 密码 | 说明 |
-|------|------|------|
-| admin | admin123 | 超级管理员 |
+| 账号 | 密码     | 说明 |
+|------|--------|------|
+| admin | 123456 | 超级管理员 |
 
 ---
 
@@ -182,14 +236,21 @@ docker build -t yh-istream:latest .
 |------|------|------|
 | **系统管理** | 用户管理 | 用户增删改查、分配角色、重置密码、导入导出 |
 | | 角色管理 | 角色增删改查、分配菜单权限、分配数据权限、分配用户 |
-| | 菜单管理 | 菜单/目录/按钮三级管理，树形展示 |
-| | 部门管理 | 部门树形管理，支持数据权限隔离 |
+| | 菜单管理 | 菜单/目录/按钮三级管理，树形展示，循环引用校验 |
+| | 部门管理 | 部门树形管理，循环引用校验，支持数据权限隔离 |
 | | 字典管理 | 字典类型 + 字典数据管理，前端字典驱动渲染 |
 | | 参数配置 | 系统参数键值对管理 |
 | | 文件管理 | 文件上传/下载/预览，支持本地/MinIO/OSS |
+| **SaaS 多租户** | 租户隔离 | SQL 自动追加 tenant_id，上下文 ThreadLocal 传递，INSERT 自动填充 |
 | **系统监控** | 操作日志 | 操作日志查询，支持 Excel 导出 |
 | | 登录日志 | 登录行为记录，IP 归属地解析 |
 | **开发工具** | 代码生成 | 在线预览 / 批量生成 / 下载代码 |
+
+---
+
+## 支持点个 Star ⭐
+
+如果这个项目对你有帮助，欢迎点个 Star 支持一下，你的支持是持续更新的动力！
 
 ---
 

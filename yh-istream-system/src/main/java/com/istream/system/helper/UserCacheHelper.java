@@ -5,7 +5,9 @@ import com.istream.framework.cache.CacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * 用户缓存统一管理
@@ -34,13 +36,20 @@ public class UserCacheHelper {
     }
 
     /**
-     * 批量清除多个用户的所有缓存
+     * 批量清除多个用户的所有缓存（使用 Pipeline 减少网络往返）
      *
      * @param userIds 用户ID集合
      */
     public void evictAllBatch(Collection<Long> userIds) {
-        for (Long userId : userIds) {
-            evictAll(userId);
+        if (userIds == null || userIds.isEmpty()) {
+            return;
         }
+        List<String> keys = new ArrayList<>(userIds.size() * 3);
+        for (Long userId : userIds) {
+            keys.add(Constants.PERM_CACHE_PREFIX + userId);
+            keys.add(Constants.ROLE_CACHE_PREFIX + userId);
+            keys.add(Constants.DATA_SCOPE_CACHE_PREFIX + userId);
+        }
+        cacheService.deleteBatch(keys);
     }
 }

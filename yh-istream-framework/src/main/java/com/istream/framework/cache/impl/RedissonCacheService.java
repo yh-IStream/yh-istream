@@ -4,11 +4,13 @@ import com.istream.framework.cache.CacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBatch;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collection;
 
 /**
  * 基于 Redisson 的缓存服务实现
@@ -47,6 +49,18 @@ public class RedissonCacheService implements CacheService {
     @Override
     public void delete(String key) {
         redissonClient.getBucket(key).delete();
+    }
+
+    @Override
+    public void deleteBatch(Collection<String> keys) {
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+        RBatch batch = redissonClient.createBatch();
+        for (String key : keys) {
+            batch.getBucket(key).deleteAsync();
+        }
+        batch.execute();
     }
 
     @Override

@@ -34,6 +34,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysConfig> page(SysConfigQuery query) {
         Page<SysConfig> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysConfig>()
@@ -45,6 +46,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByConfigKey(String configKey, Long excludeId) {
         LambdaQueryWrapper<SysConfig> wrapper = new LambdaQueryWrapper<SysConfig>()
                 .eq(SysConfig::getConfigKey, configKey);
@@ -55,6 +57,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String getConfigValueByKey(String configKey) {
         String cacheKey = CONFIG_KEY_PREFIX + configKey;
         String cached = cacheService.get(cacheKey);

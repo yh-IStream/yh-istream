@@ -3,7 +3,6 @@ package com.istream.system.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
 import com.istream.system.model.dto.SysMenuCreateDTO;
 import com.istream.system.model.dto.SysMenuDTO;
@@ -80,9 +79,6 @@ public class SysMenuController {
     @SaCheckPermission("system:menu:edit")
     @PutMapping
     public R<Void> update(@Valid @RequestBody SysMenuUpdateDTO dto) {
-        if (dto.getId().equals(dto.getParentId())) {
-            return R.fail(ResultCode.PARAM_VALID_ERROR, "上级菜单不能是自己");
-        }
         SysMenu menu = new SysMenu();
         menu.setId(dto.getId());
         sysMenuConverter.updateEntity(menu, dto);

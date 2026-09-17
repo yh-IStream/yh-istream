@@ -53,6 +53,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     private String maxFileSize;
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysFile> page(SysFileQuery query) {
         Page<SysFile> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysFile>()
@@ -96,6 +97,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public InputStream getFileStream(Long id) {
         SysFile sysFile = getById(id);
         if (sysFile == null) {

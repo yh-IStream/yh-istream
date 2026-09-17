@@ -22,13 +22,11 @@ import java.util.List;
 public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
 
     @Override
-    @Mapping(source = "dept.deptName", target = "deptName")
     @Mapping(source = "roles", target = "roleNames", qualifiedByName = "mapRoleNames")
     @Mapping(source = "roles", target = "roleIds", qualifiedByName = "mapRoleIds")
     SysUserDTO toDto(SysUser entity);
 
     @Override
-    @Mapping(target = "dept", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "password", ignore = true)
     SysUser toEntity(SysUserDTO dto);
