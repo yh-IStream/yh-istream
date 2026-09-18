@@ -8,6 +8,7 @@ import { useTable } from '@/composables/useTable'
 import { useExport } from '@/composables/useExport'
 
 const message = useMessage()
+const dialog = useDialog()
 const { renderSuccessTag } = useStatusRender()
 const { useDictTag } = useDict()
 const { render: renderBusinessTypeTag } = useDictTag('sys_oper_type', '未知')
@@ -56,8 +57,21 @@ const columns = [
 ]
 
 async function handleClear() {
-  try { await clearOperLog(); message.success('清空成功'); fetchData() }
-  catch (e: unknown) { message.error((e as Error).message || '清空失败') }
+  dialog.warning({
+    title: '确认清空',
+    content: '清空所有操作日志后不可恢复，确认继续？',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await clearOperLog()
+        message.success('清空成功')
+        fetchData()
+      } catch (e: unknown) {
+        message.error((e as Error).message || '清空失败')
+      }
+    },
+  })
 }
 
 async function handleExport() {

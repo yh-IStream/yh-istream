@@ -1,5 +1,6 @@
 package com.istream.web.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -17,6 +18,7 @@ public class LoginDTO implements Serializable {
     private String username;
 
     @NotBlank(message = "密码不能为空")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     /** 验证码 */

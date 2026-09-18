@@ -2,7 +2,7 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.system.model.query.SysRoleQuery;
+import com.istream.system.model.query.role.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 
 import java.util.List;

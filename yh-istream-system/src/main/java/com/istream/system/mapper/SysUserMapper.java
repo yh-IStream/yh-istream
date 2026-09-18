@@ -3,7 +3,7 @@ package com.istream.system.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.istream.system.model.query.SysUserQuery;
+import com.istream.system.model.query.user.SysUserQuery;
 import com.istream.system.entity.SysUser;
 import org.apache.ibatis.annotations.Param;
 

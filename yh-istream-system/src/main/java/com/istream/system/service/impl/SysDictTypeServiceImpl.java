@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.istream.system.model.query.SysDictTypeQuery;
+import com.istream.system.model.query.dict.SysDictTypeQuery;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.entity.SysDictType;
 import com.istream.system.mapper.SysDictDataMapper;

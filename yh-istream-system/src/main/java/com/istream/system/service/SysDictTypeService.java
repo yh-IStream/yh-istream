@@ -2,7 +2,7 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.system.model.query.SysDictTypeQuery;
+import com.istream.system.model.query.dict.SysDictTypeQuery;
 import com.istream.system.entity.SysDictType;
 
 /**

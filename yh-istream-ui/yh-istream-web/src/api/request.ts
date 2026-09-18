@@ -22,9 +22,9 @@ const instance: AxiosInstance = axios.create({
 function handleUnauthorized(url?: string) {
   if (!url?.endsWith('/auth/logout')) {
     const authStore = useAuthStore()
-    authStore.logout()
+    authStore.logout(true)
   }
-  return Promise.reject(new ApiError(401, '登录已过期'))
+  return Promise.reject(new ApiError(401, '登录已过期，请重新登录'))
 }
 
 // 请求拦截器
@@ -32,7 +32,7 @@ instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const authStore = useAuthStore()
     if (authStore.token) {
-      config.headers.Authorization = authStore.token
+      config.headers[authStore.tokenName] = authStore.token
     }
     return config
   },

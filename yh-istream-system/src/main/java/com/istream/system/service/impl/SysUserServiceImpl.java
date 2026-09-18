@@ -12,9 +12,8 @@ import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
 import com.istream.system.helper.UserCacheHelper;
-import com.istream.system.model.dto.SysUserCreateDTO;
-import com.istream.system.model.dto.SysUserUpdateDTO;
-import com.istream.system.model.query.SysUserQuery;
+import com.istream.system.model.dto.user.SysUserSaveDTO;
+import com.istream.system.model.query.user.SysUserQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import com.istream.system.entity.SysUserRole;
@@ -65,7 +64,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createUser(SysUserCreateDTO dto) {
+    public void createUser(SysUserSaveDTO dto) {
         if (getByUsername(dto.getUsername()) != null) {
             throw new BusinessException(ResultCode.USER_USERNAME_DUPLICATE);
         }
@@ -102,7 +101,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateUser(SysUserUpdateDTO dto) {
+    public void updateUser(SysUserSaveDTO dto) {
         if (dto.getId() == null) {
             throw new BusinessException(ResultCode.USER_ID_REQUIRED);
         }

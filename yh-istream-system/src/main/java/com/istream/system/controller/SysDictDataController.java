@@ -5,18 +5,18 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.system.model.query.SysDictDataQuery;
+import com.istream.system.model.query.dict.SysDictDataQuery;
 import com.istream.common.model.R;
-import com.istream.system.model.dto.SysDictDataCreateDTO;
-import com.istream.system.model.dto.SysDictDataDTO;
-import com.istream.system.model.dto.SysDictDataUpdateDTO;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.dict.SysDictDataSaveDTO;
+import com.istream.system.model.dto.dict.SysDictDataDTO;
 import com.istream.system.converter.SysDictDataConverter;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.service.SysDictDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -93,7 +93,7 @@ public class SysDictDataController {
     @Operation(summary = "新增字典数据")
     @SaCheckPermission("system:dict:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysDictDataCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysDictDataSaveDTO dto) {
         SysDictData dictData = sysDictDataConverter.toEntity(dto);
         sysDictDataService.save(dictData);
         return R.ok();
@@ -103,7 +103,7 @@ public class SysDictDataController {
     @Operation(summary = "修改字典数据")
     @SaCheckPermission("system:dict:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysDictDataUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysDictDataSaveDTO dto) {
         SysDictData dictData = new SysDictData();
         dictData.setId(dto.getId());
         sysDictDataConverter.updateEntity(dictData, dto);

@@ -1,6 +1,6 @@
 package com.istream.system.converter;
 
-import com.istream.system.model.dto.SysOperLogDTO;
+import com.istream.system.model.dto.operlog.SysOperLogDTO;
 import com.istream.system.entity.SysOperLog;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

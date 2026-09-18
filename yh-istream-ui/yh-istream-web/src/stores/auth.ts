@@ -13,9 +13,11 @@ export interface UserInfo {
 }
 
 export const TOKEN_KEY = 'yh-istream-token'
+export const TOKEN_NAME_KEY = 'yh-istream-token-name'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem(TOKEN_KEY) ?? '')
+  const tokenName = ref<string>(localStorage.getItem(TOKEN_NAME_KEY) || 'Authorization')
   const userInfo = ref<UserInfo | null>(null)
   const permissions = ref<string[]>([])
   const roles = ref<string[]>([])
@@ -55,7 +57,9 @@ export const useAuthStore = defineStore('auth', () => {
     const res = await loginApi({ username, password, captchaKey, captchaCode })
     const loginData = res.data
     token.value = loginData.token
+    tokenName.value = loginData.tokenName || 'Authorization'
     localStorage.setItem(TOKEN_KEY, loginData.token)
+    localStorage.setItem(TOKEN_NAME_KEY, tokenName.value)
     try {
       await fetchUserInfo()
     } catch {
@@ -86,25 +90,33 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** 登出 */
-  async function logout() {
+  async function logout(showExpiredTip = false) {
     try {
       if (token.value) {
         await logoutApi()
       }
     } finally {
       token.value = ''
+      tokenName.value = 'Authorization'
       userInfo.value = null
       permissions.value = []
       roles.value = []
       menus.value = []
       menuPaths.value = new Set()
       localStorage.removeItem(TOKEN_KEY)
-      router.push('/login')
+      localStorage.removeItem(TOKEN_NAME_KEY)
+      if (showExpiredTip) {
+        const query = { expired: '1' }
+        router.push({ path: '/login', query })
+      } else {
+        router.push('/login')
+      }
     }
   }
 
   return {
     token,
+    tokenName,
     userInfo,
     permissions,
     roles,

@@ -25,23 +25,11 @@ export interface SysUser {
   createTime: string
 }
 
-export interface SysUserCreate {
-  username: string
-  nickname: string
-  password: string
-  deptId?: string
-  email?: string
-  phone?: string
-  gender?: number
-  status?: number
-  roleIds?: string[]
-  remark?: string
-}
-
-export interface SysUserUpdate {
-  id: string
+export interface SysUserSave {
+  id?: string
   username?: string
   nickname?: string
+  password?: string
   deptId?: string
   email?: string
   phone?: string
@@ -59,16 +47,16 @@ export function getUserById(id: string) {
   return get<ApiResponse<SysUser & { roleIds: string[] }>>(`/system/user/${id}`)
 }
 
-export function addUser(data: SysUserCreate) {
+export function addUser(data: SysUserSave) {
   return post<ApiResponse<unknown>>('/system/user', data)
 }
 
-export function updateUser(data: SysUserUpdate) {
+export function updateUser(data: SysUserSave) {
   return put<ApiResponse<unknown>>('/system/user', data)
 }
 
 export function assignUserRoles(userId: string, roleIds: string[]) {
-  return put<ApiResponse<unknown>>(`/system/user/${userId}/roles`, { roleIds })
+  return put<ApiResponse<unknown>>(`/system/user/${userId}/roles`, roleIds)
 }
 
 export function deleteUser(ids: string | string[]) {
@@ -76,7 +64,7 @@ export function deleteUser(ids: string | string[]) {
 }
 
 export function resetUserPwd(userId: string, password: string) {
-  return put<ApiResponse<unknown>>('/system/user/reset-pwd', { userId, password })
+  return put<ApiResponse<unknown>>(`/system/user/${userId}/reset-pwd`, { password })
 }
 
 export function changeUserStatus(userId: string, status: number) {
@@ -99,17 +87,8 @@ export interface SysRole {
   createTime: string
 }
 
-export interface SysRoleCreate {
-  roleName: string
-  roleKey: string
-  roleSort?: number
-  dataScope?: number
-  status?: number
-  remark?: string
-}
-
-export interface SysRoleUpdate {
-  id: string
+export interface SysRoleSave {
+  id?: string
   roleName?: string
   roleKey?: string
   roleSort?: number
@@ -126,11 +105,11 @@ export function getAllRoles() {
   return get<ApiResponse<SysRole[]>>('/system/role/all')
 }
 
-export function addRole(data: SysRoleCreate) {
+export function addRole(data: SysRoleSave) {
   return post<ApiResponse<string>>('/system/role', data)
 }
 
-export function updateRole(data: SysRoleUpdate) {
+export function updateRole(data: SysRoleSave) {
   return put<ApiResponse<unknown>>('/system/role', data)
 }
 
@@ -152,7 +131,7 @@ export function getRoleMenuTree(roleId: string) {
 }
 
 export function assignRoleMenu(roleId: string, menuIds: string[]) {
-  return put<ApiResponse<unknown>>('/system/role/menu-assign', { roleId, menuIds })
+  return put<ApiResponse<unknown>>(`/system/role/${roleId}/menu-assign`, menuIds)
 }
 
 export function getRoleUsers(roleId: string) {
@@ -168,7 +147,7 @@ export function getRoleDeptIds(roleId: string) {
 }
 
 export function assignRoleDept(roleId: string, deptIds: string[]) {
-  return put<ApiResponse<unknown>>('/system/role/dept-assign', { roleId, deptIds })
+  return put<ApiResponse<unknown>>(`/system/role/${roleId}/dept-assign`, deptIds)
 }
 
 export function exportRole() {
@@ -192,22 +171,8 @@ export interface SysMenu {
   children?: SysMenu[]
 }
 
-export interface SysMenuCreate {
-  parentId?: string
-  menuName: string
-  menuType: string
-  path?: string
-  component?: string
-  query?: string
-  permission?: string
-  icon?: string
-  orderNum?: number
-  visible?: number
-  status?: number
-}
-
-export interface SysMenuUpdate {
-  id: string
+export interface SysMenuSave {
+  id?: string
   parentId?: string
   menuName?: string
   menuType?: string
@@ -225,11 +190,11 @@ export function getMenuTree(config?: AxiosRequestConfig) {
   return get<ApiResponse<SysMenu[]>>('/system/menu/tree', undefined, config)
 }
 
-export function addMenu(data: SysMenuCreate) {
+export function addMenu(data: SysMenuSave) {
   return post<ApiResponse<unknown>>('/system/menu', data)
 }
 
-export function updateMenu(data: SysMenuUpdate) {
+export function updateMenu(data: SysMenuSave) {
   return put<ApiResponse<unknown>>('/system/menu', data)
 }
 
@@ -250,18 +215,8 @@ export interface SysDept {
   children?: SysDept[]
 }
 
-export interface SysDeptCreate {
-  parentId?: string
-  deptName: string
-  orderNum?: number
-  leader?: string
-  phone?: string
-  email?: string
-  status?: number
-}
-
-export interface SysDeptUpdate {
-  id: string
+export interface SysDeptSave {
+  id?: string
   parentId?: string
   deptName?: string
   orderNum?: number
@@ -275,11 +230,11 @@ export function getDeptTree(config?: AxiosRequestConfig) {
   return get<ApiResponse<SysDept[]>>('/system/dept/tree', undefined, config)
 }
 
-export function addDept(data: SysDeptCreate) {
+export function addDept(data: SysDeptSave) {
   return post<ApiResponse<unknown>>('/system/dept', data)
 }
 
-export function updateDept(data: SysDeptUpdate) {
+export function updateDept(data: SysDeptSave) {
   return put<ApiResponse<unknown>>('/system/dept', data)
 }
 
@@ -297,15 +252,8 @@ export interface SysDictType {
   createTime: string
 }
 
-export interface SysDictTypeCreate {
-  dictName: string
-  dictType: string
-  status?: number
-  remark?: string
-}
-
-export interface SysDictTypeUpdate {
-  id: string
+export interface SysDictTypeSave {
+  id?: string
   dictName?: string
   dictType?: string
   status?: number
@@ -325,20 +273,8 @@ export interface SysDictData {
   remark: string
 }
 
-export interface SysDictDataCreate {
-  dictType: string
-  dictLabel: string
-  dictValue: string
-  cssClass?: string
-  listClass?: string
-  isDefault?: number
-  orderNum?: number
-  status?: number
-  remark?: string
-}
-
-export interface SysDictDataUpdate {
-  id: string
+export interface SysDictDataSave {
+  id?: string
   dictType?: string
   dictLabel?: string
   dictValue?: string
@@ -354,11 +290,11 @@ export function getDictTypeList(params: PageParams, config?: AxiosRequestConfig)
   return get<PageResult<SysDictType>>('/system/dict-type/list', params, config)
 }
 
-export function addDictType(data: SysDictTypeCreate) {
+export function addDictType(data: SysDictTypeSave) {
   return post<ApiResponse<unknown>>('/system/dict-type', data)
 }
 
-export function updateDictType(data: SysDictTypeUpdate) {
+export function updateDictType(data: SysDictTypeSave) {
   return put<ApiResponse<unknown>>('/system/dict-type', data)
 }
 
@@ -374,11 +310,11 @@ export function getDictDataByType(dictType: string) {
   return get<ApiResponse<SysDictData[]>>(`/system/dict-data/by-type/${dictType}`)
 }
 
-export function addDictData(data: SysDictDataCreate) {
+export function addDictData(data: SysDictDataSave) {
   return post<ApiResponse<unknown>>('/system/dict-data', data)
 }
 
-export function updateDictData(data: SysDictDataUpdate) {
+export function updateDictData(data: SysDictDataSave) {
   return put<ApiResponse<unknown>>('/system/dict-data', data)
 }
 
@@ -397,16 +333,8 @@ export interface SysConfig {
   createTime: string
 }
 
-export interface SysConfigCreate {
-  configName: string
-  configKey: string
-  configValue: string
-  configType?: number
-  remark?: string
-}
-
-export interface SysConfigUpdate {
-  id: string
+export interface SysConfigSave {
+  id?: string
   configName?: string
   configKey?: string
   configValue?: string
@@ -418,11 +346,11 @@ export function getConfigList(params: PageParams, config?: AxiosRequestConfig) {
   return get<PageResult<SysConfig>>('/system/config/list', params, config)
 }
 
-export function addConfig(data: SysConfigCreate) {
+export function addConfig(data: SysConfigSave) {
   return post<ApiResponse<unknown>>('/system/config', data)
 }
 
-export function updateConfig(data: SysConfigUpdate) {
+export function updateConfig(data: SysConfigSave) {
   return put<ApiResponse<unknown>>('/system/config', data)
 }
 

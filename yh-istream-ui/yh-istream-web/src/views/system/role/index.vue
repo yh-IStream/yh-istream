@@ -4,7 +4,7 @@ import {
   getRoleList, addRole, updateRole, deleteRole, changeRoleStatus, getRoleMenuTree, assignRoleMenu,
   getRoleUsers, assignRoleUsers, getUserList,
   getDeptTree, getRoleDeptIds, assignRoleDept, exportRole,
-  type SysRole, type SysRoleCreate, type SysRoleUpdate, type SysMenu, type SysUser, type SysDept,
+  type SysRole, type SysRoleSave, type SysMenu, type SysUser, type SysDept,
 } from '@/api/modules/system'
 import type { PageParams } from '@/api/types'
 import { createAbortController, isAbortError } from '@/api/request'
@@ -159,14 +159,22 @@ async function handleBatchDelete() {
     message.warning('请选择要删除的角色')
     return
   }
-  try {
-    await deleteRole(selectedIds.value)
-    message.success('批量删除成功')
-    selectedIds.value = []
-    fetchData()
-  } catch (e: unknown) {
-    message.error((e as Error).message || '批量删除失败')
-  }
+  dialog.warning({
+    title: '确认删除',
+    content: `确认删除选中的 ${selectedIds.value.length} 条角色吗？`,
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await deleteRole(selectedIds.value)
+        message.success('批量删除成功')
+        selectedIds.value = []
+        fetchData()
+      } catch (e: unknown) {
+        message.error((e as Error).message || '批量删除失败')
+      }
+    },
+  })
 }
 
 async function handleExport() {

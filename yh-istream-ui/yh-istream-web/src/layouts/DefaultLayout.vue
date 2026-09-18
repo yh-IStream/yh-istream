@@ -66,11 +66,11 @@ const breadcrumbs = computed(() => {
   const path = route.path
   const segments = path.split('/').filter(Boolean)
   if (segments.length === 0) return []
-  const result: { label: string }[] = []
+  const result: { label: string; path: string }[] = []
   let accumulated = ''
   for (const seg of segments) {
     accumulated += `/${seg}`
-    result.push({ label: menuPathMap.value[accumulated] ?? seg })
+    result.push({ label: menuPathMap.value[accumulated] ?? seg, path: accumulated })
   }
   return result
 })
@@ -88,7 +88,9 @@ function handleMenuUpdate(key: string, item: MenuOption) {
 }
 
 function handleDropdownSelect(key: string) {
-  if (key === 'logout') {
+  if (key === 'profile') {
+    router.push('/profile')
+  } else if (key === 'logout') {
     authStore.logout()
   }
 }
@@ -165,8 +167,11 @@ watch(
             </template>
           </n-button>
           <n-breadcrumb>
-            <n-breadcrumb-item v-for="item in breadcrumbs" :key="item.label">
-              {{ item.label }}
+            <n-breadcrumb-item v-for="(item, index) in breadcrumbs" :key="item.path">
+              <router-link v-if="index < breadcrumbs.length - 1" :to="item.path" class="breadcrumb-link">
+                {{ item.label }}
+              </router-link>
+              <span v-else>{{ item.label }}</span>
             </n-breadcrumb-item>
           </n-breadcrumb>
         </div>
@@ -305,6 +310,16 @@ html.dark .layout-header {
 .menu-toggle-btn:hover,
 .theme-toggle-btn:hover {
   color: #14b8a6 !important;
+}
+
+.breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-link:hover {
+  color: #14b8a6;
 }
 
 .user-badge {

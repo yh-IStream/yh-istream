@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.istream.system.model.query.SysOperLogQuery;
+import com.istream.system.model.query.operlog.SysOperLogQuery;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.mapper.SysOperLogMapper;
 import com.istream.system.service.SysOperLogService;

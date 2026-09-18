@@ -1,7 +1,7 @@
 package com.istream.web.model.vo;
 
 import com.istream.system.entity.SysMenu;
-import com.istream.system.model.dto.SysUserDTO;
+import com.istream.system.model.dto.user.SysUserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,9 +1,8 @@
 package com.istream.system.converter;
 
 import com.istream.common.enums.StatusEnum;
-import com.istream.system.model.dto.SysDictTypeCreateDTO;
-import com.istream.system.model.dto.SysDictTypeDTO;
-import com.istream.system.model.dto.SysDictTypeUpdateDTO;
+import com.istream.system.model.dto.dict.SysDictTypeSaveDTO;
+import com.istream.system.model.dto.dict.SysDictTypeDTO;
 import com.istream.system.entity.SysDictType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -22,7 +21,7 @@ public interface SysDictTypeConverter {
     SysDictTypeDTO toDto(SysDictType entity);
 
     @Mapping(target = "status", expression = "java(dto.getStatus() != null ? dto.getStatus() : StatusEnum.ENABLED.getCode())")
-    SysDictType toEntity(SysDictTypeCreateDTO dto);
+    SysDictType toEntity(SysDictTypeSaveDTO dto);
 
-    void updateEntity(@MappingTarget SysDictType entity, SysDictTypeUpdateDTO dto);
+    void updateEntity(@MappingTarget SysDictType entity, SysDictTypeSaveDTO dto);
 }

@@ -14,11 +14,13 @@ const captchaKey = ref('')
 const cardVisible = ref(false)
 let captchaAbort: AbortController | null = null
 
+const REMEMBER_KEY = 'yh-istream-remember'
+
 const formData = reactive({
-  username: '',
-  password: '',
+  username: localStorage.getItem(REMEMBER_KEY) ? (JSON.parse(localStorage.getItem(REMEMBER_KEY)!)?.username ?? '') : '',
+  password: localStorage.getItem(REMEMBER_KEY) ? (JSON.parse(localStorage.getItem(REMEMBER_KEY)!)?.password ?? '') : '',
   captchaCode: '',
-  remember: false,
+  remember: !!localStorage.getItem(REMEMBER_KEY),
 })
 
 const rules = {
@@ -56,6 +58,11 @@ async function handleLogin() {
   loading.value = true
   try {
     await authStore.login(formData.username, formData.password, captchaKey.value, formData.captchaCode)
+    if (formData.remember) {
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: formData.username, password: formData.password }))
+    } else {
+      localStorage.removeItem(REMEMBER_KEY)
+    }
     message.success('登录成功')
     router.push(authStore.firstMenuPath)
   } catch (e: unknown) {
@@ -67,6 +74,9 @@ async function handleLogin() {
 }
 
 onMounted(() => {
+  if (router.currentRoute.value.query.expired === '1') {
+    message.warning('登录已过期，请重新登录')
+  }
   requestAnimationFrame(() => {
     cardVisible.value = true
   })

@@ -10,12 +10,11 @@ import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.model.R;
-import com.istream.system.model.dto.ResetPasswordDTO;
-import com.istream.system.model.dto.SysUserCreateDTO;
-import com.istream.system.model.dto.SysUserDTO;
-import com.istream.system.model.dto.SysUserUpdateDTO;
-import com.istream.system.model.dto.UserRoleAssignDTO;
-import com.istream.system.model.query.SysUserQuery;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.user.SysUserResetPasswordDTO;
+import com.istream.system.model.dto.user.SysUserSaveDTO;
+import com.istream.system.model.dto.user.SysUserDTO;
+import com.istream.system.model.query.user.SysUserQuery;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.entity.SysUser;
 import com.istream.system.converter.SysUserConverter;
@@ -24,6 +23,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,7 +81,7 @@ public class SysUserController {
     @Operation(summary = "新增用户")
     @SaCheckPermission("system:user:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysUserCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysUserSaveDTO dto) {
         sysUserService.createUser(dto);
         return R.ok();
     }
@@ -90,7 +90,7 @@ public class SysUserController {
     @Operation(summary = "修改用户")
     @SaCheckPermission("system:user:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysUserUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysUserSaveDTO dto) {
         sysUserService.updateUser(dto);
         return R.ok();
     }
@@ -99,8 +99,8 @@ public class SysUserController {
     @Operation(summary = "分配用户角色")
     @SaCheckPermission("system:user:edit")
     @PutMapping("/{id}/roles")
-    public R<Void> assignRoles(@PathVariable Long id, @Valid @RequestBody UserRoleAssignDTO dto) {
-        sysUserService.assignUserRoles(id, dto.getRoleIds() != null ? dto.getRoleIds() : List.of());
+    public R<Void> assignRoles(@PathVariable Long id, @Valid @RequestBody List<Long> roleIds) {
+        sysUserService.assignUserRoles(id, roleIds != null ? roleIds : List.of());
         return R.ok();
     }
 
@@ -117,9 +117,9 @@ public class SysUserController {
     @RateLimit(key = "user:reset-pwd", rate = 3, timeout = 60)
     @Operation(summary = "重置密码")
     @SaCheckPermission("system:user:reset-pwd")
-    @PutMapping("/reset-pwd")
-    public R<Void> resetPassword(@Valid @RequestBody ResetPasswordDTO dto) {
-        sysUserService.resetPassword(dto.getUserId(), dto.getPassword());
+    @PutMapping("/{userId}/reset-pwd")
+    public R<Void> resetPassword(@PathVariable Long userId, @Valid @RequestBody SysUserResetPasswordDTO dto) {
+        sysUserService.resetPassword(userId, dto.getPassword());
         return R.ok();
     }
 

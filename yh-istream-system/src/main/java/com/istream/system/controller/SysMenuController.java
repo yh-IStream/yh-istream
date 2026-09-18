@@ -4,16 +4,16 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
-import com.istream.system.model.dto.SysMenuCreateDTO;
-import com.istream.system.model.dto.SysMenuDTO;
-import com.istream.system.model.dto.SysMenuUpdateDTO;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.menu.SysMenuSaveDTO;
+import com.istream.system.model.dto.menu.SysMenuDTO;
 import com.istream.system.converter.SysMenuConverter;
 import com.istream.system.entity.SysMenu;
 import com.istream.system.service.SysMenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -68,7 +68,7 @@ public class SysMenuController {
     @Operation(summary = "新增菜单")
     @SaCheckPermission("system:menu:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysMenuCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysMenuSaveDTO dto) {
         SysMenu menu = sysMenuConverter.toEntity(dto);
         sysMenuService.save(menu);
         return R.ok();
@@ -78,7 +78,7 @@ public class SysMenuController {
     @Operation(summary = "修改菜单")
     @SaCheckPermission("system:menu:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysMenuUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysMenuSaveDTO dto) {
         SysMenu menu = new SysMenu();
         menu.setId(dto.getId());
         sysMenuConverter.updateEntity(menu, dto);

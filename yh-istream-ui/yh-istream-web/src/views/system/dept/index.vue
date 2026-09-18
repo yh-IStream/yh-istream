@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AddOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getDeptTree, addDept, updateDept, deleteDept, type SysDept, type SysDeptCreate, type SysDeptUpdate } from '@/api/modules/system'
+import { getDeptTree, addDept, updateDept, deleteDept, type SysDept, type SysDeptSave } from '@/api/modules/system'
 import type { TreeSelectOption } from 'naive-ui'
 import { STATUS, STATUS_LABEL } from '@/constants'
 import { useTreeData } from '@/composables/useTreeData'
@@ -34,8 +34,8 @@ const {
   handleSubmit,
 } = useCrudDialog<DeptFormData>({
   defaults: () => ({ id: null, parentId: '0', deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: STATUS.NORMAL }),
-  addApi: (data) => addDept(data as SysDeptCreate),
-  updateApi: (data) => updateDept(data as SysDeptUpdate),
+  addApi: (data) => addDept(data as SysDeptSave),
+  updateApi: (data) => updateDept(data as SysDeptSave),
   onSuccess: fetchData,
   titles: { add: '新增部门', edit: '编辑部门' },
 })

@@ -70,7 +70,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('naive-ui')) return 'naive-ui'
+          if (id.includes('@vicons/ionicons5')) return 'vicons'
           if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/') || id.includes('node_modules/pinia/')) return 'vue-vendor'
+          if (id.includes('node_modules/axios/')) return 'axios'
         },
       },
     },

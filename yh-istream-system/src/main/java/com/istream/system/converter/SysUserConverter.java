@@ -1,6 +1,7 @@
 package com.istream.system.converter;
 
-import com.istream.system.model.dto.SysUserDTO;
+import com.istream.system.model.dto.user.SysUserDTO;
+import com.istream.system.model.dto.user.SysUserSaveDTO;
 import com.istream.common.converter.BaseConverter;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
@@ -30,6 +31,16 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "password", ignore = true)
     SysUser toEntity(SysUserDTO dto);
+
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "loginIp", ignore = true)
+    @Mapping(target = "loginDate", ignore = true)
+    @Mapping(target = "loginCount", ignore = true)
+    @Mapping(target = "loginFailCount", ignore = true)
+    @Mapping(target = "pwdResetTime", ignore = true)
+    @Mapping(target = "deptName", ignore = true)
+    @Mapping(target = "roles", ignore = true)
+    SysUser toEntity(SysUserSaveDTO dto);
 
     @Named("mapRoleNames")
     default List<String> mapRoleNames(List<SysRole> roles) {

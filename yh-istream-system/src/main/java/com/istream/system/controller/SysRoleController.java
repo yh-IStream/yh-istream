@@ -6,15 +6,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.StatusEnum;
-import com.istream.system.model.query.SysRoleQuery;
-import com.istream.system.model.dto.RoleMenuAssignDTO;
-import com.istream.system.model.dto.RoleDeptAssignDTO;
-import com.istream.system.model.dto.SysRoleCreateDTO;
-import com.istream.system.model.dto.SysRoleDTO;
-import com.istream.system.model.dto.SysRoleUpdateDTO;
-import com.istream.system.model.dto.SysUserDTO;
+import com.istream.system.model.query.role.SysRoleQuery;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.role.SysRoleSaveDTO;
+import com.istream.system.model.dto.role.SysRoleDTO;
+import com.istream.system.model.dto.user.SysUserDTO;
 import com.istream.common.model.R;
-import com.istream.system.model.vo.RoleMenuTreeVO;
+import com.istream.system.model.vo.role.SysRoleMenuTreeVO;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
 import com.istream.system.converter.SysRoleConverter;
@@ -30,6 +28,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -96,7 +95,7 @@ public class SysRoleController {
     @Operation(summary = "新增角色")
     @SaCheckPermission("system:role:add")
     @PostMapping
-    public R<Long> add(@Valid @RequestBody SysRoleCreateDTO dto) {
+    public R<Long> add(@Validated(Groups.Create.class) @RequestBody SysRoleSaveDTO dto) {
         if (sysRoleService.existsByRoleKey(dto.getRoleKey(), null)) {
             return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
         }
@@ -109,7 +108,7 @@ public class SysRoleController {
     @Operation(summary = "修改角色")
     @SaCheckPermission("system:role:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysRoleUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysRoleSaveDTO dto) {
         if (dto.getRoleKey() != null && sysRoleService.existsByRoleKey(dto.getRoleKey(), dto.getId())) {
             return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
         }
@@ -147,18 +146,18 @@ public class SysRoleController {
     @Operation(summary = "查询角色菜单树及已选菜单ID")
     @SaCheckPermission("system:role:edit")
     @GetMapping("/menu-tree/{roleId}")
-    public R<RoleMenuTreeVO> menuTree(@PathVariable Long roleId) {
+    public R<SysRoleMenuTreeVO> menuTree(@PathVariable Long roleId) {
         List<SysMenu> menus = sysMenuService.listMenuTree();
         List<Long> checkedKeys = sysRoleService.getMenuIdsByRoleId(roleId);
-        return R.ok(new RoleMenuTreeVO(menus, checkedKeys));
+        return R.ok(new SysRoleMenuTreeVO(menus, checkedKeys));
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "保存角色菜单分配")
     @SaCheckPermission("system:role:edit")
-    @PutMapping("/menu-assign")
-    public R<Void> saveRoleMenu(@Valid @RequestBody RoleMenuAssignDTO dto) {
-        sysRoleService.saveRoleMenu(dto.getRoleId(), dto.getMenuIds());
+    @PutMapping("/{roleId}/menu-assign")
+    public R<Void> saveRoleMenu(@PathVariable Long roleId, @Valid @RequestBody List<Long> menuIds) {
+        sysRoleService.saveRoleMenu(roleId, menuIds);
         return R.ok();
     }
 
@@ -172,9 +171,9 @@ public class SysRoleController {
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
     @Operation(summary = "保存角色自定义数据范围授权的部门")
     @SaCheckPermission("system:role:edit")
-    @PutMapping("/dept-assign")
-    public R<Void> saveRoleDept(@Valid @RequestBody RoleDeptAssignDTO dto) {
-        sysRoleService.saveRoleDept(dto.getRoleId(), dto.getDeptIds() != null ? dto.getDeptIds() : List.of());
+    @PutMapping("/{roleId}/dept-assign")
+    public R<Void> saveRoleDept(@PathVariable Long roleId, @Valid @RequestBody List<Long> deptIds) {
+        sysRoleService.saveRoleDept(roleId, deptIds != null ? deptIds : List.of());
         return R.ok();
     }
 

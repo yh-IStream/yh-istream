@@ -10,8 +10,8 @@ import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
 import com.istream.common.model.R;
-import com.istream.file.model.dto.SysFileDTO;
-import com.istream.file.model.query.SysFileQuery;
+import com.istream.file.model.dto.file.SysFileDTO;
+import com.istream.file.model.query.file.SysFileQuery;
 import com.istream.file.converter.SysFileConverter;
 import com.istream.file.entity.SysFile;
 import com.istream.file.service.SysFileService;
@@ -99,8 +99,8 @@ public class SysFileController {
     @Operation(summary = "上传文件")
     @SaCheckPermission("system:file:upload")
     @PostMapping("/upload")
-    public R<SysFile> upload(@RequestParam("file") MultipartFile file,
-                             @RequestParam(defaultValue = "common") String module) {
+    public R<SysFileDTO> upload(@RequestParam("file") MultipartFile file,
+                                @RequestParam(defaultValue = "common") String module) {
         if (file.isEmpty()) {
             return R.fail(ResultCode.PARAM_VALID_ERROR, "文件不能为空");
         }
@@ -118,7 +118,7 @@ public class SysFileController {
                     "文件类型校验失败，文件内容与声明的类型不一致");
         }
 
-        return R.ok(sysFileService.upload(file, module));
+        return R.ok(sysFileConverter.toDto(sysFileService.upload(file, module)));
     }
 
     @Operation(summary = "下载文件")

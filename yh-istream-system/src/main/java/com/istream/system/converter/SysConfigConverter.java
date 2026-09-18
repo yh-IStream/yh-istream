@@ -1,9 +1,8 @@
 package com.istream.system.converter;
 
 import com.istream.common.constant.Constants;
-import com.istream.system.model.dto.SysConfigCreateDTO;
-import com.istream.system.model.dto.SysConfigDTO;
-import com.istream.system.model.dto.SysConfigUpdateDTO;
+import com.istream.system.model.dto.config.SysConfigSaveDTO;
+import com.istream.system.model.dto.config.SysConfigDTO;
 import com.istream.system.entity.SysConfig;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -22,7 +21,7 @@ public interface SysConfigConverter {
     SysConfigDTO toDto(SysConfig entity);
 
     @Mapping(target = "configType", expression = "java(dto.getConfigType() != null ? dto.getConfigType() : Constants.DEFAULT_CONFIG_TYPE)")
-    SysConfig toEntity(SysConfigCreateDTO dto);
+    SysConfig toEntity(SysConfigSaveDTO dto);
 
-    void updateEntity(@MappingTarget SysConfig entity, SysConfigUpdateDTO dto);
+    void updateEntity(@MappingTarget SysConfig entity, SysConfigSaveDTO dto);
 }

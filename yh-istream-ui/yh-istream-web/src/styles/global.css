@@ -185,3 +185,26 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 .dict-text-orange { color: #e6a23c; font-weight: 600; }
 .dict-text-gray { color: #909399; font-weight: 600; }
 .dict-text-purple { color: #9b59b6; font-weight: 600; }
+
+.n-data-table--loading .n-data-table-table {
+  pointer-events: none;
+}
+
+.n-data-table--loading .n-data-table-td {
+  position: relative;
+}
+
+.n-data-table--loading .n-data-table-td::after {
+  content: '';
+  position: absolute;
+  inset: 4px 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.06) 25%, rgba(20, 184, 166, 0.12) 50%, rgba(20, 184, 166, 0.06) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+html.dark .n-data-table--loading .n-data-table-td::after {
+  background: linear-gradient(90deg, rgba(45, 212, 191, 0.08) 25%, rgba(45, 212, 191, 0.15) 50%, rgba(45, 212, 191, 0.08) 75%);
+  background-size: 200% 100%;
+}

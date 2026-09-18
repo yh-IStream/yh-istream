@@ -15,6 +15,7 @@ declare global {
   const NSwitch: typeof import('naive-ui').NSwitch
   const NTag: typeof import('naive-ui').NTag
   const TOKEN_KEY: typeof import('./stores/auth').TOKEN_KEY
+  const TOKEN_NAME_KEY: typeof import('./stores/auth').TOKEN_NAME_KEY
   const acceptHMRUpdate: typeof import('pinia').acceptHMRUpdate
   const computed: typeof import('vue').computed
   const createApp: typeof import('vue').createApp
@@ -138,6 +139,7 @@ declare module 'vue' {
     readonly NSwitch: UnwrapRef<typeof import('naive-ui')['NSwitch']>
     readonly NTag: UnwrapRef<typeof import('naive-ui')['NTag']>
     readonly TOKEN_KEY: UnwrapRef<typeof import('./stores/auth')['TOKEN_KEY']>
+    readonly TOKEN_NAME_KEY: UnwrapRef<typeof import('./stores/auth')['TOKEN_NAME_KEY']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>

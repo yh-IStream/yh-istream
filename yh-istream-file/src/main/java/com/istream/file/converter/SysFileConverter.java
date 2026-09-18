@@ -1,6 +1,6 @@
 package com.istream.file.converter;
 
-import com.istream.file.model.dto.SysFileDTO;
+import com.istream.file.model.dto.file.SysFileDTO;
 import com.istream.file.entity.SysFile;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

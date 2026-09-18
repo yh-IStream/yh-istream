@@ -2,9 +2,8 @@ package com.istream.system.converter;
 
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.StatusEnum;
-import com.istream.system.model.dto.SysMenuCreateDTO;
-import com.istream.system.model.dto.SysMenuDTO;
-import com.istream.system.model.dto.SysMenuUpdateDTO;
+import com.istream.system.model.dto.menu.SysMenuSaveDTO;
+import com.istream.system.model.dto.menu.SysMenuDTO;
 import com.istream.system.entity.SysMenu;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -26,7 +25,7 @@ public interface SysMenuConverter {
     @Mapping(target = "orderNum", expression = "java(dto.getOrderNum() != null ? dto.getOrderNum() : Constants.DEFAULT_ORDER_NUM)")
     @Mapping(target = "visible", expression = "java(dto.getVisible() != null ? dto.getVisible() : StatusEnum.ENABLED.getCode())")
     @Mapping(target = "status", expression = "java(dto.getStatus() != null ? dto.getStatus() : StatusEnum.ENABLED.getCode())")
-    SysMenu toEntity(SysMenuCreateDTO dto);
+    SysMenu toEntity(SysMenuSaveDTO dto);
 
-    void updateEntity(@MappingTarget SysMenu entity, SysMenuUpdateDTO dto);
+    void updateEntity(@MappingTarget SysMenu entity, SysMenuSaveDTO dto);
 }

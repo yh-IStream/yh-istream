@@ -3,7 +3,7 @@ import { SearchOutline, AddOutline, TrashOutline, DownloadOutline, RefreshOutlin
 import {
   getUserList, getUserById, addUser, updateUser, assignUserRoles, deleteUser,
   resetUserPwd, changeUserStatus, exportUser, getDeptTree, getAllRoles, type SysUser,
-  type SysUserCreate, type SysUserUpdate, type SysRole, type SysDept,
+  type SysUserSave, type SysRole, type SysDept,
 } from '@/api/modules/system'
 import { STATUS, STATUS_OPTIONS, STATUS_LABEL } from '@/constants'
 import { useDict } from '@/composables/useDict'

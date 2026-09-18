@@ -5,9 +5,9 @@ import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.model.R;
-import com.istream.generator.model.dto.GenRequest;
-import com.istream.generator.model.vo.ColumnInfo;
-import com.istream.generator.model.vo.TableInfo;
+import com.istream.generator.model.dto.GenRequestDTO;
+import com.istream.generator.model.vo.ColumnInfoVO;
+import com.istream.generator.model.vo.TableInfoVO;
 import com.istream.generator.service.GeneratorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,14 +49,14 @@ public class GeneratorController {
     @Operation(summary = "查询所有表")
     @SaCheckPermission("generator:table:list")
     @GetMapping("/tables")
-    public R<List<TableInfo>> listTables() {
+    public R<List<TableInfoVO>> listTables() {
         return R.ok(generatorService.listTables());
     }
 
     @Operation(summary = "查询表列信息")
     @SaCheckPermission("generator:table:list")
     @GetMapping("/columns/{tableName}")
-    public R<List<ColumnInfo>> listColumns(@PathVariable String tableName) {
+    public R<List<ColumnInfoVO>> listColumns(@PathVariable String tableName) {
         return R.ok(generatorService.listColumns(tableName));
     }
 
@@ -66,7 +66,7 @@ public class GeneratorController {
     @SaCheckPermission("generator:code:preview")
     @PostMapping("/preview/{tableName}")
     public R<Map<String, String>> preview(@PathVariable String tableName,
-                                          @Valid @RequestBody GenRequest request) {
+                                          @Valid @RequestBody GenRequestDTO request) {
         return R.ok(generatorService.preview(tableName, request));
     }
 
@@ -75,7 +75,7 @@ public class GeneratorController {
     @Operation(summary = "批量预览生成代码")
     @SaCheckPermission("generator:code:preview")
     @PostMapping("/batch-preview")
-    public R<Map<String, Map<String, String>>> batchPreview(@Valid @RequestBody GenRequest request) {
+    public R<Map<String, Map<String, String>>> batchPreview(@Valid @RequestBody GenRequestDTO request) {
         return R.ok(generatorService.batchPreview(request));
     }
 
@@ -85,7 +85,7 @@ public class GeneratorController {
     @SaCheckPermission("generator:code:download")
     @PostMapping("/download/{tableName}")
     public void download(@PathVariable String tableName,
-                         @Valid @RequestBody GenRequest request,
+                         @Valid @RequestBody GenRequestDTO request,
                          HttpServletResponse response) throws IOException {
         Map<String, String> codeMap = generatorService.preview(tableName, request);
 
@@ -105,7 +105,7 @@ public class GeneratorController {
     @Operation(summary = "批量生成并下载代码")
     @SaCheckPermission("generator:code:download")
     @PostMapping("/batch-download")
-    public void batchDownload(@Valid @RequestBody GenRequest request,
+    public void batchDownload(@Valid @RequestBody GenRequestDTO request,
                               HttpServletResponse response) throws IOException {
         Map<String, Map<String, String>> allCodeMap = generatorService.batchPreview(request);
 

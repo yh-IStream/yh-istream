@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AddOutline } from '@vicons/ionicons5'
-import { getDictTypeList, addDictType, updateDictType, deleteDictType, getDictDataList, addDictData, updateDictData, deleteDictData, type SysDictType, type SysDictTypeCreate, type SysDictTypeUpdate, type SysDictData, type SysDictDataCreate, type SysDictDataUpdate } from '@/api/modules/system'
+import { getDictTypeList, addDictType, updateDictType, deleteDictType, getDictDataList, addDictData, updateDictData, deleteDictData, type SysDictType, type SysDictTypeSave, type SysDictData, type SysDictDataSave } from '@/api/modules/system'
 import { STATUS, STATUS_LABEL, LIST_CLASS_OPTIONS } from '@/constants'
 import { useDict, renderDictTag } from '@/composables/useDict'
 import { useTable } from '@/composables/useTable'
@@ -37,8 +37,8 @@ const {
   handleSubmit: handleTypeSubmit,
 } = useCrudDialog<DictTypeFormData>({
   defaults: () => ({ id: null, dictName: '', dictType: '', status: STATUS.NORMAL, remark: '' }),
-  addApi: (data) => addDictType(data as SysDictTypeCreate),
-  updateApi: (data) => updateDictType(data as SysDictTypeUpdate),
+  addApi: (data) => addDictType(data as SysDictTypeSave),
+  updateApi: (data) => updateDictType(data as SysDictTypeSave),
   onSuccess: fetchTypeList,
 })
 
@@ -103,7 +103,6 @@ interface DictDataFormData {
 
 const {
   visible: dataDialogVisible,
-  isEdit: dataIsEdit,
   formRef: dataFormRef,
   formData: dataForm,
   openAdd: handleDataAddInner,
@@ -111,8 +110,8 @@ const {
   handleSubmit: handleDataSubmitInner,
 } = useCrudDialog<DictDataFormData>({
   defaults: () => ({ id: null, dictType: selectedDictType.value, dictLabel: '', dictValue: '', orderNum: 0, cssClass: '', listClass: '', status: STATUS.NORMAL, remark: '' }),
-  addApi: (data) => addDictData(data as SysDictDataCreate),
-  updateApi: (data) => updateDictData(data as SysDictDataUpdate),
+  addApi: (data) => addDictData(data as SysDictDataSave),
+  updateApi: (data) => updateDictData(data as SysDictDataSave),
   onSuccess: () => { clearDict(dataForm.dictType); fetchDataList() },
 })
 

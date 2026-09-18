@@ -5,19 +5,19 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.system.model.query.SysDictTypeQuery;
+import com.istream.system.model.query.dict.SysDictTypeQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
-import com.istream.system.model.dto.SysDictTypeCreateDTO;
-import com.istream.system.model.dto.SysDictTypeDTO;
-import com.istream.system.model.dto.SysDictTypeUpdateDTO;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.dict.SysDictTypeSaveDTO;
+import com.istream.system.model.dto.dict.SysDictTypeDTO;
 import com.istream.system.converter.SysDictTypeConverter;
 import com.istream.system.entity.SysDictType;
 import com.istream.system.service.SysDictTypeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,7 +67,7 @@ public class SysDictTypeController {
     @Operation(summary = "新增字典类型")
     @SaCheckPermission("system:dict:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysDictTypeCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysDictTypeSaveDTO dto) {
         if (sysDictTypeService.existsByDictType(dto.getDictType(), null)) {
             return R.fail(ResultCode.DATA_DUPLICATE, "字典类型已存在");
         }
@@ -80,7 +80,7 @@ public class SysDictTypeController {
     @Operation(summary = "修改字典类型")
     @SaCheckPermission("system:dict:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysDictTypeUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysDictTypeSaveDTO dto) {
         if (dto.getDictType() != null && sysDictTypeService.existsByDictType(dto.getDictType(), dto.getId())) {
             return R.fail(ResultCode.DATA_DUPLICATE, "字典类型已存在");
         }

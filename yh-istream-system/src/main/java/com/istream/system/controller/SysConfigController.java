@@ -5,19 +5,19 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
-import com.istream.system.model.query.SysConfigQuery;
+import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
-import com.istream.system.model.dto.SysConfigCreateDTO;
-import com.istream.system.model.dto.SysConfigDTO;
-import com.istream.system.model.dto.SysConfigUpdateDTO;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.config.SysConfigSaveDTO;
+import com.istream.system.model.dto.config.SysConfigDTO;
 import com.istream.system.converter.SysConfigConverter;
 import com.istream.system.entity.SysConfig;
 import com.istream.system.service.SysConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -77,7 +77,7 @@ public class SysConfigController {
     @Operation(summary = "新增配置")
     @SaCheckPermission("system:config:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysConfigCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysConfigSaveDTO dto) {
         if (sysConfigService.existsByConfigKey(dto.getConfigKey(), null)) {
             return R.fail(ResultCode.DATA_DUPLICATE, "配置键已存在");
         }
@@ -90,7 +90,7 @@ public class SysConfigController {
     @Operation(summary = "修改配置")
     @SaCheckPermission("system:config:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysConfigUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysConfigSaveDTO dto) {
         if (dto.getConfigKey() != null && sysConfigService.existsByConfigKey(dto.getConfigKey(), dto.getId())) {
             return R.fail(ResultCode.DATA_DUPLICATE, "配置键已存在");
         }

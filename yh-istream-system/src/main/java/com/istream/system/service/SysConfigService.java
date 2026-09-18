@@ -3,7 +3,7 @@ package com.istream.system.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.system.model.query.SysConfigQuery;
+import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.system.entity.SysConfig;
 
 /**

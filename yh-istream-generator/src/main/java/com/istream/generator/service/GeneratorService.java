@@ -5,9 +5,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
-import com.istream.generator.model.dto.GenRequest;
-import com.istream.generator.model.vo.ColumnInfo;
-import com.istream.generator.model.vo.TableInfo;
+import com.istream.generator.model.dto.GenRequestDTO;
+import com.istream.generator.model.vo.ColumnInfoVO;
+import com.istream.generator.model.vo.TableInfoVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.VelocityContext;
@@ -117,8 +117,8 @@ public class GeneratorService {
     /**
      * 查询所有表信息
      */
-    public List<TableInfo> listTables() {
-        List<TableInfo> tables = new ArrayList<>();
+    public List<TableInfoVO> listTables() {
+        List<TableInfoVO> tables = new ArrayList<>();
         String sql = """
                 SELECT TABLE_NAME, TABLE_COMMENT, CREATE_TIME
                 FROM information_schema.TABLES
@@ -130,7 +130,7 @@ public class GeneratorService {
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                TableInfo table = TableInfo.builder()
+                TableInfoVO table = TableInfoVO.builder()
                         .tableName(rs.getString("TABLE_NAME"))
                         .tableComment(rs.getString("TABLE_COMMENT"))
                         .className(tableNameToClassName(rs.getString("TABLE_NAME")))
@@ -148,8 +148,8 @@ public class GeneratorService {
     /**
      * 查询指定表的列信息
      */
-    public List<ColumnInfo> listColumns(String tableName) {
-        List<ColumnInfo> columns = new ArrayList<>();
+    public List<ColumnInfoVO> listColumns(String tableName) {
+        List<ColumnInfoVO> columns = new ArrayList<>();
         String sql = """
                 SELECT COLUMN_NAME, COLUMN_COMMENT, DATA_TYPE, COLUMN_TYPE,
                        IS_NULLABLE, COLUMN_KEY
@@ -167,7 +167,7 @@ public class GeneratorService {
                     String dataType = rs.getString("DATA_TYPE").toLowerCase();
                     String columnType = rs.getString("COLUMN_TYPE");
 
-                    ColumnInfo col = ColumnInfo.builder()
+                    ColumnInfoVO col = ColumnInfoVO.builder()
                             .columnName(columnName)
                             .columnComment(defaultIfEmpty(rs.getString("COLUMN_COMMENT"), columnName))
                             .javaType(mapJavaType(dataType, columnType))
@@ -193,15 +193,15 @@ public class GeneratorService {
      *
      * @return Map<模板名, 生成内容>
      */
-    public Map<String, String> preview(String tableName, GenRequest request) {
-        TableInfo tableInfo = buildTableInfo(tableName, request);
+    public Map<String, String> preview(String tableName, GenRequestDTO request) {
+        TableInfoVO tableInfo = buildTableInfoVO(tableName, request);
         return renderAll(tableInfo, request);
     }
 
     /**
      * 批量预览
      */
-    public Map<String, Map<String, String>> batchPreview(GenRequest request) {
+    public Map<String, Map<String, String>> batchPreview(GenRequestDTO request) {
         Map<String, Map<String, String>> result = new LinkedHashMap<>();
         for (String tableName : request.getTableNames()) {
             result.put(tableName, preview(tableName, request));
@@ -214,10 +214,10 @@ public class GeneratorService {
     /**
      * 构建表元数据
      */
-    private TableInfo buildTableInfo(String tableName, GenRequest request) {
-        List<ColumnInfo> columns = listColumns(tableName);
+    private TableInfoVO buildTableInfoVO(String tableName, GenRequestDTO request) {
+        List<ColumnInfoVO> columns = listColumns(tableName);
         String tableComment = getTableComment(tableName);
-        return TableInfo.builder()
+        return TableInfoVO.builder()
                 .tableName(tableName)
                 .tableComment(tableComment)
                 .className(tableNameToClassName(tableName))
@@ -252,7 +252,7 @@ public class GeneratorService {
     /**
      * 渲染所有模板
      */
-    private Map<String, String> renderAll(TableInfo tableInfo, GenRequest request) {
+    private Map<String, String> renderAll(TableInfoVO tableInfo, GenRequestDTO request) {
         VelocityEngine engine = createVelocityEngine();
         VelocityContext context = buildContext(tableInfo, request);
 
@@ -298,7 +298,7 @@ public class GeneratorService {
     /**
      * 构建 Velocity 上下文
      */
-    private VelocityContext buildContext(TableInfo tableInfo, GenRequest request) {
+    private VelocityContext buildContext(TableInfoVO tableInfo, GenRequestDTO request) {
         VelocityContext context = new VelocityContext();
 
         String className = tableInfo.getClassName();
@@ -317,7 +317,7 @@ public class GeneratorService {
 
         // 计算需要的导入包
         Set<String> importPackages = new HashSet<>();
-        for (ColumnInfo col : tableInfo.getColumns()) {
+        for (ColumnInfoVO col : tableInfo.getColumns()) {
             if (col.isBaseField()) {
                 continue;
             }
@@ -336,7 +336,7 @@ public class GeneratorService {
         // 索引列
         List<String> indexColumns = tableInfo.getColumns().stream()
                 .filter(c -> !c.isBaseField() && c.isIndexable())
-                .map(ColumnInfo::getColumnName)
+                .map(ColumnInfoVO::getColumnName)
                 .collect(Collectors.toList());
         context.put("indexColumns", indexColumns);
 

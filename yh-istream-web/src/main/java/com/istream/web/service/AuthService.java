@@ -10,7 +10,7 @@ import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
 import com.istream.web.model.dto.LoginDTO;
-import com.istream.system.model.dto.SysUserDTO;
+import com.istream.system.model.dto.user.SysUserDTO;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.web.model.vo.CaptchaVO;
 import com.istream.web.model.vo.LoginVO;

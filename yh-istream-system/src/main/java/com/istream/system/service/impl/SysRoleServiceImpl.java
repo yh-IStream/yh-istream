@@ -9,7 +9,7 @@ import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
 import com.istream.system.helper.UserCacheHelper;
-import com.istream.system.model.query.SysRoleQuery;
+import com.istream.system.model.query.role.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
 import com.istream.system.entity.SysRoleDept;

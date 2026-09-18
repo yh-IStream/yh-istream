@@ -1,8 +1,11 @@
 import { darkTheme, type GlobalTheme } from 'naive-ui'
 
+const DARK_MODE_KEY = 'yh-istream-dark-mode'
+const COLLAPSED_KEY = 'yh-istream-collapsed'
+
 export const useAppStore = defineStore('app', () => {
-  const darkMode = ref(false)
-  const collapsed = ref(false)
+  const darkMode = ref(localStorage.getItem(DARK_MODE_KEY) === 'true')
+  const collapsed = ref(localStorage.getItem(COLLAPSED_KEY) === 'true')
   const isMobile = ref(false)
 
   const theme = computed<GlobalTheme | null>(() => (darkMode.value ? darkTheme : null))
@@ -23,10 +26,20 @@ export const useAppStore = defineStore('app', () => {
 
   function toggleDark() {
     darkMode.value = !darkMode.value
+    localStorage.setItem(DARK_MODE_KEY, String(darkMode.value))
   }
 
   function toggleCollapsed() {
     collapsed.value = !collapsed.value
+    localStorage.setItem(COLLAPSED_KEY, String(collapsed.value))
+  }
+
+  if (typeof window !== 'undefined') {
+    const mediaQuery = window.matchMedia('(max-width: 768px)')
+    isMobile.value = mediaQuery.matches
+    mediaQuery.addEventListener('change', (e) => {
+      isMobile.value = e.matches
+    })
   }
 
   return {

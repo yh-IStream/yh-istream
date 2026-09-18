@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AddOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getMenuTree, addMenu, updateMenu, deleteMenu, type SysMenu, type SysMenuCreate, type SysMenuUpdate } from '@/api/modules/system'
+import { getMenuTree, addMenu, updateMenu, deleteMenu, type SysMenu, type SysMenuSave } from '@/api/modules/system'
 import type { TreeSelectOption } from 'naive-ui'
 import { STATUS, STATUS_LABEL } from '@/constants'
 import { useDict } from '@/composables/useDict'
@@ -41,8 +41,8 @@ const {
   handleSubmit,
 } = useCrudDialog<MenuFormData>({
   defaults: () => ({ id: null, parentId: '0', menuName: '', menuType: 'M', path: '', component: '', query: '', permission: '', icon: '', orderNum: 0, status: STATUS.NORMAL, visible: 1 }),
-  addApi: (data) => addMenu(data as SysMenuCreate),
-  updateApi: (data) => updateMenu(data as SysMenuUpdate),
+  addApi: (data) => addMenu(data as SysMenuSave),
+  updateApi: (data) => updateMenu(data as SysMenuSave),
   onSuccess: fetchData,
   titles: { add: '新增菜单', edit: '编辑菜单' },
 })

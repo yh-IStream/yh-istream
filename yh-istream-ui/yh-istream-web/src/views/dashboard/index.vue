@@ -48,7 +48,7 @@ onMounted(() => {
   fetchStats()
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   clearInterval(timer)
   dashboardAbort?.abort()
 })

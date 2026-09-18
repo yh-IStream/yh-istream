@@ -47,6 +47,12 @@ router.beforeEach(async (to) => {
   }
 })
 
+router.afterEach((to) => {
+  const appTitle = import.meta.env.VITE_APP_TITLE || 'iStream'
+  const pageTitle = to.meta?.title as string | undefined
+  document.title = pageTitle ? `${pageTitle} - ${appTitle}` : appTitle
+})
+
 if (import.meta.hot) {
   handleHotUpdate(router)
 }

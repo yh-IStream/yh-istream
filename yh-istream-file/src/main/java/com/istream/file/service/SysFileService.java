@@ -2,7 +2,7 @@ package com.istream.file.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.file.model.query.SysFileQuery;
+import com.istream.file.model.query.file.SysFileQuery;
 import com.istream.file.entity.SysFile;
 import org.springframework.web.multipart.MultipartFile;
 

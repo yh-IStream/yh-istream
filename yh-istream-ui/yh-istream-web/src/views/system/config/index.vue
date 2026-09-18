@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SearchOutline, AddOutline, RefreshOutline } from '@vicons/ionicons5'
-import { getConfigList, addConfig, updateConfig, deleteConfig, type SysConfig, type SysConfigCreate, type SysConfigUpdate } from '@/api/modules/system'
+import { getConfigList, addConfig, updateConfig, deleteConfig, type SysConfig, type SysConfigSave } from '@/api/modules/system'
 import { useTable } from '@/composables/useTable'
 import { useCrudDialog } from '@/composables/useCrudDialog'
 
@@ -24,8 +24,8 @@ interface ConfigFormData {
 
 const { visible: dialogVisible, title: dialogTitle, isEdit, submitLoading, formRef, formData, openAdd, openEdit, handleSubmit } = useCrudDialog<ConfigFormData>({
   defaults: () => ({ id: null, configName: '', configKey: '', configValue: '', remark: '' }),
-  addApi: (data) => addConfig(data as SysConfigCreate),
-  updateApi: (data) => updateConfig(data as SysConfigUpdate),
+  addApi: (data) => addConfig(data as SysConfigSave),
+  updateApi: (data) => updateConfig(data as SysConfigSave),
   onSuccess: fetchData,
   titles: { add: '新增配置', edit: '编辑配置' },
 })

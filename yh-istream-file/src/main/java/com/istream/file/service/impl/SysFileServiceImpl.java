@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.exception.BusinessException;
 import com.istream.common.enums.ResultCode;
-import com.istream.file.model.query.SysFileQuery;
+import com.istream.file.model.query.file.SysFileQuery;
 import com.istream.file.entity.SysFile;
 import com.istream.file.enums.StorageType;
 import com.istream.file.mapper.SysFileMapper;

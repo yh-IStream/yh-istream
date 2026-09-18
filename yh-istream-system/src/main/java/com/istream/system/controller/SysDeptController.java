@@ -5,16 +5,16 @@ import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
-import com.istream.system.model.dto.SysDeptCreateDTO;
-import com.istream.system.model.dto.SysDeptDTO;
-import com.istream.system.model.dto.SysDeptUpdateDTO;
+import com.istream.common.validation.Groups;
+import com.istream.system.model.dto.dept.SysDeptSaveDTO;
+import com.istream.system.model.dto.dept.SysDeptDTO;
 import com.istream.system.converter.SysDeptConverter;
 import com.istream.system.entity.SysDept;
 import com.istream.system.service.SysDeptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,7 +61,7 @@ public class SysDeptController {
     @Operation(summary = "新增部门")
     @SaCheckPermission("system:dept:add")
     @PostMapping
-    public R<Void> add(@Valid @RequestBody SysDeptCreateDTO dto) {
+    public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysDeptSaveDTO dto) {
         SysDept dept = sysDeptConverter.toEntity(dto);
         sysDeptService.save(dept);
         return R.ok();
@@ -71,7 +71,7 @@ public class SysDeptController {
     @Operation(summary = "修改部门")
     @SaCheckPermission("system:dept:edit")
     @PutMapping
-    public R<Void> update(@Valid @RequestBody SysDeptUpdateDTO dto) {
+    public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysDeptSaveDTO dto) {
         if (dto.getId().equals(dto.getParentId())) {
             return R.fail(ResultCode.PARAM_VALID_ERROR, "上级部门不能是自己");
         }

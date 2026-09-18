@@ -2,9 +2,8 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.istream.system.model.dto.SysUserCreateDTO;
-import com.istream.system.model.dto.SysUserUpdateDTO;
-import com.istream.system.model.query.SysUserQuery;
+import com.istream.system.model.dto.user.SysUserSaveDTO;
+import com.istream.system.model.query.user.SysUserQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 
@@ -41,14 +40,14 @@ public interface SysUserService extends IService<SysUser> {
      *
      * @param dto 用户新增 DTO
      */
-    void createUser(SysUserCreateDTO dto);
+    void createUser(SysUserSaveDTO dto);
 
     /**
      * 更新用户
      *
      * @param dto 用户修改 DTO
      */
-    void updateUser(SysUserUpdateDTO dto);
+    void updateUser(SysUserSaveDTO dto);
 
     /**
      * 分配用户角色

@@ -1,6 +1,6 @@
 package com.istream.system.converter;
 
-import com.istream.system.model.dto.SysLoginInfoDTO;
+import com.istream.system.model.dto.logininfo.SysLoginInfoDTO;
 import com.istream.system.entity.SysLoginInfo;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

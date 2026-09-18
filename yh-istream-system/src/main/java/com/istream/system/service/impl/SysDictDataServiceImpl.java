@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.istream.common.enums.StatusEnum;
-import com.istream.system.model.query.SysDictDataQuery;
+import com.istream.system.model.query.dict.SysDictDataQuery;
 import com.istream.system.entity.SysDictData;
 import com.istream.system.mapper.SysDictDataMapper;
 import com.istream.system.service.SysDictDataService;

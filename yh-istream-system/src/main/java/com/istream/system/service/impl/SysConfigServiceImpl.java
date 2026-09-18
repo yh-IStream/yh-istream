@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.istream.system.model.query.SysConfigQuery;
+import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.system.entity.SysConfig;
 import com.istream.system.mapper.SysConfigMapper;
 import com.istream.system.service.SysConfigService;
