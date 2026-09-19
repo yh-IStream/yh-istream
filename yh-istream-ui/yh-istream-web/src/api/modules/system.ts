@@ -2,8 +2,6 @@ import { get, post, put, del, upload } from '@/api/request'
 import type { ApiResponse, PageParams, PageResult } from '@/api/types'
 import type { AxiosRequestConfig } from 'axios'
 
-export type { PageParams, PageResult }
-
 // ==================== 用户管理 ====================
 export interface SysUser {
   id: string
@@ -19,6 +17,7 @@ export interface SysUser {
   loginIp: string
   loginDate: string
   loginCount: number
+  pwdResetTime: string
   roleIds: string[]
   roleNames: string[]
   remark: string
@@ -168,6 +167,8 @@ export interface SysMenu {
   orderNum: number
   visible: number
   status: number
+  remark: string
+  createTime: string
   children?: SysMenu[]
 }
 
@@ -184,6 +185,7 @@ export interface SysMenuSave {
   orderNum?: number
   visible?: number
   status?: number
+  remark?: string
 }
 
 export function getMenuTree(config?: AxiosRequestConfig) {
@@ -206,12 +208,15 @@ export function deleteMenu(ids: string | string[]) {
 export interface SysDept {
   id: string
   parentId: string
+  ancestors: string
   deptName: string
   orderNum: number
   leader: string
   phone: string
   email: string
   status: number
+  remark: string
+  createTime: string
   children?: SysDept[]
 }
 
@@ -224,6 +229,7 @@ export interface SysDeptSave {
   phone?: string
   email?: string
   status?: number
+  remark?: string
 }
 
 export function getDeptTree(config?: AxiosRequestConfig) {
@@ -271,6 +277,7 @@ export interface SysDictData {
   orderNum: number
   status: number
   remark: string
+  createTime: string
 }
 
 export interface SysDictDataSave {
@@ -364,13 +371,12 @@ export interface SysFile {
   fileName: string
   originalName: string
   filePath: string
-  fileSize: string
+  fileSize: number
   mimeType: string
   fileExt: string
   storageType: string
   storageUrl: string
   module: string
-  createBy: string
   createTime: string
 }
 

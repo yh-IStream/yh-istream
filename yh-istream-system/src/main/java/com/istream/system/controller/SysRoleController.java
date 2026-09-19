@@ -2,7 +2,6 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.StatusEnum;
@@ -15,6 +14,8 @@ import com.istream.common.model.R;
 import com.istream.system.model.vo.role.SysRoleMenuTreeVO;
 import com.istream.common.enums.ResultCode;
 import com.istream.framework.util.ExcelExportUtil;
+import com.istream.framework.util.PageUtils;
+import com.istream.system.converter.SysMenuConverter;
 import com.istream.system.converter.SysRoleConverter;
 import com.istream.system.converter.SysUserConverter;
 import com.istream.system.entity.SysRole;
@@ -61,17 +62,14 @@ public class SysRoleController {
     private final SysUserService sysUserService;
     private final SysUserConverter sysUserConverter;
     private final SysRoleConverter sysRoleConverter;
+    private final SysMenuConverter sysMenuConverter;
 
     @Operation(summary = "分页查询角色列表")
     @SaCheckPermission("system:role:list")
     @GetMapping("/list")
     public R<IPage<SysRoleDTO>> list(SysRoleQuery query) {
         IPage<SysRole> page = sysRoleService.page(query);
-        IPage<SysRoleDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysRoleConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysRoleConverter::toDto));
     }
 
     @Operation(summary = "查询所有角色（下拉选择用）")
@@ -149,7 +147,7 @@ public class SysRoleController {
     public R<SysRoleMenuTreeVO> menuTree(@PathVariable Long roleId) {
         List<SysMenu> menus = sysMenuService.listMenuTree();
         List<Long> checkedKeys = sysRoleService.getMenuIdsByRoleId(roleId);
-        return R.ok(new SysRoleMenuTreeVO(menus, checkedKeys));
+        return R.ok(new SysRoleMenuTreeVO(sysMenuConverter.toDtoList(menus), checkedKeys));
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)

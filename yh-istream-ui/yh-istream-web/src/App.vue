@@ -5,7 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 const appStore = useAppStore()
 const route = useRoute()
 
-const FULLSCREEN_ROUTES = new Set(['/', '/login', '/error/403', '/error/404'])
+const FULLSCREEN_ROUTES = new Set(['/login', '/error/403', '/error/404'])
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 package com.istream.web.model.vo;
 
-import com.istream.system.entity.SysMenu;
+import com.istream.system.model.dto.menu.SysMenuDTO;
 import com.istream.system.model.dto.user.SysUserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,5 +30,5 @@ public class UserInfoVO implements Serializable {
 
     private List<String> roles;
 
-    private List<SysMenu> menus;
+    private List<SysMenuDTO> menus;
 }

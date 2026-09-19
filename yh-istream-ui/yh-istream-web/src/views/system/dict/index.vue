@@ -97,6 +97,7 @@ interface DictDataFormData {
   orderNum: number
   cssClass: string
   listClass: string
+  isDefault: number
   status: number
   remark: string
 }
@@ -109,7 +110,7 @@ const {
   openEdit: handleDataEditInner,
   handleSubmit: handleDataSubmitInner,
 } = useCrudDialog<DictDataFormData>({
-  defaults: () => ({ id: null, dictType: selectedDictType.value, dictLabel: '', dictValue: '', orderNum: 0, cssClass: '', listClass: '', status: STATUS.NORMAL, remark: '' }),
+  defaults: () => ({ id: null, dictType: selectedDictType.value, dictLabel: '', dictValue: '', orderNum: 0, cssClass: '', listClass: '', isDefault: 0, status: STATUS.NORMAL, remark: '' }),
   addApi: (data) => addDictData(data as SysDictDataSave),
   updateApi: (data) => updateDictData(data as SysDictDataSave),
   onSuccess: () => { clearDict(dataForm.dictType); fetchDataList() },
@@ -240,6 +241,12 @@ onMounted(() => fetchTypeList())
         </n-form-item>
         <n-form-item label="CSS类名" path="cssClass">
           <n-input v-model:value="dataForm.cssClass" placeholder="自定义CSS类名，如 text-red" />
+        </n-form-item>
+        <n-form-item label="是否默认" path="isDefault">
+          <n-radio-group v-model:value="dataForm.isDefault">
+            <n-radio :value="1">是</n-radio>
+            <n-radio :value="0">否</n-radio>
+          </n-radio-group>
         </n-form-item>
         <n-form-item label="状态">
           <n-switch v-model:value="dataForm.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">

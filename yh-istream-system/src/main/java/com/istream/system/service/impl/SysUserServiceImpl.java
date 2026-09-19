@@ -240,12 +240,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Transactional(rollbackFor = Exception.class)
     public boolean removeByIds(Collection<?> list) {
         @SuppressWarnings("unchecked")
-        List<SysUser> users = listByIds((Collection<? extends Serializable>) list);
-        for (SysUser user : users) {
-            if (hasSuperAdminRole(user.getId())) {
-                throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
-            }
-        }
+        List<Long> userIds = list.stream().map(id -> (Long) id).toList();
+        checkSuperAdminBatch(userIds);
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .in(SysUserRole::getUserId, list));
         for (Object id : list) {
@@ -257,6 +253,26 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private void checkSuperAdmin(Long userId) {
         if (hasSuperAdminRole(userId)) {
             throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
+        }
+    }
+
+    private void checkSuperAdminBatch(List<Long> userIds) {
+        List<SysUserRole> allUserRoles = sysUserRoleMapper.selectList(
+                new LambdaQueryWrapper<SysUserRole>().in(SysUserRole::getUserId, userIds));
+        if (allUserRoles.isEmpty()) {
+            return;
+        }
+        List<Long> roleIds = allUserRoles.stream().map(SysUserRole::getRoleId).distinct().toList();
+        List<SysRole> roles = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getId, roleIds)
+                .eq(SysRole::getRoleKey, Constants.SUPER_ADMIN_ROLE));
+        if (!roles.isEmpty()) {
+            Set<Long> superAdminRoleIds = roles.stream().map(SysRole::getId).collect(Collectors.toSet());
+            for (SysUserRole ur : allUserRoles) {
+                if (superAdminRoleIds.contains(ur.getRoleId())) {
+                    throw new BusinessException(ResultCode.SUPER_ADMIN_PROTECT);
+                }
+            }
         }
     }
 

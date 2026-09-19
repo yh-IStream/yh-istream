@@ -10,6 +10,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
+import java.util.List;
+
 /**
  * SysMenu DTO ↔ Entity 转换器
  *
@@ -20,6 +22,8 @@ import org.mapstruct.ReportingPolicy;
 public interface SysMenuConverter {
 
     SysMenuDTO toDto(SysMenu entity);
+
+    List<SysMenuDTO> toDtoList(List<SysMenu> entities);
 
     @Mapping(target = "parentId", expression = "java(dto.getParentId() != null ? dto.getParentId() : Constants.ROOT_PARENT_ID)")
     @Mapping(target = "orderNum", expression = "java(dto.getOrderNum() != null ? dto.getOrderNum() : Constants.DEFAULT_ORDER_NUM)")

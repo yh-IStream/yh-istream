@@ -73,7 +73,14 @@ export function useTable<T, S extends Record<string, unknown>>(options: UseTable
   }
 
   function handleReset(defaults?: S) {
-    Object.assign(searchForm, defaults ?? searchDefaults ?? {})
+    const resetValues = defaults ?? searchDefaults
+    if (resetValues) {
+      Object.assign(searchForm, resetValues)
+    } else {
+      for (const key of Object.keys(searchForm) as (keyof S)[]) {
+        delete searchForm[key]
+      }
+    }
     resetPage()
     fetchData()
   }

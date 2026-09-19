@@ -2,7 +2,6 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
@@ -10,6 +9,7 @@ import com.istream.common.model.R;
 import com.istream.system.model.dto.logininfo.SysLoginInfoDTO;
 import com.istream.system.model.query.logininfo.SysLoginInfoQuery;
 import com.istream.framework.util.ExcelExportUtil;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.converter.SysLoginInfoConverter;
 import com.istream.system.entity.SysLoginInfo;
 import com.istream.system.service.SysLoginInfoService;
@@ -47,11 +47,7 @@ public class SysLoginInfoController {
     @GetMapping("/list")
     public R<IPage<SysLoginInfoDTO>> list(SysLoginInfoQuery query) {
         IPage<SysLoginInfo> page = sysLoginInfoService.page(query);
-        IPage<SysLoginInfoDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysLoginInfoConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysLoginInfoConverter::toDto));
     }
 
     @Operation(summary = "根据ID查询登录日志")

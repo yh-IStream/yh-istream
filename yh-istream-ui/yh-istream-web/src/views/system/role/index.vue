@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SearchOutline, AddOutline, RefreshOutline, DownloadOutline } from '@vicons/ionicons5'
+import { SearchOutline, AddOutline, RefreshOutline, DownloadOutline, TrashOutline } from '@vicons/ionicons5'
 import {
   getRoleList, addRole, updateRole, deleteRole, changeRoleStatus, getRoleMenuTree, assignRoleMenu,
   getRoleUsers, assignRoleUsers, getUserList,
@@ -325,12 +325,7 @@ onBeforeUnmount(() => {
       <div class="flex items-center justify-between mb-12px">
         <n-space>
           <n-button type="primary" @click="handleAdd" v-permission="'system:role:add'"><template #icon><n-icon :component="AddOutline" /></template>新增</n-button>
-          <n-popconfirm @positive-click="handleBatchDelete">
-            <template #trigger>
-              <n-button type="error" :disabled="selectedIds.length === 0" v-permission="'system:role:delete'">批量删除</n-button>
-            </template>
-            确认删除选中的 {{ selectedIds.length }} 条角色吗？
-          </n-popconfirm>
+          <n-button type="error" ghost @click="handleBatchDelete" :disabled="selectedIds.length === 0" v-permission="'system:role:delete'"><template #icon><n-icon :component="TrashOutline" /></template>批量删除</n-button>
           <n-button @click="handleExport" v-permission="'system:role:export'"><template #icon><n-icon :component="DownloadOutline" /></template>导出</n-button>
         </n-space>
       </div>

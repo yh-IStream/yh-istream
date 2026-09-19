@@ -2,13 +2,13 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.system.model.query.dict.SysDictTypeQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.validation.Groups;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.model.dto.dict.SysDictTypeSaveDTO;
 import com.istream.system.model.dto.dict.SysDictTypeDTO;
 import com.istream.system.converter.SysDictTypeConverter;
@@ -49,11 +49,7 @@ public class SysDictTypeController {
     @GetMapping("/list")
     public R<IPage<SysDictTypeDTO>> list(SysDictTypeQuery query) {
         IPage<SysDictType> page = sysDictTypeService.page(query);
-        IPage<SysDictTypeDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysDictTypeConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysDictTypeConverter::toDto));
     }
 
     @Operation(summary = "根据ID查询字典类型")

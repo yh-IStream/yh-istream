@@ -1,6 +1,5 @@
 package com.istream.generator.service;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.istream.common.enums.ResultCode;
@@ -12,14 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.sql.DataSource;
 import java.io.StringWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -43,7 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GeneratorService {
 
-    private final DataSource dataSource;
+    private final JdbcTemplate jdbcTemplate;
 
     /** BaseEntity 中已定义的字段，Entity 模板中跳过 */
     private static final Set<String> BASE_ENTITY_FIELDS = new HashSet<>(Arrays.asList(
@@ -118,7 +113,6 @@ public class GeneratorService {
      * 查询所有表信息
      */
     public List<TableInfoVO> listTables() {
-        List<TableInfoVO> tables = new ArrayList<>();
         String sql = """
                 SELECT TABLE_NAME, TABLE_COMMENT, CREATE_TIME
                 FROM information_schema.TABLES
@@ -126,30 +120,23 @@ public class GeneratorService {
                   AND TABLE_TYPE = 'BASE TABLE'
                 ORDER BY CREATE_TIME DESC
                 """;
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                TableInfoVO table = TableInfoVO.builder()
-                        .tableName(rs.getString("TABLE_NAME"))
-                        .tableComment(rs.getString("TABLE_COMMENT"))
-                        .className(tableNameToClassName(rs.getString("TABLE_NAME")))
-                        .createTime(rs.getString("CREATE_TIME"))
-                        .build();
-                tables.add(table);
-            }
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> TableInfoVO.builder()
+                    .tableName(rs.getString("TABLE_NAME"))
+                    .tableComment(rs.getString("TABLE_COMMENT"))
+                    .className(tableNameToClassName(rs.getString("TABLE_NAME")))
+                    .createTime(rs.getString("CREATE_TIME"))
+                    .build());
         } catch (Exception e) {
             log.error("查询表信息失败", e);
             throw new BusinessException(ResultCode.ERROR, "查询表信息失败", e);
         }
-        return tables;
     }
 
     /**
      * 查询指定表的列信息
      */
     public List<ColumnInfoVO> listColumns(String tableName) {
-        List<ColumnInfoVO> columns = new ArrayList<>();
         String sql = """
                 SELECT COLUMN_NAME, COLUMN_COMMENT, DATA_TYPE, COLUMN_TYPE,
                        IS_NULLABLE, COLUMN_KEY
@@ -158,34 +145,27 @@ public class GeneratorService {
                   AND TABLE_NAME = ?
                 ORDER BY ORDINAL_POSITION
                 """;
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tableName);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String columnName = rs.getString("COLUMN_NAME");
-                    String dataType = rs.getString("DATA_TYPE").toLowerCase();
-                    String columnType = rs.getString("COLUMN_TYPE");
-
-                    ColumnInfoVO col = ColumnInfoVO.builder()
-                            .columnName(columnName)
-                            .columnComment(defaultIfEmpty(rs.getString("COLUMN_COMMENT"), columnName))
-                            .javaType(mapJavaType(dataType, columnType))
-                            .javaField(columnNameToField(columnName))
-                            .isPk("PRI".equals(rs.getString("COLUMN_KEY")))
-                            .isRequired("NO".equals(rs.getString("IS_NULLABLE")))
-                            .isBaseField(BASE_ENTITY_FIELDS.contains(columnName.toLowerCase()))
-                            .sqlType(columnType.toUpperCase())
-                            .isIndexable(INDEXABLE_TYPES.contains(dataType))
-                            .build();
-                    columns.add(col);
-                }
-            }
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                String columnName = rs.getString("COLUMN_NAME");
+                String dataType = rs.getString("DATA_TYPE").toLowerCase();
+                String columnType = rs.getString("COLUMN_TYPE");
+                return ColumnInfoVO.builder()
+                        .columnName(columnName)
+                        .columnComment(defaultIfEmpty(rs.getString("COLUMN_COMMENT"), columnName))
+                        .javaType(mapJavaType(dataType, columnType))
+                        .javaField(columnNameToField(columnName))
+                        .isPk("PRI".equals(rs.getString("COLUMN_KEY")))
+                        .isRequired("NO".equals(rs.getString("IS_NULLABLE")))
+                        .isBaseField(BASE_ENTITY_FIELDS.contains(columnName.toLowerCase()))
+                        .sqlType(columnType.toUpperCase())
+                        .isIndexable(INDEXABLE_TYPES.contains(dataType))
+                        .build();
+            }, tableName);
         } catch (Exception e) {
             log.error("查询列信息失败: {}", tableName, e);
             throw new BusinessException(ResultCode.ERROR, "查询列信息失败", e);
         }
-        return columns;
     }
 
     /**
@@ -235,14 +215,9 @@ public class GeneratorService {
                 WHERE TABLE_SCHEMA = DATABASE()
                   AND TABLE_NAME = ?
                 """;
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, tableName);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return defaultIfEmpty(rs.getString("TABLE_COMMENT"), tableName);
-                }
-            }
+        try {
+            String comment = jdbcTemplate.queryForObject(sql, String.class, tableName);
+            return defaultIfEmpty(comment, tableName);
         } catch (Exception e) {
             log.error("获取表注释失败: {}", tableName, e);
         }

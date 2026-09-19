@@ -2,13 +2,13 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.validation.Groups;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.model.dto.config.SysConfigSaveDTO;
 import com.istream.system.model.dto.config.SysConfigDTO;
 import com.istream.system.converter.SysConfigConverter;
@@ -49,11 +49,7 @@ public class SysConfigController {
     @GetMapping("/list")
     public R<IPage<SysConfigDTO>> list(SysConfigQuery query) {
         IPage<SysConfig> page = sysConfigService.page(query);
-        IPage<SysConfigDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysConfigConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysConfigConverter::toDto));
     }
 
     /**

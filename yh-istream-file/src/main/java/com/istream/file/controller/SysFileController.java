@@ -3,13 +3,13 @@ package com.istream.file.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.io.IoUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
 import com.istream.common.model.R;
+import com.istream.framework.util.PageUtils;
 import com.istream.file.model.dto.file.SysFileDTO;
 import com.istream.file.model.query.file.SysFileQuery;
 import com.istream.file.converter.SysFileConverter;
@@ -185,11 +185,7 @@ public class SysFileController {
     @GetMapping("/list")
     public R<IPage<SysFileDTO>> list(SysFileQuery query) {
         IPage<SysFile> page = sysFileService.page(query);
-        IPage<SysFileDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysFileConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysFileConverter::toDto));
     }
 
     /**

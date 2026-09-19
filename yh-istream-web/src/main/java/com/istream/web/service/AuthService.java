@@ -22,7 +22,8 @@ import com.istream.framework.util.IpRegionUtils;
 import com.istream.framework.util.IpUtils;
 import com.istream.system.converter.SysUserConverter;
 import com.istream.system.entity.SysLoginInfo;
-import com.istream.system.entity.SysMenu;
+import com.istream.system.converter.SysMenuConverter;
+import com.istream.system.model.dto.menu.SysMenuDTO;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysUser;
 import com.istream.system.service.SysLoginInfoService;
@@ -31,6 +32,7 @@ import com.istream.system.service.SysUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -56,10 +58,14 @@ public class AuthService {
     private final SysMenuService sysMenuService;
     private final SysLoginInfoService sysLoginInfoService;
     private final SysUserConverter sysUserConverter;
+    private final SysMenuConverter sysMenuConverter;
     private final CacheService cacheService;
     private final SseService sseService;
 
-    private static final Duration CAPTCHA_TTL = Duration.ofMinutes(2);
+    @Value("${captcha.enabled:true}")
+    private boolean captchaEnabled;
+
+    private static final Duration CAPTCHA_TTL = Duration.ofSeconds(Constants.CAPTCHA_EXPIRE_SECONDS);
 
     /**
      * 用户登录
@@ -128,7 +134,7 @@ public class AuthService {
         List<String> roles = sysUserService.getRolesByUserId(userId).stream()
                 .map(SysRole::getRoleKey)
                 .toList();
-        List<SysMenu> menus = sysMenuService.getCurrentUserMenuTree();
+        List<SysMenuDTO> menus = sysMenuConverter.toDtoList(sysMenuService.getCurrentUserMenuTree());
 
         return UserInfoVO.builder()
                 .user(userDTO)
@@ -139,15 +145,19 @@ public class AuthService {
     }
 
     private void validateCaptcha(LoginDTO loginDTO) {
-        if (StrUtil.isNotBlank(loginDTO.getCaptchaKey())) {
-            String redisKey = Constants.CAPTCHA_CACHE_PREFIX + loginDTO.getCaptchaKey();
-            String cachedCode = cacheService.getAndDelete(redisKey);
-            if (cachedCode == null) {
-                throw new BusinessException(ResultCode.CAPTCHA_EXPIRED);
-            }
-            if (!cachedCode.equalsIgnoreCase(loginDTO.getCaptchaCode())) {
-                throw new BusinessException(ResultCode.CAPTCHA_ERROR);
-            }
+        if (!captchaEnabled) {
+            return;
+        }
+        if (StrUtil.isBlank(loginDTO.getCaptchaKey())) {
+            throw new BusinessException(ResultCode.CAPTCHA_EXPIRED);
+        }
+        String redisKey = Constants.CAPTCHA_CACHE_PREFIX + loginDTO.getCaptchaKey();
+        String cachedCode = cacheService.getAndDelete(redisKey);
+        if (cachedCode == null) {
+            throw new BusinessException(ResultCode.CAPTCHA_EXPIRED);
+        }
+        if (!cachedCode.equalsIgnoreCase(loginDTO.getCaptchaCode())) {
+            throw new BusinessException(ResultCode.CAPTCHA_ERROR);
         }
     }
 

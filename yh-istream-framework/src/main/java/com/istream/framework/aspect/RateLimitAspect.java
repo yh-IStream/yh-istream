@@ -49,7 +49,9 @@ public class RateLimitAspect {
 
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(fullKey);
         initializedKeys.computeIfAbsent(fullKey, k -> {
-            rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
+            if (!rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1))) {
+                rateLimiter.setRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
+            }
             return Boolean.TRUE;
         });
 

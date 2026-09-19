@@ -1,4 +1,4 @@
-package com.istream.common.tool;
+package com.istream.common.util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +18,12 @@ import java.util.List;
  *
  *   与 MyBatis-Plus 3.5.17 DefaultIdentifierGenerator 一致，
  * </pre>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 public class SnowflakeIdGenerator {
 
-    /* MyBatis-Plus 3.5.17 DefaultIdentifierGenerator 使用的 epoch */
     static final long EPOCH = 1288834974657L;
 
     final long workerId;
@@ -55,8 +57,6 @@ public class SnowflakeIdGenerator {
              | (workerId << 12)
              | sequence;
     }
-
-    // ==================== main ====================
 
     public static void main(String[] args) {
         SnowflakeIdGenerator gen = new SnowflakeIdGenerator(1, 1);
@@ -145,7 +145,6 @@ public class SnowflakeIdGenerator {
             System.out.println();
         }
 
-        // 验证位数
         System.out.println("-- 当前时间 ↓");
         System.out.println("  now          = " + System.currentTimeMillis());
         System.out.println("  epoch        = " + EPOCH);

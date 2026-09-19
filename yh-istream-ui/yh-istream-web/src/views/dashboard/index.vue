@@ -9,6 +9,7 @@ import {
   TrendingUpOutline,
 } from '@vicons/ionicons5'
 import { createAbortController, isAbortError } from '@/api/request'
+import { STATUS } from '@/constants'
 
 const authStore = useAuthStore()
 const now = ref(new Date())
@@ -41,7 +42,7 @@ function animateNumber(index: number, target: number) {
 onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date()
-  }, 1000)
+  }, 30000)
 
   dashboardAbort = createAbortController()
   fetchLatestLogs()
@@ -156,8 +157,8 @@ async function fetchStats() {
             <td>{{ log.operIp }}</td>
             <td>{{ log.operTime }}</td>
             <td>
-              <n-tag :type="log.status === 0 ? 'success' : 'error'" size="small" round>
-                {{ log.status === 0 ? '成功' : '失败' }}
+              <n-tag :type="log.status === STATUS.NORMAL ? 'success' : 'error'" size="small" round>
+                {{ log.status === STATUS.NORMAL ? '成功' : '失败' }}
               </n-tag>
             </td>
           </tr>

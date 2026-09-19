@@ -52,7 +52,6 @@ declare module 'vue' {
     NTree: typeof import('naive-ui')['NTree']
     NTreeSelect: typeof import('naive-ui')['NTreeSelect']
     NUpload: typeof import('naive-ui')['NUpload']
-    PlaceholderPage: typeof import('./components/common/PlaceholderPage.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

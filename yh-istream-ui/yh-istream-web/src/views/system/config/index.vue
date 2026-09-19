@@ -19,11 +19,12 @@ interface ConfigFormData {
   configName: string
   configKey: string
   configValue: string
+  configType: number
   remark: string
 }
 
 const { visible: dialogVisible, title: dialogTitle, isEdit, submitLoading, formRef, formData, openAdd, openEdit, handleSubmit } = useCrudDialog<ConfigFormData>({
-  defaults: () => ({ id: null, configName: '', configKey: '', configValue: '', remark: '' }),
+  defaults: () => ({ id: null, configName: '', configKey: '', configValue: '', configType: 0, remark: '' }),
   addApi: (data) => addConfig(data as SysConfigSave),
   updateApi: (data) => updateConfig(data as SysConfigSave),
   onSuccess: fetchData,
@@ -125,6 +126,12 @@ onMounted(() => fetchData())
         </n-form-item>
         <n-form-item label="配置值" path="configValue">
           <n-input v-model:value="formData.configValue" type="textarea" placeholder="请输入配置值" :rows="4" />
+        </n-form-item>
+        <n-form-item label="系统内置" path="configType">
+          <n-radio-group v-model:value="formData.configType">
+            <n-radio :value="1">是</n-radio>
+            <n-radio :value="0">否</n-radio>
+          </n-radio-group>
         </n-form-item>
         <n-form-item label="备注">
           <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />

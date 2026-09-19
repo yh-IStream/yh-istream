@@ -2,7 +2,6 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.constant.Constants;
@@ -16,6 +15,7 @@ import com.istream.system.model.dto.user.SysUserSaveDTO;
 import com.istream.system.model.dto.user.SysUserDTO;
 import com.istream.system.model.query.user.SysUserQuery;
 import com.istream.framework.util.ExcelExportUtil;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.entity.SysUser;
 import com.istream.system.converter.SysUserConverter;
 import com.istream.system.service.SysUserService;
@@ -58,11 +58,7 @@ public class SysUserController {
     @GetMapping("/list")
     public R<IPage<SysUserDTO>> list(SysUserQuery query) {
         IPage<SysUser> page = sysUserService.page(query);
-        IPage<SysUserDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysUserConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysUserConverter::toDto));
     }
 
     @Operation(summary = "根据ID查询用户")

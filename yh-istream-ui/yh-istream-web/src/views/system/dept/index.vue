@@ -20,6 +20,7 @@ interface DeptFormData {
   email: string
   orderNum: number
   status: number
+  remark: string
 }
 
 const {
@@ -33,7 +34,7 @@ const {
   openEdit: openEditInner,
   handleSubmit,
 } = useCrudDialog<DeptFormData>({
-  defaults: () => ({ id: null, parentId: '0', deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: STATUS.NORMAL }),
+  defaults: () => ({ id: null, parentId: '0', deptName: '', leader: '', phone: '', email: '', orderNum: 0, status: STATUS.NORMAL, remark: '' }),
   addApi: (data) => addDept(data as SysDeptSave),
   updateApi: (data) => updateDept(data as SysDeptSave),
   onSuccess: fetchData,
@@ -95,6 +96,7 @@ function handleEdit(row: SysDept) {
     email: row.email ?? '',
     orderNum: row.orderNum ?? 0,
     status: row.status ?? 0,
+    remark: row.remark ?? '',
   })
 }
 
@@ -140,6 +142,9 @@ onMounted(() => fetchData())
           <n-switch v-model:value="formData.status" :checked-value="STATUS.NORMAL" :unchecked-value="STATUS.DISABLED">
             <template #checked>{{ STATUS_LABEL[STATUS.NORMAL] }}</template><template #unchecked>{{ STATUS_LABEL[STATUS.DISABLED] }}</template>
           </n-switch>
+        </n-form-item>
+        <n-form-item label="备注">
+          <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />
         </n-form-item>
       </n-form>
       <template #footer>

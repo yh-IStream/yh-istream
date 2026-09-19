@@ -15,10 +15,13 @@ function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
 
-function buildMenuTree(menus: SysMenu[], parentPath: string = ''): MenuOption[] {
+function buildMenu(menus: SysMenu[], parentPath: string = '', pathMap: Record<string, string>): MenuOption[] {
   return menus.map((menu) => {
     const rawPath = menu.path || ''
     const fullPath = rawPath ? (rawPath.startsWith('/') ? rawPath : (parentPath ? `${parentPath}/${rawPath}` : `/${rawPath}`)) : ''
+    if (fullPath) {
+      pathMap[fullPath] = menu.menuName
+    }
     const option: MenuOption = {
       label: menu.menuName,
       key: fullPath || String(menu.id),
@@ -27,7 +30,7 @@ function buildMenuTree(menus: SysMenu[], parentPath: string = ''): MenuOption[] 
       option.icon = renderIcon(MENU_ICON_MAP[menu.icon])
     }
     if (menu.children && menu.children.length > 0) {
-      option.children = buildMenuTree(menu.children, fullPath)
+      option.children = buildMenu(menu.children, fullPath, pathMap)
     }
     return option
   })
@@ -37,25 +40,12 @@ const menuOptions = ref<MenuOption[]>([])
 
 const menuPathMap = ref<Record<string, string>>({})
 
-function buildPathMap(menus: SysMenu[], parentPath: string = '') {
-  for (const menu of menus) {
-    const rawPath = menu.path || ''
-    const fullPath = rawPath ? (rawPath.startsWith('/') ? rawPath : (parentPath ? `${parentPath}/${rawPath}` : `/${rawPath}`)) : ''
-    if (fullPath) {
-      menuPathMap.value[fullPath] = menu.menuName
-    }
-    if (menu.children?.length) {
-      buildPathMap(menu.children, fullPath)
-    }
-  }
-}
-
 watch(
   () => authStore.menus,
   (menus) => {
-    menuPathMap.value = {}
-    buildPathMap(menus)
-    menuOptions.value = buildMenuTree(menus)
+    const pathMap: Record<string, string> = {}
+    menuOptions.value = buildMenu(menus, '', pathMap)
+    menuPathMap.value = pathMap
   },
   { immediate: true },
 )

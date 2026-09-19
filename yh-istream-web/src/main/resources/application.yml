@@ -48,6 +48,9 @@ oss:
     upload-path: ./uploads
     url-prefix: /files
 
+captcha:
+  enabled: true
+
 # SaaS 多租户配置
 saas:
   enabled: false

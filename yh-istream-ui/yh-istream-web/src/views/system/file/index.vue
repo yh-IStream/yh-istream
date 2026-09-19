@@ -21,7 +21,6 @@ const columns = [
   { title: '文件类型', key: 'fileExt', width: 90 },
   { title: '文件大小', key: 'fileSize', width: 90, render: (row: SysFile) => formatFileSize(row.fileSize) },
   { title: '存储路径', key: 'filePath', minWidth: 140, ellipsis: { tooltip: true } },
-  { title: '上传人', key: 'createBy', minWidth: 80, ellipsis: { tooltip: true } },
   { title: '创建时间', key: 'createTime', minWidth: 150, ellipsis: { tooltip: true } },
   {
     title: '操作', key: 'actions', width: 180, fixed: 'right' as const,
@@ -36,12 +35,11 @@ const columns = [
   },
 ]
 
-function formatFileSize(bytes: string | number): string {
-  const num = typeof bytes === 'string' ? Number(bytes) : bytes
-  if (!num || num === 0) return '0 B'
+function formatFileSize(bytes: number): string {
+  if (!bytes || bytes === 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(num) / Math.log(1024))
-  return (num / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
 }
 
 async function handleDownload(row: SysFile) {

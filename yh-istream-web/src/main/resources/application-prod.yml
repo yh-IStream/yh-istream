@@ -48,6 +48,9 @@ sa-token:
   is-log: false
   is-print: false
 
+captcha:
+  enabled: true
+
 # Knife4j Next 配置（生产环境关闭）
 knife4j:
   enable: false

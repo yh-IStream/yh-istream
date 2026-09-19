@@ -2,7 +2,6 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
@@ -10,6 +9,7 @@ import com.istream.common.model.R;
 import com.istream.system.model.dto.operlog.SysOperLogDTO;
 import com.istream.system.model.query.operlog.SysOperLogQuery;
 import com.istream.framework.util.ExcelExportUtil;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.converter.SysOperLogConverter;
 import com.istream.system.entity.SysOperLog;
 import com.istream.system.service.SysOperLogService;
@@ -47,11 +47,7 @@ public class SysOperLogController {
     @GetMapping("/list")
     public R<IPage<SysOperLogDTO>> list(SysOperLogQuery query) {
         IPage<SysOperLog> page = sysOperLogService.page(query);
-        IPage<SysOperLogDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysOperLogConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysOperLogConverter::toDto));
     }
 
     @Operation(summary = "根据ID查询操作日志")

@@ -5,7 +5,7 @@
     container_name: yh-istream-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?缺少MYSQL_ROOT_PASSWORD配置}
       MYSQL_DATABASE: yh_istream
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_0900_ai_ci
@@ -23,7 +23,7 @@
     image: redis:7.4-alpine
     container_name: yh-istream-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?缺少REDIS_PASSWORD配置}
     ports:
       - "6379:6379"
     volumes:
@@ -52,12 +52,12 @@
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:mysql://mysql:3306/yh_istream?createDatabaseIfNotExist=true&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&sslMode=PREFERRED&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&cachePrepStmts=true&cacheCallableStmts=true&prepStmtCacheSize=256&prepStmtCacheSqlLimit=2048&useServerPrepStmts=true&useLocalSessionState=true&cacheServerConfiguration=true&elideSetAutoCommits=true&tcpKeepAlive=true
       DB_USERNAME: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?缺少MYSQL_ROOT_PASSWORD配置}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?缺少REDIS_PASSWORD配置}
       XXL_JOB_ADMIN: ${XXL_JOB_ADMIN:-http://xxl-job-admin:8080/xxl-job-admin}
-      XXL_JOB_ACCESS_TOKEN: ${XXL_JOB_ACCESS_TOKEN:-}
+      XXL_JOB_ACCESS_TOKEN: ${XXL_JOB_ACCESS_TOKEN:?缺少XXL_JOB_ACCESS_TOKEN配置}
     depends_on:
       mysql:
         condition: service_healthy

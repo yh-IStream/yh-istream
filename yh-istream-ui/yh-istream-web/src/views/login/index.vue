@@ -16,9 +16,18 @@ let captchaAbort: AbortController | null = null
 
 const REMEMBER_KEY = 'yh-istream-remember'
 
+const particleStyles = Array.from({ length: 20 }, () => ({
+  left: `${Math.random() * 100}%`,
+  top: `${Math.random() * 100}%`,
+  animationDelay: `${Math.random() * 6}s`,
+  animationDuration: `${3 + Math.random() * 4}s`,
+  width: `${1 + Math.random() * 2}px`,
+  height: `${1 + Math.random() * 2}px`,
+}))
+
 const formData = reactive({
-  username: localStorage.getItem(REMEMBER_KEY) ? (JSON.parse(localStorage.getItem(REMEMBER_KEY)!)?.username ?? '') : '',
-  password: localStorage.getItem(REMEMBER_KEY) ? (JSON.parse(localStorage.getItem(REMEMBER_KEY)!)?.password ?? '') : '',
+  username: localStorage.getItem(REMEMBER_KEY) ?? '',
+  password: '',
   captchaCode: '',
   remember: !!localStorage.getItem(REMEMBER_KEY),
 })
@@ -59,7 +68,7 @@ async function handleLogin() {
   try {
     await authStore.login(formData.username, formData.password, captchaKey.value, formData.captchaCode)
     if (formData.remember) {
-      localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: formData.username, password: formData.password }))
+      localStorage.setItem(REMEMBER_KEY, formData.username)
     } else {
       localStorage.removeItem(REMEMBER_KEY)
     }
@@ -96,14 +105,7 @@ onBeforeUnmount(() => {
       <div class="orb orb-3" />
       <div class="grid-lines" />
       <div class="particles">
-        <div v-for="i in 20" :key="i" class="particle" :style="{
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          animationDelay: `${Math.random() * 6}s`,
-          animationDuration: `${3 + Math.random() * 4}s`,
-          width: `${1 + Math.random() * 2}px`,
-          height: `${1 + Math.random() * 2}px`,
-        }" />
+        <div v-for="(p, idx) in particleStyles" :key="idx" class="particle" :style="p" />
       </div>
     </div>
 

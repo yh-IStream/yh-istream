@@ -1,4 +1,6 @@
-<h1 align="center">iStream 企业级快速开发框架</h1>
+<h1 align="center">yh-istream 是一个「实时优先的轻量级中后台底座」。
+它不追求大而全的企业级功能堆砌，而是为需要实时数据同步、即时消息触达、在线状态感知的业务场景，提供开箱即用的基础架构与开发者体验。
+轻量、实时、可验证。</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/JDK-21-orange" alt="JDK 21" />
@@ -14,6 +16,7 @@
 ## 项目简介
 
 采用前后端分离架构，后端基于 Spring Boot 4 + MyBatis-Plus + Sa-Token + Redisson，前端基于 Vue 3 + TypeScript+ Naive UI + Vite。内置 RBAC 权限管理、SaaS 多租户、数据权限、代码生成器等核心功能，开箱即用。
+适合电商运营台、IoT 监控中心、即时工单系统、数据大屏后台等动态场景。
 
 ### 在线预览
 

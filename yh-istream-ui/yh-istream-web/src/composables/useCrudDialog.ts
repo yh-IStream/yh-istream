@@ -39,6 +39,8 @@ export function useCrudDialog<T extends object>(options: UseCrudDialogOptions<T>
   function openEdit(row: unknown) {
     isEdit.value = true
     title.value = titles?.edit ?? '编辑'
+    // 浅合并：defaults() 提供缺失字段的默认值，row 覆盖已有字段
+    // 注意：若 FormData 含嵌套对象，浅拷贝会导致残留旧数据，需改用深拷贝
     Object.assign(formData, { ...defaults(), ...row as Record<string, unknown> })
     visible.value = true
   }

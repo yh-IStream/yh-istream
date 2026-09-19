@@ -27,6 +27,7 @@ interface MenuFormData {
   orderNum: number
   status: number
   visible: number
+  remark: string
 }
 
 const {
@@ -40,7 +41,7 @@ const {
   openEdit: openEditInner,
   handleSubmit,
 } = useCrudDialog<MenuFormData>({
-  defaults: () => ({ id: null, parentId: '0', menuName: '', menuType: 'M', path: '', component: '', query: '', permission: '', icon: '', orderNum: 0, status: STATUS.NORMAL, visible: 1 }),
+  defaults: () => ({ id: null, parentId: '0', menuName: '', menuType: 'M', path: '', component: '', query: '', permission: '', icon: '', orderNum: 0, status: STATUS.NORMAL, visible: 1, remark: '' }),
   addApi: (data) => addMenu(data as SysMenuSave),
   updateApi: (data) => updateMenu(data as SysMenuSave),
   onSuccess: fetchData,
@@ -120,6 +121,7 @@ function handleEdit(row: SysMenu) {
     orderNum: row.orderNum ?? 0,
     status: row.status ?? 0,
     visible: row.visible ?? 1,
+    remark: row.remark ?? '',
   })
 }
 
@@ -179,6 +181,9 @@ async function handleDelete(id: string) {
           <n-switch v-model:value="formData.visible" :checked-value="1" :unchecked-value="0">
             <template #checked>显示</template><template #unchecked>隐藏</template>
           </n-switch>
+        </n-form-item>
+        <n-form-item label="备注">
+          <n-input v-model:value="formData.remark" type="textarea" placeholder="请输入备注" :rows="2" />
         </n-form-item>
       </n-form>
       <template #footer>

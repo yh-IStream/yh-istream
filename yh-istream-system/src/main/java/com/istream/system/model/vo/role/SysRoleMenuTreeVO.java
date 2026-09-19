@@ -1,5 +1,6 @@
 package com.istream.system.model.vo.role;
 
+import com.istream.system.model.dto.menu.SysMenuDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,7 @@ public class SysRoleMenuTreeVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private List<?> menus;
+    private List<SysMenuDTO> menus;
 
     private List<Long> checkedKeys;
 }

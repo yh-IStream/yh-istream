@@ -2,12 +2,12 @@ package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
 import com.istream.system.model.query.dict.SysDictDataQuery;
 import com.istream.common.model.R;
 import com.istream.common.validation.Groups;
+import com.istream.framework.util.PageUtils;
 import com.istream.system.model.dto.dict.SysDictDataSaveDTO;
 import com.istream.system.model.dto.dict.SysDictDataDTO;
 import com.istream.system.converter.SysDictDataConverter;
@@ -50,11 +50,7 @@ public class SysDictDataController {
     @GetMapping("/list")
     public R<IPage<SysDictDataDTO>> list(SysDictDataQuery query) {
         IPage<SysDictData> page = sysDictDataService.page(query);
-        IPage<SysDictDataDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        dtoPage.setRecords(page.getRecords().stream()
-                .map(sysDictDataConverter::toDto)
-                .toList());
-        return R.ok(dtoPage);
+        return R.ok(PageUtils.toDtoPage(page, sysDictDataConverter::toDto));
     }
 
     /**

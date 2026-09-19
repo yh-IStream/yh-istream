@@ -53,4 +53,6 @@ public class SysUserDTO implements Serializable {
     private List<String> roleNames;
 
     private List<String> roleIds;
+
+    private String remark;
 }

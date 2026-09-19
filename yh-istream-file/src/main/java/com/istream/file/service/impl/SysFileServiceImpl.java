@@ -16,17 +16,14 @@ import com.istream.file.storage.FileStorageService;
 import com.istream.framework.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 文件管理服务实现
@@ -40,17 +37,6 @@ import java.util.Set;
 public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> implements SysFileService {
 
     private final FileStorageService fileStorageService;
-
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            "jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",
-            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-            "txt", "csv", "md", "json", "xml", "yml", "yaml",
-            "zip", "rar", "7z", "tar", "gz",
-            "mp3", "mp4", "avi", "mov", "wmv"
-    );
-
-    @Value("${spring.servlet.multipart.max-file-size:10MB}")
-    private String maxFileSize;
 
     @Override
     @Transactional(readOnly = true)
@@ -67,8 +53,6 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public SysFile upload(MultipartFile file, String module) {
-        validateFile(file);
-
         String originalName = file.getOriginalFilename();
         String ext = FileUtil.extName(originalName).toLowerCase();
         String mimeType = file.getContentType();
@@ -139,20 +123,4 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         return result;
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new BusinessException(ResultCode.FILE_UPLOAD_ERROR);
-        }
-        if (file.getSize() > DataSize.parse(maxFileSize).toBytes()) {
-            throw new BusinessException(ResultCode.FILE_SIZE_EXCEED);
-        }
-        String originalName = file.getOriginalFilename();
-        if (originalName == null || originalName.isEmpty()) {
-            throw new BusinessException(ResultCode.FILE_UPLOAD_ERROR);
-        }
-        String ext = FileUtil.extName(originalName).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(ext)) {
-            throw new BusinessException(ResultCode.FILE_TYPE_NOT_SUPPORT);
-        }
-    }
 }
