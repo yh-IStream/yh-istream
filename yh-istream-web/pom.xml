@@ -28,11 +28,11 @@
         </dependency>
         <dependency>
             <groupId>com.istream</groupId>
-            <artifactId>yh-istream-job</artifactId>
+            <artifactId>yh-istream-file</artifactId>
         </dependency>
         <dependency>
             <groupId>com.istream</groupId>
-            <artifactId>yh-istream-file</artifactId>
+            <artifactId>yh-istream-message</artifactId>
         </dependency>
 
         <!-- Spring Boot Actuator -->

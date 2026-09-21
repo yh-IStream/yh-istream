@@ -65,18 +65,6 @@ sa-token:
 captcha:
   enabled: false
 
-# XXL-Job 配置（开发环境可选启用）
-xxl:
-  job:
-    admin:
-      addresses: http://localhost:8080/xxl-job-admin
-    accessToken:
-    executor:
-      appname: yh-istream-job
-      port: 9999
-      logpath: ./logs/xxl-job
-      logretentiondays: 30
-
 # 日志
 logging:
   level:

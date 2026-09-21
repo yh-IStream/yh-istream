@@ -8,7 +8,9 @@ import net.sf.jsqlparser.expression.LongValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * MyBatis-Plus 多租户拦截器
@@ -60,6 +62,9 @@ public class TenantLineHandlerImpl implements TenantLineHandler {
         if (ignoreTablesConfig == null || ignoreTablesConfig.isBlank()) {
             return Set.of();
         }
-        return Set.of(ignoreTablesConfig.split(","));
+        return Arrays.stream(ignoreTablesConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

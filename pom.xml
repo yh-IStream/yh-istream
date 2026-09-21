@@ -16,7 +16,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>yh-istream</name>
-    <description>实时优先的轻量级中后台底座</description>
+    <description>轻量的全栈管理后台底座</description>
 
     <modules>
         <module>yh-istream-common</module>
@@ -24,8 +24,8 @@
         <module>yh-istream-system</module>
         <module>yh-istream-web</module>
         <module>yh-istream-generator</module>
-        <module>yh-istream-job</module>
         <module>yh-istream-file</module>
+        <module>yh-istream-message</module>
     </modules>
 
     <properties>
@@ -40,7 +40,6 @@
         <hutool.version>5.8.47</hutool.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <easyexcel.version>4.0.3</easyexcel.version>
-        <xxl-job.version>3.4.2</xxl-job.version>
         <ip2region.version>2.7.0</ip2region.version>
         <tlog.version>1.5.2</tlog.version>
         <knife4j.version>5.2.3</knife4j.version>
@@ -82,12 +81,12 @@
             </dependency>
             <dependency>
                 <groupId>com.istream</groupId>
-                <artifactId>yh-istream-job</artifactId>
+                <artifactId>yh-istream-file</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.istream</groupId>
-                <artifactId>yh-istream-file</artifactId>
+                <artifactId>yh-istream-message</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -150,10 +149,25 @@
                 <version>${redisson.version}</version>
             </dependency>
 
-            <!-- ==================== Hutool 工具类 ==================== -->
+            <!-- ==================== Hutool 工具类（按需引入子模块） ==================== -->
             <dependency>
                 <groupId>cn.hutool</groupId>
-                <artifactId>hutool-all</artifactId>
+                <artifactId>hutool-core</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-captcha</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-crypto</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-json</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
 
@@ -191,13 +205,6 @@
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi-ooxml</artifactId>
                 <version>${poi.version}</version>
-            </dependency>
-
-            <!-- ==================== XXL-Job 分布式定时任务 ==================== -->
-            <dependency>
-                <groupId>com.xuxueli</groupId>
-                <artifactId>xxl-job-core</artifactId>
-                <version>${xxl-job.version}</version>
             </dependency>
 
             <!-- ==================== ip2region IP 离线定位 ==================== -->

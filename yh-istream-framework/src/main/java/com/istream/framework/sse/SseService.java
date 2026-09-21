@@ -1,7 +1,9 @@
 package com.istream.framework.sse;
 
 import com.istream.common.model.sse.SseEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -14,18 +16,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * SSE 实时推送服务
  * <p>
  * 管理客户端 SSE 连接，支持广播和单播。每30秒发送心跳保活，
- * 连接超时或异常时自动清理。
+ * 连接超时或异常时自动清理。连接建立/断开时发布 {@link SseConnectionEvent} 事件。
  *
  * @author istream
  * @since 2026-08-20
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SseService {
 
     private static final long SSE_TIMEOUT = 300_000L;
 
     private final ConcurrentHashMap<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
+
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 客户端订阅 SSE 连接
@@ -41,16 +46,19 @@ public class SseService {
         emitter.onCompletion(() -> {
             log.debug("SSE 连接完成: userId={}", userId);
             emitters.remove(userId);
+            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
         });
 
         emitter.onTimeout(() -> {
             log.debug("SSE 连接超时: userId={}", userId);
             emitters.remove(userId);
+            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
         });
 
         emitter.onError(ex -> {
             log.debug("SSE 连接异常: userId={}, error={}", userId, ex.getMessage());
             emitters.remove(userId);
+            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
         });
 
         try {
@@ -63,6 +71,7 @@ public class SseService {
         }
 
         log.info("SSE 客户端已连接: userId={}, 当前连接数={}", userId, emitters.size());
+        eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.CONNECTED, userId));
         return emitter;
     }
 

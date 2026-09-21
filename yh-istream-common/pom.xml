@@ -30,10 +30,22 @@
             <artifactId>mapstruct</artifactId>
         </dependency>
 
-        <!-- Hutool -->
+        <!-- Hutool（按需子模块） -->
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
+            <artifactId>hutool-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-captcha</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
         </dependency>
 
         <!-- MyBatis-Plus 注解（轻量级，仅注解） -->

@@ -11,29 +11,27 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>yh-istream-job</artifactId>
+    <artifactId>yh-istream-message</artifactId>
     <packaging>jar</packaging>
-    <name>yh-istream-job</name>
-    <description>定时任务模块：基于 XXL-Job 的分布式任务调度</description>
+    <name>yh-istream-message</name>
+    <description>消息中心模块：SSE连接管理、事件总线、消息持久化、聚合推送</description>
 
     <dependencies>
-        <!-- 内部依赖 -->
         <dependency>
             <groupId>com.istream</groupId>
-            <artifactId>yh-istream-system</artifactId>
+            <artifactId>yh-istream-framework</artifactId>
         </dependency>
 
-        <!-- XXL-Job -->
-        <dependency>
-            <groupId>com.xuxueli</groupId>
-            <artifactId>xxl-job-core</artifactId>
-        </dependency>
-
-        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

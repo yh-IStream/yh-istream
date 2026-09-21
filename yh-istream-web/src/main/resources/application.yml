@@ -127,16 +127,3 @@ management:
     health:
       show-details: when-authorized
 #      show-details: always
-
-# XXL-Job 分布式任务调度
-xxl:
-  job:
-    enabled: false
-    admin:
-      addresses: http://127.0.0.1:8080/xxl-job-admin
-    accessToken:
-    executor:
-      appname: yh-istream
-      port: 9999
-      logpath: ./logs/xxl-job
-      logretentiondays: 30
