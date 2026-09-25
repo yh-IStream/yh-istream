@@ -1,6 +1,5 @@
 package com.istream.file.model.dto.file;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.istream.file.enums.StorageType;
 import lombok.Data;
 
@@ -18,7 +17,6 @@ public class SysFileDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     private String fileName;

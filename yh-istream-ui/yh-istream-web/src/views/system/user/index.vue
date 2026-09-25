@@ -13,6 +13,7 @@ import { useExport } from '@/composables/useExport'
 const message = useMessage()
 const dialog = useDialog()
 const { renderStatusTag } = useStatusRender()
+const statusLoadingMap = ref(new Map<string, boolean>())
 const { loadDict, useDictTag } = useDict()
 const { render: renderGenderTag } = useDictTag('sys_user_sex')
 const { downloadExcel } = useExport()
@@ -92,6 +93,7 @@ const columns = [
       value: row.status === STATUS.NORMAL,
       checkedValue: true,
       uncheckedValue: false,
+      loading: statusLoadingMap.value.get(row.id) ?? false,
       onUpdateValue: (val: boolean) => handleStatusChange(row, val),
     }),
   },
@@ -136,11 +138,11 @@ const pwdRules = {
 
 // ==================== Methods ====================
 async function fetchDeptTree() {
-  try { deptOptions.value = (await getDeptTree()).data ?? [] } catch { /* ignore */ }
+  try { deptOptions.value = (await getDeptTree()).data ?? [] } catch (e) { console.warn('部门树加载失败', e) }
 }
 
 async function fetchRoles() {
-  try { roleOptions.value = ((await getAllRoles()).data ?? []).map((r: SysRole) => ({ label: r.roleName, value: String(r.id) })) } catch { /* ignore */ }
+  try { roleOptions.value = ((await getAllRoles()).data ?? []).map((r: SysRole) => ({ label: r.roleName, value: String(r.id) })) } catch (e) { console.warn('角色列表加载失败', e) }
 }
 
 function handleAdd() {
@@ -201,7 +203,7 @@ async function handleRoleAssign(row: SysUser) {
     if (res.data?.roleIds) {
       roleForm.roleIds = res.data.roleIds.map((id: string) => String(id))
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn('用户角色加载失败', e) }
   finally { roleInitLoading.value = false }
 }
 
@@ -275,13 +277,17 @@ async function handlePwdSubmit() {
 }
 
 async function handleStatusChange(row: SysUser, value: boolean) {
+  if (statusLoadingMap.value.get(row.id)) return
   const newStatus = value ? STATUS.NORMAL : STATUS.DISABLED
+  statusLoadingMap.value.set(row.id, true)
   try {
     await changeUserStatus(row.id, newStatus)
     row.status = newStatus
     message.success('状态修改成功')
   } catch (e: unknown) {
     message.error((e as Error).message || '修改失败')
+  } finally {
+    statusLoadingMap.value.delete(row.id)
   }
 }
 

@@ -1,14 +1,14 @@
-package com.istream.web.controller;
+package com.istream.system.controller;
 
-import com.istream.web.service.AuthService;
+import com.istream.system.service.AuthService;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
-import com.istream.web.model.dto.LoginDTO;
+import com.istream.system.model.dto.auth.LoginDTO;
 import com.istream.common.model.R;
-import com.istream.web.model.vo.CaptchaVO;
-import com.istream.web.model.vo.LoginVO;
-import com.istream.web.model.vo.UserInfoVO;
+import com.istream.system.model.vo.auth.CaptchaVO;
+import com.istream.system.model.vo.auth.LoginVO;
+import com.istream.system.model.vo.auth.UserInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;

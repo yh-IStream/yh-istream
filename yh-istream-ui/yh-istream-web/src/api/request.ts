@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import router from '@/router'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
@@ -67,7 +68,7 @@ instance.interceptors.response.use(
       return handleUnauthorized(error.config?.url)
     }
     if (error.response?.status === 403) {
-      window.location.href = '/error/403'
+      router.push('/error/403')
       return Promise.reject(new Error('权限不足'))
     }
     return Promise.reject(error)

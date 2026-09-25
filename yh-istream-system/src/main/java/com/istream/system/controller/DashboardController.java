@@ -1,9 +1,9 @@
-package com.istream.web.controller;
+package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.model.R;
-import com.istream.web.model.vo.DashboardVO;
+import com.istream.system.model.vo.dashboard.DashboardVO;
 import com.istream.system.service.SysUserService;
 import com.istream.system.service.SysRoleService;
 import com.istream.system.service.SysOperLogService;

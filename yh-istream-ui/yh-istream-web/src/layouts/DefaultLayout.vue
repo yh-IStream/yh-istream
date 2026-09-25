@@ -3,6 +3,8 @@ import type { MenuOption } from 'naive-ui'
 import type { SysMenu } from '@/api/modules/system'
 import { LogOutOutline, MoonOutline, SunnyOutline, MenuOutline, PersonOutline } from '@vicons/ionicons5'
 import { MENU_ICON_MAP } from '@/constants/menuIcons'
+import BellNotification from '@/components/message/BellNotification.vue'
+import { useSSE } from '@/composables/useSSE'
 
 const router = useRouter()
 const route = useRoute()
@@ -96,6 +98,16 @@ watch(
   },
   { immediate: true },
 )
+
+const sse = useSSE()
+
+onMounted(() => {
+  sse.connect()
+})
+
+onBeforeUnmount(() => {
+  sse.disconnect()
+})
 </script>
 
 <template>
@@ -172,6 +184,8 @@ watch(
               <n-icon :component="appStore.darkMode ? SunnyOutline : MoonOutline" />
             </template>
           </n-button>
+
+          <BellNotification />
 
           <n-dropdown :options="dropdownOptions" @select="handleDropdownSelect">
             <div class="user-badge">

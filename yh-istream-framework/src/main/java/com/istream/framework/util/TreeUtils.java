@@ -27,7 +27,7 @@ import java.util.function.Function;
  * </ul>
  *
  * @author yh-istream
- * @since 1.0.0
+ * @since 2026-08-14
  */
 public final class TreeUtils {
 

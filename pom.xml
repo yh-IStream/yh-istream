@@ -26,6 +26,7 @@
         <module>yh-istream-generator</module>
         <module>yh-istream-file</module>
         <module>yh-istream-message</module>
+        <module>yh-istream-watchdog</module>
     </modules>
 
     <properties>
@@ -87,6 +88,11 @@
             <dependency>
                 <groupId>com.istream</groupId>
                 <artifactId>yh-istream-message</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.istream</groupId>
+                <artifactId>yh-istream-watchdog</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

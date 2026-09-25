@@ -1,4 +1,4 @@
-package com.istream.web.model.vo;
+package com.istream.system.model.vo.auth;
 
 import com.istream.system.model.dto.menu.SysMenuDTO;
 import com.istream.system.model.dto.user.SysUserDTO;

@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -29,10 +28,9 @@ public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 主键ID（雪花算法） */
+    /** 主键ID（雪花算法，Long→String 由全局 JacksonConfig 处理） */
     @ExcelProperty("ID")
     @TableId
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     /** 租户ID（SaaS 多租户隔离，默认0表示非租户模式） */

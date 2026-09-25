@@ -56,6 +56,36 @@ saas:
   enabled: false
   ignore-tables: sys_config,sys_oper_log,sys_login_info,sys_file
 
+# Watchdog 智能守护配置（渐进式架构 L2，默认关闭）
+istream:
+  watchdog:
+    enabled: false
+    channels:
+      sse:
+        enabled: true
+      email:
+        enabled: false
+        from: alert@istream.com
+      wecom:
+        enabled: false
+        webhook-url: ""
+      dingtalk:
+        enabled: false
+        webhook-url: ""
+      feishu:
+        enabled: false
+        webhook-url: ""
+    escalation:
+      - channel: sse
+        timeout: 5m
+      - channel: email
+        timeout: 30m
+      - channel: wecom
+        timeout: 2h
+      - channel: sms
+        timeout: 0
+    aggregate-window: 10m
+
 # Sa-Token 配置
 sa-token:
   token-name: Authorization

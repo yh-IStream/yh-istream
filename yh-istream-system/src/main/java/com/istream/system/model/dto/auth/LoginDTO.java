@@ -1,4 +1,4 @@
-package com.istream.web.model.dto;
+package com.istream.system.model.dto.auth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +8,9 @@ import java.io.Serializable;
 
 /**
  * 登录请求 DTO
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Data
 public class LoginDTO implements Serializable {
@@ -21,9 +24,7 @@ public class LoginDTO implements Serializable {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    /** 验证码 */
     private String captchaCode;
 
-    /** 验证码唯一标识 */
     private String captchaKey;
 }

@@ -8,6 +8,8 @@ package com.istream.common.enums;
  *   <li>{@link #DATA_CHANGE} → useTable 自动刷新表格数据</li>
  *   <li>{@link #NOTIFICATION} → Bell 铃铛消息通知</li>
  *   <li>{@link #SYSTEM} → 系统公告栏</li>
+ *   <li>{@link #ALERT} → Bell 铃铛 + 多通道推送（Watchdog 触发）</li>
+ *   <li>{@link #AI_INSIGHT} → Bell 铃铛 + 表格行高亮（AI 洞察）</li>
  * </ul>
  *
  * @author istream
@@ -22,5 +24,11 @@ public enum EventType {
     NOTIFICATION,
 
     /** 系统事件：系统公告、维护通知，触发系统栏 */
-    SYSTEM
+    SYSTEM,
+
+    /** 告警事件：Watchdog 规则引擎触发，铃铛 + 多通道推送 */
+    ALERT,
+
+    /** AI 洞察事件：AI 分析发现异常，铃铛 + 表格行高亮 */
+    AI_INSIGHT
 }

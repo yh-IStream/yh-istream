@@ -95,6 +95,7 @@ declare global {
   const usePagination: typeof import('./composables/usePagination').usePagination
   const useRoute: typeof import('vue-router').useRoute
   const useRouter: typeof import('vue-router').useRouter
+  const useSSE: typeof import('./composables/useSSE').useSSE
   const useSlots: typeof import('vue').useSlots
   const useStatusRender: typeof import('./composables/useStatus').useStatusRender
   const useTable: typeof import('./composables/useTable').useTable
@@ -219,6 +220,7 @@ declare module 'vue' {
     readonly usePagination: UnwrapRef<typeof import('./composables/usePagination')['usePagination']>
     readonly useRoute: UnwrapRef<typeof import('vue-router')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router')['useRouter']>
+    readonly useSSE: UnwrapRef<typeof import('./composables/useSSE')['useSSE']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useStatusRender: UnwrapRef<typeof import('./composables/useStatus')['useStatusRender']>
     readonly useTable: UnwrapRef<typeof import('./composables/useTable')['useTable']>

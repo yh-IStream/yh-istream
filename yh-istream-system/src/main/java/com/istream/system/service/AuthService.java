@@ -1,4 +1,4 @@
-package com.istream.web.service;
+package com.istream.system.service;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.captcha.CaptchaUtil;
@@ -9,12 +9,12 @@ import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
-import com.istream.web.model.dto.LoginDTO;
+import com.istream.system.model.dto.auth.LoginDTO;
 import com.istream.system.model.dto.user.SysUserDTO;
 import com.istream.common.model.sse.SseEvent;
-import com.istream.web.model.vo.CaptchaVO;
-import com.istream.web.model.vo.LoginVO;
-import com.istream.web.model.vo.UserInfoVO;
+import com.istream.system.model.vo.auth.CaptchaVO;
+import com.istream.system.model.vo.auth.LoginVO;
+import com.istream.system.model.vo.auth.UserInfoVO;
 import com.istream.framework.sse.SseService;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.framework.cache.CacheService;
@@ -44,7 +44,7 @@ import java.util.UUID;
 /**
  * 认证业务服务
  *
- * <p>封装登录、登出、验证码、用户信息等认证相关业务逻辑，</p>
+ * <p>封装登录、登出、验证码、用户信息等认证相关业务逻辑</p>
  *
  * @author istream
  * @since 2026-08-17
@@ -84,7 +84,6 @@ public class AuthService {
 
         if (user == null) {
             handleUserNotFound(loginDTO, clientIp, loginLocation);
-            // 显式抛出异常，避免下面代码idea警告可能为null异常
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
 

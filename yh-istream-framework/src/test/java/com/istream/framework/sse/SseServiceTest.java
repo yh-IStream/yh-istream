@@ -4,6 +4,7 @@ import com.istream.common.model.sse.SseEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -27,7 +28,8 @@ class SseServiceTest {
     @BeforeEach
     void setUp() {
         ApplicationEventPublisher mockPublisher = mock(ApplicationEventPublisher.class);
-        sseService = new SseService(mockPublisher);
+        RedissonClient mockRedisson = mock(RedissonClient.class);
+        sseService = new SseService(mockPublisher, mockRedisson);
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.istream.framework.sse;
 import com.istream.common.model.sse.SseEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -10,7 +12,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SSE 实时推送服务
@@ -27,10 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SseService {
 
     private static final long SSE_TIMEOUT = 300_000L;
+    private static final String TICKET_PREFIX = "sse:ticket:";
+    private static final long TICKET_TTL_SECONDS = 30L;
 
     private final ConcurrentHashMap<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     private final ApplicationEventPublisher eventPublisher;
+    private final RedissonClient redissonClient;
 
     /**
      * 客户端订阅 SSE 连接
@@ -122,6 +129,36 @@ public class SseService {
      */
     public int getConnectionCount() {
         return emitters.size();
+    }
+
+    /**
+     * 生成一次性 SSE 连接凭证
+     * <p>凭证 30 秒有效，使用后即焚（一次性），避免主 Token 暴露在 URL 中。</p>
+     *
+     * @param userId 用户ID
+     * @return ticket 字符串
+     */
+    public String generateTicket(Long userId) {
+        String ticket = UUID.randomUUID().toString().replace("-", "");
+        RBucket<Long> bucket = redissonClient.getBucket(TICKET_PREFIX + ticket);
+        bucket.set(userId, TICKET_TTL_SECONDS, TimeUnit.SECONDS);
+        return ticket;
+    }
+
+    /**
+     * 验证并消费一次性 ticket
+     * <p>ticket 验证后立即删除，确保一次性使用。</p>
+     *
+     * @param ticket 凭证字符串
+     * @return 用户ID，若 ticket 无效或已过期返回 null
+     */
+    public Long consumeTicket(String ticket) {
+        if (ticket == null || ticket.isEmpty()) {
+            return null;
+        }
+        RBucket<Long> bucket = redissonClient.getBucket(TICKET_PREFIX + ticket);
+        Long userId = bucket.getAndDelete();
+        return userId;
     }
 
     private void sendEvent(Long userId, SseEmitter emitter, SseEvent event) {

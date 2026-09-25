@@ -80,8 +80,8 @@ async function fetchStats() {
       })
       statsLoaded.value = true
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.warn('仪表盘数据加载失败', e)
   }
 }
 </script>

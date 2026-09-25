@@ -1,4 +1,4 @@
-package com.istream.web.model.vo;
+package com.istream.system.model.vo.dashboard;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

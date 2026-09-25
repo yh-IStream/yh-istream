@@ -14,7 +14,7 @@
     <artifactId>yh-istream-web</artifactId>
     <packaging>jar</packaging>
     <name>yh-istream-web</name>
-    <description>Web 入口模块：启动类、配置文件（Controller 按业务域归属各自模块）</description>
+    <description>Web 入口模块：启动类、配置文件、SSE 等基础设施端点</description>
 
     <dependencies>
         <!-- 内部依赖 -->
@@ -33,6 +33,10 @@
         <dependency>
             <groupId>com.istream</groupId>
             <artifactId>yh-istream-message</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.istream</groupId>
+            <artifactId>yh-istream-watchdog</artifactId>
         </dependency>
 
         <!-- Spring Boot Actuator -->

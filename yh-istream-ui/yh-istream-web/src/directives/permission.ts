@@ -15,13 +15,33 @@ function hasPermission(binding: DirectiveBinding): boolean {
   return true
 }
 
+const placeholderMap = new WeakMap<HTMLElement, Comment>()
+
 export const vPermission: Directive<HTMLElement, string | string[]> = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     if (!hasPermission(binding)) {
-      el.style.display = 'none'
+      const placeholder = new Comment('v-permission')
+      placeholderMap.set(el, placeholder)
+      el.replaceWith(placeholder)
     }
   },
   updated(el: HTMLElement, binding: DirectiveBinding) {
-    el.style.display = hasPermission(binding) ? '' : 'none'
+    const placeholder = placeholderMap.get(el)
+    const permitted = hasPermission(binding)
+    if (!permitted && !placeholder) {
+      const newPlaceholder = new Comment('v-permission')
+      placeholderMap.set(el, newPlaceholder)
+      el.replaceWith(newPlaceholder)
+    } else if (permitted && placeholder) {
+      placeholder.replaceWith(el)
+      placeholderMap.delete(el)
+    }
+  },
+  unmounted(el: HTMLElement) {
+    const placeholder = placeholderMap.get(el)
+    if (placeholder) {
+      placeholder.remove()
+      placeholderMap.delete(el)
+    }
   },
 }

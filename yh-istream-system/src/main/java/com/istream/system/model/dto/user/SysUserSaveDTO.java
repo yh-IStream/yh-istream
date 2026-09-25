@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.user;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.istream.common.validation.Groups;
 import jakarta.validation.constraints.Email;
@@ -27,7 +26,6 @@ public class SysUserSaveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotNull(groups = Groups.Update.class, message = "用户ID不能为空")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @NotBlank(groups = Groups.Create.class, message = "用户名不能为空")
@@ -43,7 +41,6 @@ public class SysUserSaveDTO implements Serializable {
     @Size(max = 50, message = "昵称长度不能超过50")
     private String nickname;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long deptId;
 
     @Email(message = "邮箱格式不正确")

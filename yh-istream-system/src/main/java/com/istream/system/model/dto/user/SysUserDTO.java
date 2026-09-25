@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.user;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -18,10 +17,8 @@ public class SysUserDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long deptId;
 
     private String username;

@@ -73,6 +73,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/message/list/': RouteRecordInfo<
+      '/message/list/',
+      '/message/list',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/monitor/login-info/': RouteRecordInfo<
       '/monitor/login-info/',
       '/monitor/login-info',
@@ -192,6 +199,14 @@ declare module 'vue-router/auto-routes' {
     'src/views/login/index.vue': {
       routes:
         | '/login/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/views/message/list/index.vue': {
+      routes:
+        | '/message/list/'
       views:
         | never
       pathParamNames:

@@ -3,6 +3,7 @@ import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 import { useAuthStore, TOKEN_KEY } from '@/stores/auth'
 
 const PUBLIC_PATHS = new Set(['/login', '/error/404', '/error/403'])
+const AUTH_ONLY_PATHS = new Set(['/message', '/message/list'])
 
 const router = createRouter({
   history: createWebHistory(),
@@ -42,7 +43,7 @@ router.beforeEach(async (to) => {
   const redirect = await ensureAuthenticated(to.fullPath)
   if (redirect) return redirect
   const authStore = useAuthStore()
-  if (authStore.menuPaths.size > 0 && !authStore.hasPathPermission(to.path)) {
+  if (!AUTH_ONLY_PATHS.has(to.path) && authStore.menuPaths.size > 0 && !authStore.hasPathPermission(to.path)) {
     return { path: '/error/403' }
   }
 })

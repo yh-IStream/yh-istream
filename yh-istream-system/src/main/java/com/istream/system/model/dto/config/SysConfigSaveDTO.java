@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.config;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.istream.common.validation.Groups;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +22,6 @@ public class SysConfigSaveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotNull(groups = Groups.Update.class, message = "配置ID不能为空")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     @NotBlank(groups = Groups.Create.class, message = "配置名称不能为空")

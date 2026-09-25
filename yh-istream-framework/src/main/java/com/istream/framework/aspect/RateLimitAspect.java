@@ -15,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -40,7 +41,13 @@ public class RateLimitAspect {
 
     private final RedissonClient redissonClient;
 
-    private final ConcurrentHashMap<String, Boolean> initializedKeys = new ConcurrentHashMap<>();
+    /**
+     * 已初始化的限流器 key 集合
+     *
+     * <p>避免每次请求都调用 Redis trySetRate。该集合的上界等于项目中
+     * {@link RateLimit} 注解的数量（编译期确定），不会无限增长。</p>
+     */
+    private final Set<String> initializedKeys = ConcurrentHashMap.newKeySet();
 
     @Around("@annotation(rateLimit)")
     public Object around(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
@@ -48,12 +55,12 @@ public class RateLimitAspect {
         String fullKey = RATE_LIMITER_KEY_PREFIX + key;
 
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(fullKey);
-        initializedKeys.computeIfAbsent(fullKey, k -> {
+        if (!initializedKeys.contains(fullKey)) {
             if (!rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1))) {
                 rateLimiter.setRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
             }
-            return Boolean.TRUE;
-        });
+            initializedKeys.add(fullKey);
+        }
 
         if (rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()))) {
             return joinPoint.proceed();

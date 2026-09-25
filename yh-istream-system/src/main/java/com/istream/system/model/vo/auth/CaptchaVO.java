@@ -1,4 +1,4 @@
-package com.istream.web.model.vo;
+package com.istream.system.model.vo.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 登录成功响应 VO
+ * 验证码响应 VO
  *
  * @author istream
  * @since 2026-08-17
@@ -15,11 +15,11 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginVO implements Serializable {
+public class CaptchaVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String token;
+    private String uuid;
 
-    private String tokenName;
+    private String image;
 }

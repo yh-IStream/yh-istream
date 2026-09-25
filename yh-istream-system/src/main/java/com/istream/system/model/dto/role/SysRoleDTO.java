@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.role;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,7 +16,6 @@ public class SysRoleDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
     private String roleName;

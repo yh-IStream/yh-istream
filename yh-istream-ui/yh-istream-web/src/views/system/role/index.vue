@@ -13,6 +13,7 @@ import { useTable } from '@/composables/useTable'
 import { useExport } from '@/composables/useExport'
 
 const message = useMessage()
+const statusLoadingMap = ref(new Map<string, boolean>())
 const dialog = useDialog()
 const { renderStatusTag } = useStatusRender()
 const { downloadExcel } = useExport()
@@ -72,6 +73,7 @@ const columns = [
       value: row.status === STATUS.NORMAL,
       checkedValue: true,
       uncheckedValue: false,
+      loading: statusLoadingMap.value.get(row.id) ?? false,
       onUpdateValue: (val: boolean) => handleStatusChange(row, val),
     }),
   },
@@ -144,13 +146,17 @@ async function handleDelete(id: string) {
 }
 
 async function handleStatusChange(row: SysRole, val: boolean) {
+  if (statusLoadingMap.value.get(row.id)) return
   const newStatus = val ? STATUS.NORMAL : STATUS.DISABLED
+  statusLoadingMap.value.set(row.id, true)
   try {
     await changeRoleStatus(row.id, newStatus)
     row.status = newStatus
     message.success('状态修改成功')
   } catch (e: unknown) {
     message.error((e as Error).message || '修改失败')
+  } finally {
+    statusLoadingMap.value.delete(row.id)
   }
 }
 
@@ -249,8 +255,8 @@ async function handleUserAssign(row: SysRole) {
       }
     }
     selectedUserIds.value = Array.from(assignedIds)
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn('已分配用户加载失败', e)
   }
   finally { userInitLoading.value = false }
 }

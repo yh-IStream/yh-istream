@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.dept;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.istream.common.validation.Groups;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,10 +23,8 @@ public class SysDeptSaveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotNull(groups = Groups.Update.class, message = "部门ID不能为空")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long parentId;
 
     @NotBlank(groups = Groups.Create.class, message = "部门名称不能为空")

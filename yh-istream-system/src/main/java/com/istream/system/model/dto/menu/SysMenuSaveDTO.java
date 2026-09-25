@@ -1,6 +1,5 @@
 package com.istream.system.model.dto.menu;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.istream.common.validation.Groups;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,10 +22,8 @@ public class SysMenuSaveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @NotNull(groups = Groups.Update.class, message = "菜单ID不能为空")
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long id;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long parentId;
 
     @NotBlank(groups = Groups.Create.class, message = "菜单名称不能为空")
