@@ -32,14 +32,26 @@ public enum StatusEnum {
      * @since 2026-09-09
      */
     public static boolean isInvalidCode(Integer code) {
+        return code == null || (!code.equals(ENABLED.code) && !code.equals(DISABLED.code));
+    }
+
+    /**
+     * 根据状态码获取枚举实例
+     *
+     * @param code 状态码
+     * @return 对应的枚举实例，若 code 为 null 或不匹配则返回 null
+     * @since 2026-09-27
+     */
+    public static StatusEnum of(Integer code) {
         if (code == null) {
-            return true;
+            return null;
         }
-        for (StatusEnum e : values()) {
-            if (e.code.equals(code)) {
-                return false;
-            }
+        if (ENABLED.code.equals(code)) {
+            return ENABLED;
         }
-        return true;
+        if (DISABLED.code.equals(code)) {
+            return DISABLED;
+        }
+        return null;
     }
 }

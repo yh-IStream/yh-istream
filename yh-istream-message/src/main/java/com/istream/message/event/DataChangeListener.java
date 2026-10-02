@@ -33,46 +33,46 @@ public class DataChangeListener {
      *
      * @param event 数据变更事件
      */
-    @Async
+    @Async("asyncExecutor")
     @EventListener
     public void onDataChange(DataChangeEvent event) {
         try {
             String title = buildTitle(event);
             String content = buildContent(event);
 
-            if (event.getOperatorId() != null) {
-                messageCenter.sendToUser(event.getOperatorId(), title, content,
-                        EventType.DATA_CHANGE, event.getEntityType(), event.getEntityId());
-            } else if (event.getTenantId() != null) {
-                messageCenter.sendToTenant(event.getTenantId(), title, content,
-                        EventType.DATA_CHANGE, event.getEntityType(), event.getEntityId());
+            if (event.operatorId() != null) {
+                messageCenter.sendToUser(event.operatorId(), title, content,
+                        EventType.DATA_CHANGE, event.entityType(), event.entityId());
+            } else if (event.tenantId() != null) {
+                messageCenter.sendToTenant(event.tenantId(), title, content,
+                        EventType.DATA_CHANGE, event.entityType(), event.entityId());
             } else {
                 messageCenter.broadcast(title, content, EventType.DATA_CHANGE);
             }
 
             log.debug("DataChangeListener: 已路由数据变更事件 entityType={}, entityId={}, eventType={}",
-                    event.getEntityType(), event.getEntityId(), event.getSyncEventType());
+                    event.entityType(), event.entityId(), event.syncEventType());
         } catch (Exception e) {
             log.warn("DataChangeListener: 处理数据变更事件失败 entityType={}, entityId={}",
-                    event.getEntityType(), event.getEntityId(), e);
+                    event.entityType(), event.entityId(), e);
         }
     }
 
     private String buildTitle(DataChangeEvent event) {
-        String action = switch (event.getSyncEventType()) {
+        String action = switch (event.syncEventType()) {
             case CREATE -> "新增";
             case UPDATE -> "修改";
             case DELETE -> "删除";
         };
-        return action + event.getEntityType();
+        return action + event.entityType();
     }
 
     private String buildContent(DataChangeEvent event) {
-        String action = switch (event.getSyncEventType()) {
+        String action = switch (event.syncEventType()) {
             case CREATE -> "新增了";
             case UPDATE -> "修改了";
             case DELETE -> "删除了";
         };
-        return event.getEntityType() + " " + action + " (ID: " + event.getEntityId() + ")";
+        return event.entityType() + " " + action + " (ID: " + event.entityId() + ")";
     }
 }

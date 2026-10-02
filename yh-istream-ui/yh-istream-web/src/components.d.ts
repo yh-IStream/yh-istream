@@ -11,6 +11,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AISuggestionCard: typeof import('./components/ai/AISuggestionCard.vue')['default']
+    AISuggestionPanel: typeof import('./components/ai/AISuggestionPanel.vue')['default']
     BellNotification: typeof import('./components/message/BellNotification.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NBadge: typeof import('naive-ui')['NBadge']

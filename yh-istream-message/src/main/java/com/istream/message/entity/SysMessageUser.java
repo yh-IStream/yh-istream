@@ -3,7 +3,6 @@ package com.istream.message.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -16,9 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("sys_message_user")
-public class SysMessageUser implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysMessageUser {
 
     /** 主键ID */
     private Long id;

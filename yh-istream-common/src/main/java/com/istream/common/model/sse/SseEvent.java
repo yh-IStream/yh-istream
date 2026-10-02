@@ -1,9 +1,5 @@
 package com.istream.common.model.sse;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 
 /**
@@ -12,16 +8,16 @@ import java.time.LocalDateTime;
  * @author istream
  * @since 2026-08-20
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class SseEvent {
+public record SseEvent(
+        /* 事件类型 */
+        String type,
 
-    private String type;
+        /* 事件数据 */
+        Object data,
 
-    private Object data;
-
-    private LocalDateTime timestamp;
+        /* 事件时间戳 */
+        LocalDateTime timestamp
+) {
 
     public static SseEvent of(String type, Object data) {
         return new SseEvent(type, data, LocalDateTime.now());

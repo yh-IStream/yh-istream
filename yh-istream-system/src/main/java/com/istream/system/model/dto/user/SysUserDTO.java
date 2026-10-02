@@ -2,7 +2,6 @@ package com.istream.system.model.dto.user;
 
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,9 +12,7 @@ import java.util.List;
  * @since 2026-08-17
  */
 @Data
-public class SysUserDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysUserDTO {
 
     private Long id;
 

@@ -5,7 +5,9 @@ import com.istream.common.event.DataChangeEvent;
 import com.istream.watchdog.model.AlertEvent;
 import com.istream.watchdog.model.AlertRule;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 规则引擎
@@ -33,9 +37,14 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class RuleEngine {
 
+    private static final AtomicLong ALERT_ID_SEQ = new AtomicLong(0);
+
     private final SpelExpressionParser parser = new SpelExpressionParser();
+
+    private final ConcurrentHashMap<String, Expression> expressionCache = new ConcurrentHashMap<>();
 
     /**
      * 评估所有规则
@@ -67,7 +76,7 @@ public class RuleEngine {
             if (evaluateCondition(rule, event, data)) {
                 alerts.add(buildAlert(rule, event, data));
                 log.info("RuleEngine: 规则 [{}] 命中 entityType={}, entityId={}",
-                        rule.getName(), event.getEntityType(), event.getEntityId());
+                        rule.getName(), event.entityType(), event.entityId());
             }
         }
 
@@ -75,14 +84,14 @@ public class RuleEngine {
     }
 
     private boolean matchesEntity(AlertRule rule, DataChangeEvent event) {
-        return rule.getEntity().equals(event.getEntityType());
+        return rule.getEntity().equals(event.entityType());
     }
 
     private boolean matchesEvent(AlertRule rule, DataChangeEvent event) {
         if (rule.getOnEvents() == null || rule.getOnEvents().isEmpty()) {
             return true;
         }
-        return rule.getOnEvents().contains(event.getSyncEventType().name());
+        return rule.getOnEvents().contains(event.syncEventType().name());
     }
 
     private boolean evaluateCondition(AlertRule rule, DataChangeEvent event, Object data) {
@@ -93,11 +102,12 @@ public class RuleEngine {
         try {
             EvaluationContext context = new StandardEvaluationContext();
             context.setVariable("data", data);
-            context.setVariable("entityType", event.getEntityType());
-            context.setVariable("entityId", event.getEntityId());
-            context.setVariable("event", event.getSyncEventType().name());
+            context.setVariable("entityType", event.entityType());
+            context.setVariable("entityId", event.entityId());
+            context.setVariable("event", event.syncEventType().name());
 
-            return Boolean.TRUE.equals(parser.parseExpression(rule.getCondition()).getValue(context, Boolean.class));
+            var expression = expressionCache.computeIfAbsent(rule.getCondition(), parser::parseExpression);
+            return Boolean.TRUE.equals(expression.getValue(context, Boolean.class));
         } catch (Exception e) {
             log.warn("RuleEngine: SpEL 表达式求值失败 rule={}, condition={}", rule.getName(), rule.getCondition(), e);
             return false;
@@ -106,18 +116,19 @@ public class RuleEngine {
 
     private AlertEvent buildAlert(AlertRule rule, DataChangeEvent event, Object data) {
         return AlertEvent.builder()
+                .id(ALERT_ID_SEQ.incrementAndGet())
                 .ruleName(rule.getName())
                 .severity(rule.getSeverity())
-                .entityType(event.getEntityType())
-                .entityId(event.getEntityId())
-                .triggerEvent(event.getSyncEventType())
+                .entityType(event.entityType())
+                .entityId(event.entityId())
+                .triggerEvent(event.syncEventType())
                 .title(resolveTemplate(rule.getTitle(), data))
                 .content(resolveTemplate(rule.getContent(), data))
                 .receiverIds(rule.getReceivers())
                 .channels(rule.getChannels())
                 .alertTime(LocalDateTime.now())
                 .confirmed(0)
-                .tenantId(event.getTenantId())
+                .tenantId(event.tenantId())
                 .build();
     }
 

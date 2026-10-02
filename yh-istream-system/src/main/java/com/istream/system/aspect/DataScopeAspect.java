@@ -25,7 +25,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,7 +84,7 @@ public class DataScopeAspect {
             Set<Long> selfRoleIds,
             Long userDeptId,
             String userDeptAncestors
-    ) implements Serializable {
+    ) {
     }
 
     /**

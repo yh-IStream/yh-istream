@@ -1,10 +1,7 @@
 package com.istream.message.event;
 
-import com.istream.common.enums.EventType;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.framework.sse.SseService;
-import com.istream.framework.tenant.TenantContext;
-import com.istream.message.connection.ConnectionRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -12,7 +9,7 @@ import org.springframework.stereotype.Component;
 /**
  * SSE 事件总线
  *
- * <p>统一的事件发布入口，支持按用户、角色、租户、全量广播四种目标范围：</p>
+ * <p>统一的事件发布入口，支持按用户、租户、全量广播三种目标范围：</p>
  * <ul>
  *   <li>{@code publishToUser(userId, event)} — 精确推送到指定用户</li>
  *   <li>{@code publishToTenant(tenantId, event)} — 推送到同一租户下所有在线用户</li>
@@ -29,7 +26,6 @@ import org.springframework.stereotype.Component;
 public class EventBus {
 
     private final SseService sseService;
-    private final ConnectionRegistry connectionRegistry;
 
     /**
      * 向指定用户发布事件
@@ -43,9 +39,9 @@ public class EventBus {
         }
         try {
             sseService.sendToUser(userId, event);
-            log.debug("EventBus 单播: userId={}, type={}", userId, event.getType());
+            log.debug("EventBus 单播: userId={}, type={}", userId, event.type());
         } catch (Exception e) {
-            log.warn("EventBus 单播失败（降级）: userId={}, type={}", userId, event.getType(), e);
+            log.warn("EventBus 单播失败（降级）: userId={}, type={}", userId, event.type(), e);
         }
     }
 
@@ -61,9 +57,9 @@ public class EventBus {
         }
         try {
             sseService.broadcast(event);
-            log.debug("EventBus 租户广播: tenantId={}, type={}", tenantId, event.getType());
+            log.debug("EventBus 租户广播: tenantId={}, type={}", tenantId, event.type());
         } catch (Exception e) {
-            log.warn("EventBus 租户广播失败（降级）: tenantId={}, type={}", tenantId, event.getType(), e);
+            log.warn("EventBus 租户广播失败（降级）: tenantId={}, type={}", tenantId, event.type(), e);
         }
     }
 
@@ -78,9 +74,9 @@ public class EventBus {
         }
         try {
             sseService.broadcast(event);
-            log.debug("EventBus 全量广播: type={}", event.getType());
+            log.debug("EventBus 全量广播: type={}", event.type());
         } catch (Exception e) {
-            log.warn("EventBus 全量广播失败（降级）: type={}", event.getType(), e);
+            log.warn("EventBus 全量广播失败（降级）: type={}", event.type(), e);
         }
     }
 }

@@ -48,9 +48,31 @@
           min-idle: 0
           max-wait: 10000ms
 
-# Redisson 配置
+  # ===== AI 模型连接（二选一，注释掉不用的） =====
+  # 方式 A：Ollama 本地（免费，需先 ollama pull qwen2.5:7b && ollama serve）
+#  ai:
+#    ollama:
+#      base-url: http://localhost:11434
+#      chat:
+#        options:
+#          model: qwen2.5:7b
+#          temperature: 0.3
+  # 方式 B：OpenRouter 云端（免费额度使用，注册获取 key → 系统环境变量 OPENROUTER_API_KEY）
+  ai:
+    model:
+      chat: openai
+    openai:
+      base-url: https://openrouter.ai/api/v1
+      api-key: ${OPENROUTER_API_KEY:}
+      chat:
+        model: cohere/north-mini-code:free
+        temperature: 0.3
+        max-tokens: 1500
+
+# Redisson 配置（JsonJacksonCodec：Redis 数据可读、可跨语言、更安全）
 redisson:
   config: |
+    codec: !<org.redisson.codec.JsonJacksonCodec> {}
     singleServerConfig:
       address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
       database: ${spring.data.redis.database}
@@ -72,8 +94,31 @@ logging:
     com.istream: DEBUG
     org.springframework.web: DEBUG
 
+    org.springframework.ai.openai: DEBUG
+    org.springframework.ai.chat.client: DEBUG
+    org.springframework.web.client: DEBUG
+#    org.springframework.ai: DEBUG
+#    org.springframework.boot.autoconfigure: DEBUG
+
 # MyBatis-Plus SQL 日志（仅开发环境）
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 #    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# ==================== AI 配置（开发环境启用） ====================
+# 如未安装 Ollama / 无 OpenRouter key，AI 会自动降级为 NoOp（启动不报错）
+#istream:
+#  ai:
+#    enabled: true
+#    provider: ollama
+#    mcp:
+#      enabled: true
+
+# ===== 如果用 OpenRouter 而不是 Ollama，改 provider 并取消注释上面的方式 B =====
+istream:
+ ai:
+   enabled: true
+   provider: openai
+   mcp:
+     enabled: true

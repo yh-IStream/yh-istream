@@ -1,5 +1,7 @@
 package com.istream.common.annotation;
 
+import com.istream.common.model.query.BaseQuery;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,7 +17,7 @@ import java.lang.annotation.Target;
  * List<SysUser> selectUserList(SysUserQuery query);
  * }</pre>
  * <p>
- * 注入到 {@link com.istream.common.model.query.BaseQuery#params} 中的 key 为 {@value #DATA_SCOPE_KEY}
+ * 注入到 {@link BaseQuery#params} 中的 key 为 {@value #DATA_SCOPE_KEY}
  */
 @Documented
 @Target(ElementType.METHOD)

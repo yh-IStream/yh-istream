@@ -2,7 +2,6 @@ package com.istream.system.model.dto.dept;
 
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +13,7 @@ import java.util.List;
  * @since 2026-09-15
  */
 @Data
-public class SysDeptDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysDeptDTO {
 
     private Long id;
 

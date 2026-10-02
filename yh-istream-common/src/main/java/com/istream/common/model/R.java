@@ -1,11 +1,6 @@
 package com.istream.common.model;
 
 import com.istream.common.enums.ResultCode;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
 
 /**
  * 统一响应体
@@ -16,21 +11,16 @@ import java.io.Serializable;
  * @author istream
  * @since 2026-08-17
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class R<T> implements Serializable {
+public record R<T>(
+        /* 状态码 */
+        Integer code,
 
-    private static final long serialVersionUID = 1L;
+        /* 响应消息 */
+        String msg,
 
-    /** 状态码 */
-    private Integer code;
-
-    /** 响应消息 */
-    private String msg;
-
-    /** 响应数据 */
-    private T data;
+        /* 响应数据 */
+        T data
+) {
 
     /* ==================== 静态工厂方法 ==================== */
 

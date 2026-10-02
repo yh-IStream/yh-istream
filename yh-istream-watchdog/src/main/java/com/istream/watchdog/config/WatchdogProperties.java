@@ -2,7 +2,6 @@ package com.istream.watchdog.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -47,7 +46,6 @@ import java.util.List;
  * @since 2026-09-24
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "istream.watchdog")
 public class WatchdogProperties {
 

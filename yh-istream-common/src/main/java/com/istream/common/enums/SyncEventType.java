@@ -1,17 +1,20 @@
 package com.istream.common.enums;
 
+import com.istream.common.annotation.RealTimeSync;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * 数据同步事件类型
  *
- * <p>用于 {@link com.istream.common.annotation.RealTimeSync} 注解声明
+ * <p>用于 {@link RealTimeSync} 注解声明
  * Service 类关注的实体变更类型，AOP 切面据此自动发布 {@link EventType#DATA_CHANGE} 事件。</p>
  *
  * @author istream
  * @since 2026-09-24
  */
 @Getter
+@AllArgsConstructor
 public enum SyncEventType {
 
     /** 实体创建 */
@@ -25,9 +28,4 @@ public enum SyncEventType {
 
     private final int code;
     private final String desc;
-
-    SyncEventType(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
 }

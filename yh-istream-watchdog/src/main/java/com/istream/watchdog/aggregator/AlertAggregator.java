@@ -1,9 +1,11 @@
 package com.istream.watchdog.aggregator;
 
+import com.istream.watchdog.config.WatchdogProperties;
 import com.istream.watchdog.model.AlertEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -25,6 +27,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class AlertAggregator {
 
     private static final String KEY_PREFIX = "watchdog:aggregate:";
@@ -33,9 +36,9 @@ public class AlertAggregator {
     private final RedissonClient redissonClient;
     private final Duration window;
 
-    public AlertAggregator(RedissonClient redissonClient) {
+    public AlertAggregator(RedissonClient redissonClient, WatchdogProperties properties) {
         this.redissonClient = redissonClient;
-        this.window = DEFAULT_WINDOW;
+        this.window = parseWindow(properties.getAggregateWindow());
     }
 
     /**
@@ -45,21 +48,44 @@ public class AlertAggregator {
      * @return true 表示应推送（首次或窗口外），false 表示应抑制（窗口内重复）
      */
     public boolean shouldEmit(AlertEvent event) {
-        String key = buildKey(event);
-        RBucket<LocalDateTime> bucket = redissonClient.getBucket(key);
+        try {
+            String key = buildKey(event);
+            RBucket<LocalDateTime> bucket = redissonClient.getBucket(key);
 
-        LocalDateTime lastAlert = bucket.get();
-        if (lastAlert != null && lastAlert.plus(window).isAfter(LocalDateTime.now())) {
-            log.debug("AlertAggregator: 告警被聚合抑制 rule={}, entity={}/{}",
-                    event.getRuleName(), event.getEntityType(), event.getEntityId());
-            return false;
+            LocalDateTime lastAlert = bucket.get();
+            if (lastAlert != null && lastAlert.plus(window).isAfter(LocalDateTime.now())) {
+                log.debug("AlertAggregator: 告警被聚合抑制 rule={}, entity={}/{}",
+                        event.getRuleName(), event.getEntityType(), event.getEntityId());
+                return false;
+            }
+
+            bucket.set(LocalDateTime.now(), window.toSeconds(), TimeUnit.SECONDS);
+            return true;
+        } catch (Exception e) {
+            log.warn("AlertAggregator: Redis 操作失败，降级为允许推送 rule={}", event.getRuleName(), e);
+            return true;
         }
-
-        bucket.set(LocalDateTime.now(), window.toSeconds(), TimeUnit.SECONDS);
-        return true;
     }
 
     private String buildKey(AlertEvent event) {
         return KEY_PREFIX + event.getRuleName() + ":" + event.getEntityType() + ":" + event.getEntityId();
+    }
+
+    private static Duration parseWindow(String windowStr) {
+        if (windowStr == null || windowStr.isBlank()) {
+            return DEFAULT_WINDOW;
+        }
+        try {
+            char unit = windowStr.charAt(windowStr.length() - 1);
+            long value = Long.parseLong(windowStr.substring(0, windowStr.length() - 1));
+            return switch (unit) {
+                case 's' -> Duration.ofSeconds(value);
+                case 'm' -> Duration.ofMinutes(value);
+                case 'h' -> Duration.ofHours(value);
+                default -> DEFAULT_WINDOW;
+            };
+        } catch (Exception e) {
+            return DEFAULT_WINDOW;
+        }
     }
 }

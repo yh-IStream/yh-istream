@@ -27,6 +27,7 @@
         <module>yh-istream-file</module>
         <module>yh-istream-message</module>
         <module>yh-istream-watchdog</module>
+        <module>yh-istream-ai</module>
     </modules>
 
     <properties>
@@ -48,6 +49,7 @@
         <mysql-connector.version>9.7.0</mysql-connector.version>
         <postgresql.version>42.7.5</postgresql.version>
         <velocity.version>2.4</velocity.version>
+        <spring-ai.version>2.0.0</spring-ai.version>
 
         <!-- 传递依赖安全覆盖（EasyExcel 引入的旧版本存在 CVE） -->
         <commons-compress.version>1.26.0</commons-compress.version>
@@ -93,6 +95,11 @@
             <dependency>
                 <groupId>com.istream</groupId>
                 <artifactId>yh-istream-watchdog</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.istream</groupId>
+                <artifactId>yh-istream-ai</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -251,6 +258,15 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+            </dependency>
+
+            <!-- ==================== Spring AI（可拆卸，optional） ==================== -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

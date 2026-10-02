@@ -41,13 +41,13 @@ public class OperLogListener {
         try {
             sysOperLogService.save(logEntry);
         } catch (Exception e) {
-            log.error("操作日志持久化失败: title={}, method={}", event.getTitle(), event.getMethod(), e);
+            log.error("操作日志持久化失败: title={}, method={}", event.title(), event.method(), e);
         }
 
         try {
             sseService.broadcast(SseEvent.of("OPER_LOG", logEntry));
         } catch (Exception e) {
-            log.error("操作日志SSE广播失败: title={}", event.getTitle(), e);
+            log.error("操作日志SSE广播失败: title={}", event.title(), e);
         }
     }
 
@@ -56,21 +56,21 @@ public class OperLogListener {
      */
     private SysOperLog convertToEntity(OperLogEvent event) {
         SysOperLog logEntry = new SysOperLog();
-        logEntry.setTitle(event.getTitle());
-        logEntry.setBusinessType(event.getBusinessType());
-        logEntry.setMethod(event.getMethod());
-        logEntry.setRequestMethod(event.getRequestMethod());
-        logEntry.setOperUrl(event.getOperUrl());
-        logEntry.setOperIp(event.getOperIp());
-        logEntry.setOperLocation(event.getOperLocation());
-        logEntry.setOperParam(event.getOperParam());
-        logEntry.setJsonResult(event.getJsonResult());
-        logEntry.setStatus(event.getStatus());
-        logEntry.setErrorMsg(event.getErrorMsg());
-        logEntry.setCostTime(event.getCostTime());
-        logEntry.setOperBy(event.getOperBy());
-        logEntry.setOperName(event.getOperName());
-        logEntry.setOperTime(event.getOperTime());
+        logEntry.setTitle(event.title());
+        logEntry.setBusinessType(event.businessType());
+        logEntry.setMethod(event.method());
+        logEntry.setRequestMethod(event.requestMethod());
+        logEntry.setOperUrl(event.operUrl());
+        logEntry.setOperIp(event.operIp());
+        logEntry.setOperLocation(event.operLocation());
+        logEntry.setOperParam(event.operParam());
+        logEntry.setJsonResult(event.jsonResult());
+        logEntry.setStatus(event.status());
+        logEntry.setErrorMsg(event.errorMsg());
+        logEntry.setCostTime(event.costTime());
+        logEntry.setOperBy(event.operBy());
+        logEntry.setOperName(event.operName());
+        logEntry.setOperTime(event.operTime());
         return logEntry;
     }
 }

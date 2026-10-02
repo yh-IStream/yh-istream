@@ -1,42 +1,59 @@
 package com.istream.common.event;
 
-import lombok.Data;
-
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Data
-public class OperLogEvent implements Serializable {
+/**
+ * 操作日志事件
+ *
+ * <p>由 {@code @OperLog} AOP 切面在 Controller 方法执行后构建，
+ * 通过 Spring 事件总线异步消费，持久化到 {@code sys_oper_log} 表。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
+public record OperLogEvent(
+        // 操作模块标题
+        String title,
 
-    private static final long serialVersionUID = 1L;
+        // 业务类型（0=其他 1=新增 2=修改 3=删除 ...）
+        Integer businessType,
 
-    private String title;
+        // 请求方法全路径
+        String method,
 
-    private Integer businessType;
+        // HTTP 请求方法（GET/POST/PUT/DELETE）
+        String requestMethod,
 
-    private String method;
+        // 请求 URL
+        String operUrl,
 
-    private String requestMethod;
+        // 操作者 IP
+        String operIp,
 
-    private String operUrl;
+        // 操作者地理位置
+        String operLocation,
 
-    private String operIp;
+        // 请求参数（JSON）
+        String operParam,
 
-    private String operLocation;
+        // 返回结果（JSON）
+        String jsonResult,
 
-    private String operParam;
+        // 操作状态（0=正常 1=异常）
+        Integer status,
 
-    private String jsonResult;
+        // 错误消息
+        String errorMsg,
 
-    private Integer status;
+        // 耗时（毫秒）
+        Long costTime,
 
-    private String errorMsg;
+        // 操作者ID
+        Long operBy,
 
-    private Long costTime;
+        // 操作者姓名
+        String operName,
 
-    private Long operBy;
-
-    private String operName;
-
-    private LocalDateTime operTime;
-}
+        // 操作时间
+        LocalDateTime operTime
+) {}

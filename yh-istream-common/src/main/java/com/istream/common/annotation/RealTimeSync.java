@@ -1,5 +1,6 @@
 package com.istream.common.annotation;
 
+import com.istream.common.enums.EventType;
 import com.istream.common.enums.SyncEventType;
 
 import java.lang.annotation.Documented;
@@ -12,7 +13,7 @@ import java.lang.annotation.Target;
  * 声明式实时同步注解
  *
  * <p>标注在 Service 类上，声明该 Service 管理的实体及其变更事件类型。
- * AOP 切面自动拦截匹配的方法，在方法执行成功后发布 {@link com.istream.common.enums.EventType#DATA_CHANGE} 事件，
+ * AOP 切面自动拦截匹配的方法，在方法执行成功后发布 {@link EventType#DATA_CHANGE} 事件，
  * 经 EventBus → SSE 推送到前端，同时进入 Watchdog 守护管道进行规则检测。</p>
  *
  * <p>方法事件类型推断规则（约定优于配置）：</p>

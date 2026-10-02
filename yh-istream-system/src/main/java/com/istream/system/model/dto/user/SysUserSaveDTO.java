@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -21,9 +20,7 @@ import java.util.List;
  * @since 2026-09-17
  */
 @Data
-public class SysUserSaveDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysUserSaveDTO {
 
     @NotNull(groups = Groups.Update.class, message = "用户ID不能为空")
     private Long id;

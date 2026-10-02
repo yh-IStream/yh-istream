@@ -12,8 +12,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_role")
 public class SysRole extends BaseEntity {
 
-    private static final long serialVersionUID = 1L;
-
     @ExcelProperty("角色名称")
     private String roleName;
 

@@ -3,7 +3,7 @@ import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 import { useAuthStore, TOKEN_KEY } from '@/stores/auth'
 
 const PUBLIC_PATHS = new Set(['/login', '/error/404', '/error/403'])
-const AUTH_ONLY_PATHS = new Set(['/message', '/message/list'])
+const AUTH_ONLY_PATHS = new Set(['/message', '/message/list', '/ai'])
 
 const router = createRouter({
   history: createWebHistory(),

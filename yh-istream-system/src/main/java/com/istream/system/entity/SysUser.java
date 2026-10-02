@@ -18,8 +18,6 @@ import java.util.List;
 @TableName("sys_user")
 public class SysUser extends BaseEntity {
 
-    private static final long serialVersionUID = 1L;
-
     @ExcelIgnore
     @TableField("dept_id")
     private Long deptId;

@@ -30,6 +30,18 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Hutool Captcha（验证码生成） -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-captcha</artifactId>
+        </dependency>
+
+        <!-- Hutool Crypto（BCrypt 密码加密） -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-crypto</artifactId>
+        </dependency>
+
         <!-- 测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

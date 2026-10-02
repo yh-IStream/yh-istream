@@ -5,8 +5,6 @@ import com.istream.common.model.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
-
 /**
  * 消息主表实体
  *
@@ -19,9 +17,7 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_message")
-public class SysMessage extends BaseEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysMessage extends BaseEntity {
 
     /** 消息标题 */
     private String title;

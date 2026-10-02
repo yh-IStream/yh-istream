@@ -3,7 +3,6 @@ package com.istream.message.model.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -13,9 +12,7 @@ import java.time.LocalDateTime;
  * @since 2026-09-21
  */
 @Data
-public class SysMessageDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysMessageDTO {
 
     private Long id;
 

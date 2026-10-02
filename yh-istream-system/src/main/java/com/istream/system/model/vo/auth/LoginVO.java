@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
  * 登录成功响应 VO
  *
@@ -15,9 +13,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginVO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class LoginVO {
 
     private String token;
 

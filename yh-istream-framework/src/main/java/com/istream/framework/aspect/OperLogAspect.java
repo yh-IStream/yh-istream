@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
  * 操作日志 AOP 切面
  *
  * <p>拦截 {@link OperLog} 注解标注的方法，自动记录操作日志。
- * 日志通过 Spring {@link org.springframework.context.ApplicationEventPublisher} 异步发布，
+ * 日志通过 Spring {@link ApplicationEventPublisher} 异步发布，
  * 由 {@code OperLogListener} 异步持久化。</p>
  *
  * <p>执行顺序：@Order(2)，在 {@link RateLimitAspect}(@Order=0) 和
@@ -63,92 +63,85 @@ public class OperLogAspect {
     public Object around(ProceedingJoinPoint joinPoint, OperLog operLog) throws Throwable {
         long start = System.currentTimeMillis();
 
-        OperLogEvent event = new OperLogEvent();
-        event.setTitle(operLog.title());
-        event.setBusinessType(operLog.businessType().getCode());
-        event.setMethod(joinPoint.getSignature().getDeclaringTypeName()
-                + "." + joinPoint.getSignature().getName());
-        event.setOperTime(LocalDateTime.now());
+        String title = operLog.title();
+        Integer businessType = operLog.businessType().getCode();
+        String method = joinPoint.getSignature().getDeclaringTypeName()
+                + "." + joinPoint.getSignature().getName();
+        LocalDateTime operTime = LocalDateTime.now();
 
-        fillRequestInfo(event);
-        fillOperatorInfo(event);
-        fillParamInfo(event, joinPoint.getArgs());
+        String requestMethod = null;
+        String operUrl = null;
+        String operIp = null;
+        String operLocation = null;
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            HttpServletRequest request = attributes.getRequest();
+            requestMethod = request.getMethod();
+            operUrl = request.getRequestURI();
+            operIp = IpUtils.getClientIp(request);
+            operLocation = IpRegionUtils.parseRegion(operIp);
+        }
 
+        Long operBy = null;
+        String operName = null;
+        try {
+            operBy = SecurityUtils.getLoginUserId();
+            operName = (String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY);
+        } catch (Exception e) {
+            log.debug("操作日志获取当前用户信息失败（可能为匿名访问）: {}", e.getMessage());
+        }
+
+        String operParam = serializeParams(joinPoint.getArgs());
+
+        int status = 0;
+        String jsonResult = "{}";
+        String errorMsg = null;
         Object result;
+
         try {
             result = joinPoint.proceed();
-            event.setStatus(0);
-            fillResultInfo(event, result);
+            jsonResult = serializeResult(result);
         } catch (Exception e) {
-            event.setStatus(1);
-            String errorMsg = e.getMessage();
-            event.setErrorMsg(errorMsg != null && errorMsg.length() > MAX_ERROR_MSG_LENGTH
-                    ? errorMsg.substring(0, MAX_ERROR_MSG_LENGTH) + "..." : errorMsg);
+            status = 1;
+            String msg = e.getMessage();
+            errorMsg = msg != null && msg.length() > MAX_ERROR_MSG_LENGTH
+                    ? msg.substring(0, MAX_ERROR_MSG_LENGTH) + "..." : msg;
             try {
-                event.setJsonResult(JSONUtil.toJsonStr(R.fail(ResultCode.ERROR.getCode(), event.getErrorMsg())));
+                jsonResult = JSONUtil.toJsonStr(R.fail(ResultCode.ERROR.getCode(), errorMsg));
             } catch (Exception ex) {
-                event.setJsonResult("{}");
+                jsonResult = "{}";
             }
             throw e;
         } finally {
-            event.setCostTime(System.currentTimeMillis() - start);
-            eventPublisher.publishEvent(event);
+            long costTime = System.currentTimeMillis() - start;
+            eventPublisher.publishEvent(new OperLogEvent(
+                    title, businessType, method, requestMethod, operUrl, operIp, operLocation,
+                    operParam, jsonResult, status, errorMsg, costTime, operBy, operName, operTime));
         }
 
         return result;
     }
 
-    /**
-     * 填充请求信息（URL、IP、请求方式等）
-     */
-    private void fillRequestInfo(OperLogEvent event) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attributes != null) {
-            HttpServletRequest request = attributes.getRequest();
-            event.setRequestMethod(request.getMethod());
-            event.setOperUrl(request.getRequestURI());
-            event.setOperIp(IpUtils.getClientIp(request));
-            event.setOperLocation(IpRegionUtils.parseRegion(event.getOperIp()));
-        }
-    }
-
-    /**
-     * 填充操作人信息（用户ID、用户名）
-     */
-    private void fillOperatorInfo(OperLogEvent event) {
-        try {
-            event.setOperBy(SecurityUtils.getLoginUserId());
-            event.setOperName((String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY));
-        } catch (Exception e) {
-            log.debug("操作日志获取当前用户信息失败（可能为匿名访问）: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 填充请求参数信息
-     */
-    private void fillParamInfo(OperLogEvent event, Object[] args) {
+    private String serializeParams(Object[] args) {
         try {
             String paramJson = JSONUtil.toJsonStr(filterSerializableArgs(args));
-            event.setOperParam(paramJson.length() > MAX_PARAM_LENGTH
-                    ? paramJson.substring(0, MAX_PARAM_LENGTH) + "..." : paramJson);
+            return paramJson.length() > MAX_PARAM_LENGTH
+                    ? paramJson.substring(0, MAX_PARAM_LENGTH) + "..." : paramJson;
         } catch (Exception e) {
             log.debug("操作日志序列化请求参数失败: {}", e.getMessage());
-            event.setOperParam("[]");
+            return "[]";
         }
     }
 
-    /**
-     * 填充返回结果信息
-     */
-    private void fillResultInfo(OperLogEvent event, Object result) {
+    private String serializeResult(Object result) {
         try {
             String resultJson = result != null ? JSONUtil.toJsonStr(result) : "{}";
-            event.setJsonResult(resultJson.length() > MAX_PARAM_LENGTH
-                    ? resultJson.substring(0, MAX_PARAM_LENGTH) + "..." : resultJson);
+            return resultJson.length() > MAX_PARAM_LENGTH
+                    ? resultJson.substring(0, MAX_PARAM_LENGTH) + "..." : resultJson;
         } catch (Exception e) {
             log.debug("操作日志序列化返回结果失败: {}", e.getMessage());
-            event.setJsonResult("{}");
+            return "{}";
         }
     }
 

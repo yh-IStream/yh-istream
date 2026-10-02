@@ -3,6 +3,7 @@ package com.istream.system.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
+import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
 import com.istream.common.enums.StatusEnum;
 import com.istream.system.model.query.role.SysRoleQuery;
@@ -56,8 +57,6 @@ import java.util.List;
 @RequestMapping("/system/role")
 @RequiredArgsConstructor
 public class SysRoleController {
-
-    private static final int EXPORT_PAGE_SIZE = 5000;
 
     private final SysRoleService sysRoleService;
     private final SysMenuService sysMenuService;
@@ -201,6 +200,6 @@ public class SysRoleController {
     @GetMapping("/export")
     public void export(HttpServletResponse response) throws IOException {
         ExcelExportUtil.exportByPage(response, "角色列表", "角色列表", SysRole.class,
-                (pageNum) -> sysRoleService.pageExport(pageNum, EXPORT_PAGE_SIZE));
+                (pageNum) -> sysRoleService.pageExport(pageNum, Constants.EXPORT_PAGE_SIZE));
     }
 }

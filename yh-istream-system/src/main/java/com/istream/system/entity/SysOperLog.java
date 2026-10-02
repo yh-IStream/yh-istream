@@ -6,14 +6,11 @@ import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("sys_oper_log")
-public class SysOperLog implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysOperLog {
 
     @ExcelProperty("ID")
     private Long id;

@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 告警事件
  *
- * <p>Watchdog 规则引擎检测到异常后产生的告警事件，经 {@link com.istream.watchdog.router.AlertRouter}
+ * <p>Watchdog 规则引擎检测到异常后产生的告警事件，经 {@link AlertRouter}
  * 路由到指定通道推送。</p>
  *
  * @author istream

@@ -5,14 +5,11 @@ import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("sys_login_info")
-public class SysLoginInfo implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysLoginInfo {
 
     @ExcelProperty("ID")
     private Long id;

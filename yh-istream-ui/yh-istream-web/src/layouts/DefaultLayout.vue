@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { MenuOption } from 'naive-ui'
 import type { SysMenu } from '@/api/modules/system'
-import { LogOutOutline, MoonOutline, SunnyOutline, MenuOutline, PersonOutline } from '@vicons/ionicons5'
+import { LogOutOutline, MoonOutline, SunnyOutline, MenuOutline, PersonOutline, BulbOutline } from '@vicons/ionicons5'
 import { MENU_ICON_MAP } from '@/constants/menuIcons'
 import BellNotification from '@/components/message/BellNotification.vue'
+import AISuggestionPanel from '@/components/ai/AISuggestionPanel.vue'
 import { useSSE } from '@/composables/useSSE'
 
 const router = useRouter()
@@ -101,6 +102,8 @@ watch(
 
 const sse = useSSE()
 
+const showAIPanel = ref(false)
+
 onMounted(() => {
   sse.connect()
 })
@@ -185,6 +188,12 @@ onBeforeUnmount(() => {
             </template>
           </n-button>
 
+          <n-button quaternary circle size="small" class="ai-toggle-btn" title="AI 建议" @click="showAIPanel = true">
+            <template #icon>
+              <n-icon :component="BulbOutline" />
+            </template>
+          </n-button>
+
           <BellNotification />
 
           <n-dropdown :options="dropdownOptions" @select="handleDropdownSelect">
@@ -207,6 +216,8 @@ onBeforeUnmount(() => {
       </n-layout-content>
     </n-layout>
   </n-layout>
+
+  <AISuggestionPanel v-model:show="showAIPanel" />
 </template>
 
 <style scoped>

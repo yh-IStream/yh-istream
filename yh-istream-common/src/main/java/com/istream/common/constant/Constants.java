@@ -88,7 +88,4 @@ public final class Constants {
 
     /** 菜单可见性：显示 */
     public static final int MENU_VISIBLE_SHOW = 1;
-
-    /** 菜单可见性：隐藏 */
-    public static final int MENU_VISIBLE_HIDE = 0;
 }

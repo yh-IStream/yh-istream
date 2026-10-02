@@ -1,10 +1,12 @@
 package com.istream.message.connection;
 
+import com.istream.framework.sse.SseService;
+
 /**
  * SSE 连接注册表
  *
  * <p>维护用户与 SSE 连接的映射关系，支持单实例（内存）和多实例（Redis）两种模式。</p>
- * <p>单实例模式直接委托给 {@link com.istream.framework.sse.SseService} 的本地 emitters，
+ * <p>单实例模式直接委托给 {@link SseService} 的本地 emitters，
  * 多实例模式额外维护 Redis Hash 用于跨节点广播时定位连接所在节点。</p>
  *
  * @author istream

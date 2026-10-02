@@ -91,7 +91,7 @@ public class SseService {
         if (emitters.isEmpty()) {
             return;
         }
-        log.debug("SSE 广播: type={}, 接收方数={}", event.getType(), emitters.size());
+        log.debug("SSE 广播: type={}, 接收方数={}", event.type(), emitters.size());
         for (Map.Entry<Long, SseEmitter> entry : emitters.entrySet()) {
             sendEvent(entry.getKey(), entry.getValue(), event);
         }
@@ -164,7 +164,7 @@ public class SseService {
     private void sendEvent(Long userId, SseEmitter emitter, SseEvent event) {
         try {
             emitter.send(SseEmitter.event()
-                    .name(event.getType().toLowerCase())
+                    .name(event.type().toLowerCase())
                     .data(event));
         } catch (IOException e) {
             log.debug("SSE 发送失败，移除连接: userId={}", userId);

@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -17,9 +16,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SysRoleMenuTreeVO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysRoleMenuTreeVO {
 
     private List<SysMenuDTO> menus;
 

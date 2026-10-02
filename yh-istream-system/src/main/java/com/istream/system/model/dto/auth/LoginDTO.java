@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-import java.io.Serializable;
-
 /**
  * 登录请求 DTO
  *
@@ -13,9 +11,7 @@ import java.io.Serializable;
  * @since 2026-08-17
  */
 @Data
-public class LoginDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class LoginDTO {
 
     @NotBlank(message = "用户名不能为空")
     private String username;

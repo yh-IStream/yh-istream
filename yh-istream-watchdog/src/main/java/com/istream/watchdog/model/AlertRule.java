@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * 告警规则
  *
- * <p>YAML 声明的告警规则，由 {@link com.istream.watchdog.engine.RuleEngine} 评估。
+ * <p>YAML 声明的告警规则，由 {@link RuleEngine} 评估。
  * 每条规则绑定一个实体类型，当该实体的数据变更事件到达时触发评估。</p>
  *
  * <p>规则配置示例（YAML）：</p>

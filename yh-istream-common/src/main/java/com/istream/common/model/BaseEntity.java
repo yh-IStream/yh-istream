@@ -8,9 +8,11 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -23,10 +25,11 @@ import java.time.LocalDateTime;
  * @author istream
  * @since 2026-08-17
  */
-@Data
-public class BaseEntity implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(of = "id")
+public class BaseEntity {
 
     /** 主键ID（雪花算法，Long→String 由全局 JacksonConfig 处理） */
     @ExcelProperty("ID")

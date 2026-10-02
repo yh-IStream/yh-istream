@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.io.Serializable;
-
 /**
  * 系统配置新增/修改 DTO
  *
@@ -17,9 +15,7 @@ import java.io.Serializable;
  * @since 2026-09-17
  */
 @Data
-public class SysConfigSaveDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysConfigSaveDTO {
 
     @NotNull(groups = Groups.Update.class, message = "配置ID不能为空")
     private Long id;

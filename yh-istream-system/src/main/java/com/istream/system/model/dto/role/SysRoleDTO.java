@@ -2,7 +2,6 @@ package com.istream.system.model.dto.role;
 
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -12,9 +11,7 @@ import java.time.LocalDateTime;
  * @since 2026-09-15
  */
 @Data
-public class SysRoleDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysRoleDTO {
 
     private Long id;
 

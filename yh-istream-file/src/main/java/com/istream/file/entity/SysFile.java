@@ -11,8 +11,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_file")
 public class SysFile extends BaseEntity {
 
-    private static final long serialVersionUID = 1L;
-
     private String fileName;
 
     private String originalName;

@@ -22,14 +22,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.redisson.api.RAtomicLong;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,18 +61,28 @@ class MessageCenterImplTest {
     @Mock
     private RedissonClient redissonClient;
     @Mock
+    private TransactionTemplate transactionTemplate;
+    @Mock
+    private RLock lock;
+    @Mock
     private RAtomicLong atomicLong;
 
     @InjectMocks
     private MessageCenterImpl messageCenter;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         when(sysMessageService.save(any(SysMessage.class))).thenAnswer(inv -> {
             SysMessage msg = inv.getArgument(0);
             msg.setId(1L);
             return true;
         });
+        when(transactionTemplate.execute(any())).thenAnswer(inv -> {
+            TransactionCallback<?> callback = inv.getArgument(0);
+            return callback.doInTransaction(mock(TransactionStatus.class));
+        });
+        when(redissonClient.getLock(anyString())).thenReturn(lock);
+        when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
     }
 
     @Test
@@ -204,10 +219,10 @@ class MessageCenterImplTest {
         verify(sseService).broadcast(captor.capture());
         SseEvent event = captor.getValue();
 
-        assertEquals(EventType.NOTIFICATION.name(), event.getType());
-        assertNotNull(event.getData());
-        assertTrue(event.getData() instanceof SysMessage);
-        SysMessage msg = (SysMessage) event.getData();
+        assertEquals(EventType.NOTIFICATION.name(), event.type());
+        assertNotNull(event.data());
+        assertInstanceOf(SysMessage.class, event.data());
+        SysMessage msg = (SysMessage) event.data();
         assertEquals("测试", msg.getTitle());
         assertEquals("内容", msg.getContent());
     }

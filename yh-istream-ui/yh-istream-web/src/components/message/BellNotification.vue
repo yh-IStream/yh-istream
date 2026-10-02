@@ -13,6 +13,7 @@ const loadingMessages = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let cleanupNotif: (() => void) | null = null
 let cleanupSystem: (() => void) | null = null
+let cleanupAIInsight: (() => void) | null = null
 
 const EVENT_ICON_MAP: Record<string, string> = {
   SYSTEM: '⚙️',
@@ -102,6 +103,23 @@ onMounted(() => {
   cleanupSystem = sse.on('SYSTEM', () => {
     sse.fetchUnreadCount()
   })
+  cleanupAIInsight = sse.on('ai_insight', (data: any) => {
+    if (data?.eventType === 'AI_INSIGHT') {
+      const notification = window.Notification
+      if (notification && notification.permission === 'granted') {
+        new notification(`🧠 ${data.title}`, {
+          body: data.content,
+          icon: '/favicon.ico',
+        })
+      }
+      message.info(`🧠 ${data.title}: ${data.confidence}`, {
+        closable: true,
+        duration: 8000,
+        onAfterLeave: () => {},
+      })
+      sse.fetchUnreadCount()
+    }
+  })
 
   watch(() => sse.status.value, (newStatus) => {
     if (newStatus !== 'connected') {
@@ -121,6 +139,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   cleanupNotif?.()
   cleanupSystem?.()
+  cleanupAIInsight?.()
   if (pollTimer) {
     clearInterval(pollTimer)
     pollTimer = null

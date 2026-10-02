@@ -108,10 +108,12 @@ public class MessageCenterImpl implements MessageCenter {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void broadcast(String title, String content, EventType eventType) {
-        SysMessage message = createMessage(title, content, eventType, null, null);
-        broadcastSse(message);
+        SysMessage message = transactionTemplate.execute(status ->
+                createMessage(title, content, eventType, null, null));
+        if (message != null) {
+            broadcastSse(message);
+        }
     }
 
     @Override

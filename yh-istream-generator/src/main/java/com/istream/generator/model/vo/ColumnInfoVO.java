@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
  * 列元数据信息 VO
  *
@@ -17,9 +15,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ColumnInfoVO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ColumnInfoVO {
 
     /** 数据库列名（下划线命名） */
     private String columnName;

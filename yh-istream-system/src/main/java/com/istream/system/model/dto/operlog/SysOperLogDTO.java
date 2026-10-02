@@ -2,7 +2,6 @@ package com.istream.system.model.dto.operlog;
 
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -12,9 +11,7 @@ import java.time.LocalDateTime;
  * @since 2026-09-15
  */
 @Data
-public class SysOperLogDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysOperLogDTO {
 
     private Long id;
 

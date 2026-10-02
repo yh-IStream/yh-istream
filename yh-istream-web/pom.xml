@@ -38,6 +38,10 @@
             <groupId>com.istream</groupId>
             <artifactId>yh-istream-watchdog</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.istream</groupId>
+            <artifactId>yh-istream-ai</artifactId>
+        </dependency>
 
         <!-- Spring Boot Actuator -->
         <dependency>

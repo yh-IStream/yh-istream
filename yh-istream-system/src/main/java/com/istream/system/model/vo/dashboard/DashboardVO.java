@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
  * 仪表盘统计数据响应 VO
  *
@@ -17,9 +15,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardVO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class DashboardVO {
 
     private long userCount;
 

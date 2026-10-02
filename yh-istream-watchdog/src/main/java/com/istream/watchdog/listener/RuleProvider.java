@@ -1,8 +1,10 @@
 package com.istream.watchdog.listener;
 
 import com.istream.watchdog.model.AlertRule;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-09-24
  */
 @Component
+@ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class RuleProvider {
 
     private final Map<String, List<AlertRule>> rulesByEntity = new ConcurrentHashMap<>();
@@ -29,7 +32,7 @@ public class RuleProvider {
      */
     public void register(AlertRule rule) {
         rulesByEntity.computeIfAbsent(rule.getEntity(), k ->
-                Collections.synchronizedList(new java.util.ArrayList<>())).add(rule);
+                Collections.synchronizedList(new ArrayList<>())).add(rule);
     }
 
     /**

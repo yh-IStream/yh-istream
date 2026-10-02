@@ -3,7 +3,6 @@ package com.istream.file.model.dto.file;
 import com.istream.file.enums.StorageType;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -13,9 +12,7 @@ import java.time.LocalDateTime;
  * @since 2026-09-15
  */
 @Data
-public class SysFileDTO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysFileDTO {
 
     private Long id;
 

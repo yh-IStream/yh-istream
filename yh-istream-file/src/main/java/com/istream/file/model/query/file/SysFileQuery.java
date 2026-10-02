@@ -5,8 +5,6 @@ import com.istream.common.model.query.BaseQuery;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
-
 /**
  * 文件查询条件
  *
@@ -15,9 +13,7 @@ import java.io.Serializable;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SysFileQuery extends BaseQuery implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysFileQuery extends BaseQuery {
 
     private String originalName;
 

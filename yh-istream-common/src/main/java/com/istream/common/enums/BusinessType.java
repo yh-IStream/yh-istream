@@ -1,8 +1,19 @@
 package com.istream.common.enums;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 操作业务类型枚举
+ *
+ * <p>用于 {@code @OperLog} 注解标记操作类型，
+ * 操作日志表按此分类记录。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
+ */
 @Getter
+@AllArgsConstructor
 public enum BusinessType {
 
     OTHER(0, "其他"),
@@ -17,9 +28,4 @@ public enum BusinessType {
 
     private final int code;
     private final String desc;
-
-    BusinessType(int code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
 }

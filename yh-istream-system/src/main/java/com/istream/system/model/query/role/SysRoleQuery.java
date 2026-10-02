@@ -5,13 +5,9 @@ import com.istream.common.model.query.BaseQuery;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serializable;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SysRoleQuery extends BaseQuery implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SysRoleQuery extends BaseQuery {
 
     private String roleName;
 

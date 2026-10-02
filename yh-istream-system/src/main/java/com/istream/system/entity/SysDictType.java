@@ -10,8 +10,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_dict_type")
 public class SysDictType extends BaseEntity {
 
-    private static final long serialVersionUID = 1L;
-
     private String dictName;
 
     private String dictType;

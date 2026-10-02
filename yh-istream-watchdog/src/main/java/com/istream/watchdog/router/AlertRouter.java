@@ -4,6 +4,7 @@ import com.istream.watchdog.channel.AlertChannel;
 import com.istream.watchdog.config.WatchdogProperties;
 import com.istream.watchdog.model.AlertEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class AlertRouter {
 
     private final Map<String, AlertChannel> channelMap;
@@ -34,7 +36,7 @@ public class AlertRouter {
 
     public AlertRouter(List<AlertChannel> channels, WatchdogProperties properties) {
         this.channelMap = channels.stream()
-                .collect(Collectors.toMap(AlertChannel::getName, Function.identity()));
+                .collect(Collectors.toMap(AlertChannel::getName, Function.identity(), (a, b) -> a));
         this.properties = properties;
     }
 

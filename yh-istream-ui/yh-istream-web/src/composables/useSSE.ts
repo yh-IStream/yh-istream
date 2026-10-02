@@ -21,7 +21,7 @@ interface SSEMessage {
  * 后端通过 SseEmitter.event().name(type.toLowerCase()) 发送命名事件，
  * 因此 SSE event: 字段值为小写事件类型。前端必须用 addEventListener 按名监听。
  */
-const SSE_EVENT_NAMES = ['data_change', 'notification', 'system', 'heartbeat', 'connected']
+const SSE_EVENT_NAMES = ['data_change', 'notification', 'system', 'heartbeat', 'connected', 'ai_insight']
 
 function createSSE() {
   const status = ref<ConnectionStatus>('disconnected')

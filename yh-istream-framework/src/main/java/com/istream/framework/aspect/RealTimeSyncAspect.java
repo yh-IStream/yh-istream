@@ -1,6 +1,5 @@
 package com.istream.framework.aspect;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.annotation.RealTimeSync;
 import com.istream.common.annotation.SyncEvent;
 import com.istream.common.enums.SyncEventType;
@@ -17,6 +16,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,12 +83,12 @@ public class RealTimeSyncAspect {
         }
 
         String entityType = realTimeSync.entity().getSimpleName();
-        Long entityId = extractEntityId(joinPoint.getArgs(), method);
-        Long operatorId = resolveOperatorId();
+        Long entityId = AspectUtils.extractEntityId(joinPoint.getArgs());
+        Long operatorId = AspectUtils.resolveOperatorId();
         Long tenantId = TenantContext.getTenantId();
 
         DataChangeEvent event = new DataChangeEvent(
-                this, entityType, entityId, eventType, null, operatorId, tenantId);
+                entityType, entityId, eventType, null, operatorId, tenantId, LocalDateTime.now());
         eventPublisher.publishEvent(event);
 
         log.info("RealTimeSync: 发布数据变更事件 entityType={}, entityId={}, eventType={}",
@@ -117,55 +117,4 @@ public class RealTimeSyncAspect {
         return null;
     }
 
-    /**
-     * 从方法参数中提取实体ID
-     *
-     * <p>提取策略：优先取第一个 Long 类型参数作为实体ID，
-     * 其次取第一个参数的 id 字段（通过反射）。</p>
-     *
-     * @param args   方法参数
-     * @param method 方法
-     * @return 实体ID，无法提取时返回 null
-     */
-    private Long extractEntityId(Object[] args, Method method) {
-        if (args == null || args.length == 0) {
-            return null;
-        }
-
-        for (Object arg : args) {
-            if (arg instanceof Long id) {
-                return id;
-            }
-        }
-
-        Object firstArg = args[0];
-        try {
-            var idField = firstArg.getClass().getDeclaredField("id");
-            idField.setAccessible(true);
-            Object idValue = idField.get(firstArg);
-            if (idValue instanceof Long id) {
-                return id;
-            }
-        } catch (Exception e) {
-            log.debug("RealTimeSync: 无法从参数 {} 提取 id 字段", firstArg.getClass().getSimpleName());
-        }
-
-        return null;
-    }
-
-    /**
-     * 获取当前操作人ID
-     *
-     * @return 操作人ID，未登录时返回 null
-     */
-    private Long resolveOperatorId() {
-        try {
-            if (StpUtil.isLogin()) {
-                return StpUtil.getLoginIdAsLong();
-            }
-        } catch (Exception e) {
-            log.debug("RealTimeSync: 无法获取当前登录用户ID");
-        }
-        return null;
-    }
 }

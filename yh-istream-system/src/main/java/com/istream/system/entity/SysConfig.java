@@ -10,8 +10,6 @@ import lombok.EqualsAndHashCode;
 @TableName("sys_config")
 public class SysConfig extends BaseEntity {
 
-    private static final long serialVersionUID = 1L;
-
     private String configName;
 
     private String configKey;

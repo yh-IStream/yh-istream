@@ -24,6 +24,17 @@ spring:
     multipart:
           max-file-size: 10MB
           max-request-size: 50MB
+  # Spring AI 2.0 模型配置
+  # 具体用哪个模型，在各环境 profile（application-dev.yml / application-prod.yml）中定义。
+  # 目前可选方案：
+  #   A) Ollama 本地模型（免费，需安装 ollama，CPU 即可运行）
+  #   B) OpenRouter 云端模型（免费额度，需注册获取 key → 设环境变量 AI_OPENROUTER_KEY）
+  ai:
+    mcp:
+      server:
+        name: istream-mcp
+        version: 1.0.0
+        protocol: STREAMABLE
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -56,8 +67,9 @@ saas:
   enabled: false
   ignore-tables: sys_config,sys_oper_log,sys_login_info,sys_file
 
-# Watchdog 智能守护配置（渐进式架构 L2，默认关闭）
+# iStream 配置（渐进式架构 L0→L3）
 istream:
+  # Watchdog 智能守护配置（L2，默认关闭）
   watchdog:
     enabled: false
     channels:
@@ -85,6 +97,18 @@ istream:
       - channel: sms
         timeout: 0
     aggregate-window: 10m
+  # AI 增强配置（L3，默认关闭）
+  ai:
+    enabled: false
+    provider: openai
+    analyze:
+      batch-size: 10
+      confidence-threshold: 0.7
+      timeout-seconds: 30
+    mcp:
+      enabled: false
+      name: istream-mcp
+      version: 1.0.0
 
 # Sa-Token 配置
 sa-token:
