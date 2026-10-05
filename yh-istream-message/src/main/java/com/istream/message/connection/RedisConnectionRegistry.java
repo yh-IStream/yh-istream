@@ -37,8 +37,8 @@ public class RedisConnectionRegistry implements ConnectionRegistry {
      */
     @EventListener
     public void onConnected(SseConnectionEvent event) {
-        if (event.getEventType() == SseConnectionEvent.Type.CONNECTED) {
-            bind(event.getUserId());
+        if (event.eventType() == SseConnectionEvent.Type.CONNECTED) {
+            bind(event.userId());
         }
     }
 
@@ -47,8 +47,8 @@ public class RedisConnectionRegistry implements ConnectionRegistry {
      */
     @EventListener
     public void onDisconnected(SseConnectionEvent event) {
-        if (event.getEventType() == SseConnectionEvent.Type.DISCONNECTED) {
-            unbind(event.getUserId());
+        if (event.eventType() == SseConnectionEvent.Type.DISCONNECTED) {
+            unbind(event.userId());
         }
     }
 

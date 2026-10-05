@@ -61,6 +61,7 @@ class TenantLineHandlerImplTest {
     void shouldIgnoreAllTablesWhenSaasDisabled() {
         ReflectionTestUtils.setField(handler, "saasEnabled", false);
         ReflectionTestUtils.setField(handler, "ignoreTablesConfig", "");
+        handler.init();
 
         assertTrue(handler.ignoreTable("sys_user"));
         assertTrue(handler.ignoreTable("biz_order"));
@@ -71,6 +72,7 @@ class TenantLineHandlerImplTest {
     void shouldNotIgnoreTableWhenSaasEnabledAndNoIgnoreConfig() {
         ReflectionTestUtils.setField(handler, "saasEnabled", true);
         ReflectionTestUtils.setField(handler, "ignoreTablesConfig", "");
+        handler.init();
 
         assertFalse(handler.ignoreTable("sys_user"));
     }
@@ -80,6 +82,7 @@ class TenantLineHandlerImplTest {
     void shouldIgnoreConfiguredTablesWhenSaasEnabled() {
         ReflectionTestUtils.setField(handler, "saasEnabled", true);
         ReflectionTestUtils.setField(handler, "ignoreTablesConfig", "sys_config,sys_dict_data,sys_dict_type");
+        handler.init();
 
         assertTrue(handler.ignoreTable("sys_config"));
         assertTrue(handler.ignoreTable("sys_dict_data"));
@@ -92,6 +95,7 @@ class TenantLineHandlerImplTest {
     void shouldHandleIgnoreConfigWithSpaces() {
         ReflectionTestUtils.setField(handler, "saasEnabled", true);
         ReflectionTestUtils.setField(handler, "ignoreTablesConfig", "sys_config , sys_dict_data ");
+        handler.init();
 
         assertTrue(handler.ignoreTable("sys_config"));
         assertFalse(handler.ignoreTable("sys_user"));
@@ -102,6 +106,7 @@ class TenantLineHandlerImplTest {
     void shouldNotIgnoreAnyTableWhenConfigIsBlank() {
         ReflectionTestUtils.setField(handler, "saasEnabled", true);
         ReflectionTestUtils.setField(handler, "ignoreTablesConfig", "");
+        handler.init();
 
         assertFalse(handler.ignoreTable("sys_user"));
         assertFalse(handler.ignoreTable("biz_order"));

@@ -1,9 +1,6 @@
 package com.istream.framework.aspect;
 
-import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.json.JSONUtil;
 import com.istream.common.annotation.OperLog;
-import com.istream.common.constant.Constants;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.event.OperLogEvent;
 import com.istream.common.model.R;
@@ -23,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 
@@ -34,7 +32,7 @@ import java.time.LocalDateTime;
  * 由 {@code OperLogListener} 异步持久化。</p>
  *
  * <p>执行顺序：@Order(2)，在 {@link RateLimitAspect}(@Order=0) 和
- * {@link com.istream.system.aspect.DataScopeAspect}(@Order=1) 之后执行。</p>
+ * {@code com.istream.system.aspect.DataScopeAspect}(@Order=1) 之后执行。</p>
  *
  * @author istream
  * @since 2026-08-17
@@ -47,6 +45,7 @@ import java.time.LocalDateTime;
 public class OperLogAspect {
 
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     private static final int MAX_PARAM_LENGTH = 2000;
     private static final int MAX_ERROR_MSG_LENGTH = 2000;
@@ -83,14 +82,8 @@ public class OperLogAspect {
             operLocation = IpRegionUtils.parseRegion(operIp);
         }
 
-        Long operBy = null;
-        String operName = null;
-        try {
-            operBy = SecurityUtils.getLoginUserId();
-            operName = (String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY);
-        } catch (Exception e) {
-            log.debug("操作日志获取当前用户信息失败（可能为匿名访问）: {}", e.getMessage());
-        }
+        Long operBy = SecurityUtils.getLoginUserId();
+        String operName = SecurityUtils.getLoginUsername();
 
         String operParam = serializeParams(joinPoint.getArgs());
 
@@ -102,13 +95,13 @@ public class OperLogAspect {
         try {
             result = joinPoint.proceed();
             jsonResult = serializeResult(result);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             status = 1;
             String msg = e.getMessage();
             errorMsg = msg != null && msg.length() > MAX_ERROR_MSG_LENGTH
                     ? msg.substring(0, MAX_ERROR_MSG_LENGTH) + "..." : msg;
             try {
-                jsonResult = JSONUtil.toJsonStr(R.fail(ResultCode.ERROR.getCode(), errorMsg));
+                jsonResult = objectMapper.writeValueAsString(R.fail(ResultCode.ERROR.getCode(), errorMsg));
             } catch (Exception ex) {
                 jsonResult = "{}";
             }
@@ -125,7 +118,7 @@ public class OperLogAspect {
 
     private String serializeParams(Object[] args) {
         try {
-            String paramJson = JSONUtil.toJsonStr(filterSerializableArgs(args));
+            String paramJson = objectMapper.writeValueAsString(filterSerializableArgs(args));
             return paramJson.length() > MAX_PARAM_LENGTH
                     ? paramJson.substring(0, MAX_PARAM_LENGTH) + "..." : paramJson;
         } catch (Exception e) {
@@ -136,7 +129,7 @@ public class OperLogAspect {
 
     private String serializeResult(Object result) {
         try {
-            String resultJson = result != null ? JSONUtil.toJsonStr(result) : "{}";
+            String resultJson = result != null ? objectMapper.writeValueAsString(result) : "{}";
             return resultJson.length() > MAX_PARAM_LENGTH
                     ? resultJson.substring(0, MAX_PARAM_LENGTH) + "..." : resultJson;
         } catch (Exception e) {

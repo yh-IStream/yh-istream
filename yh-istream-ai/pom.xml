@@ -14,12 +14,18 @@
     <artifactId>yh-istream-ai</artifactId>
     <packaging>jar</packaging>
     <name>yh-istream-ai</name>
-    <description>AI 增强模块：@AnomalyGuard 发现未知异常、@Tool AI 辅助决策处置、MCP Server</description>
+    <description>AI 增强模块：AnomalyGuard 发现未知异常、Tool AI 辅助决策处置、MCP Server</description>
 
     <dependencies>
         <dependency>
             <groupId>com.istream</groupId>
             <artifactId>yh-istream-framework</artifactId>
+        </dependency>
+
+        <!-- Hutool JSON（SpringAIProvider AI 响应解析） -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
         </dependency>
 
         <!-- Spring AI OpenAI 兼容模型（含 OpenRouter / vLLM / LM Studio 等 OpenAI 兼容端点） -->

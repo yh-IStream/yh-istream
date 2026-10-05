@@ -1,6 +1,6 @@
 package com.istream.framework.aspect;
 
-import cn.dev33.satoken.stp.StpUtil;
+import com.istream.framework.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,13 +58,6 @@ public final class AspectUtils {
      * @return 操作人 ID，未登录时返回 null
      */
     public static Long resolveOperatorId() {
-        try {
-            if (StpUtil.isLogin()) {
-                return StpUtil.getLoginIdAsLong();
-            }
-        } catch (Exception e) {
-            log.debug("AspectUtils: 无法获取当前登录用户ID");
-        }
-        return null;
+        return SecurityUtils.getLoginUserId();
     }
 }

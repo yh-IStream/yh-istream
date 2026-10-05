@@ -1,7 +1,7 @@
 package com.istream.framework.tenant;
 
 import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class TenantLineHandlerImpl implements TenantLineHandler {
 
     @Value("${saas.enabled:false}")
@@ -34,6 +33,21 @@ public class TenantLineHandlerImpl implements TenantLineHandler {
     private String ignoreTablesConfig;
 
     private static final String TENANT_ID_COLUMN = "tenant_id";
+
+    private Set<String> ignoreTables;
+
+    @PostConstruct
+    void init() {
+        if (ignoreTablesConfig == null || ignoreTablesConfig.isBlank()) {
+            ignoreTables = Set.of();
+        } else {
+            ignoreTables = Arrays.stream(ignoreTablesConfig.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+        log.debug("多租户配置: saasEnabled={}, ignoreTables={}", saasEnabled, ignoreTables);
+    }
 
     @Override
     public Expression getTenantId() {
@@ -50,21 +64,6 @@ public class TenantLineHandlerImpl implements TenantLineHandler {
         if (!saasEnabled) {
             return true;
         }
-        return getIgnoreTables().contains(tableName);
-    }
-
-    /**
-     * 获取忽略租户隔离的表名集合
-     *
-     * @return 忽略的表名集合
-     */
-    private Set<String> getIgnoreTables() {
-        if (ignoreTablesConfig == null || ignoreTablesConfig.isBlank()) {
-            return Set.of();
-        }
-        return Arrays.stream(ignoreTablesConfig.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
+        return ignoreTables.contains(tableName);
     }
 }

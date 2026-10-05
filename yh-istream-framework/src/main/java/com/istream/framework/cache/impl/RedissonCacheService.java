@@ -72,7 +72,7 @@ public class RedissonCacheService implements CacheService {
     public long incrementAndGet(String key, Duration duration) {
         RAtomicLong counter = redissonClient.getAtomicLong(key);
         long value = counter.incrementAndGet();
-        if (counter.remainTimeToLive() < 0) {
+        if (counter.remainTimeToLive() == -1) {
             counter.expire(duration);
         }
         return value;

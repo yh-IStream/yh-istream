@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * SSE 实时推送服务
@@ -46,26 +46,35 @@ public class SseService {
      * @return SseEmitter 实例
      */
     public SseEmitter subscribe(Long userId) {
+        SseEmitter oldEmitter = emitters.get(userId);
+        if (oldEmitter != null) {
+            log.debug("SSE 重复订阅，关闭旧连接: userId={}", userId);
+            oldEmitter.complete();
+        }
+
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
         emitters.put(userId, emitter);
 
         emitter.onCompletion(() -> {
             log.debug("SSE 连接完成: userId={}", userId);
-            emitters.remove(userId);
-            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
+            if (emitters.remove(userId, emitter)) {
+                eventPublisher.publishEvent(new SseConnectionEvent(SseConnectionEvent.Type.DISCONNECTED, userId));
+            }
         });
 
         emitter.onTimeout(() -> {
             log.debug("SSE 连接超时: userId={}", userId);
-            emitters.remove(userId);
-            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
+            if (emitters.remove(userId, emitter)) {
+                eventPublisher.publishEvent(new SseConnectionEvent(SseConnectionEvent.Type.DISCONNECTED, userId));
+            }
         });
 
         emitter.onError(ex -> {
             log.debug("SSE 连接异常: userId={}, error={}", userId, ex.getMessage());
-            emitters.remove(userId);
-            eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.DISCONNECTED, userId));
+            if (emitters.remove(userId, emitter)) {
+                eventPublisher.publishEvent(new SseConnectionEvent(SseConnectionEvent.Type.DISCONNECTED, userId));
+            }
         });
 
         try {
@@ -74,11 +83,12 @@ public class SseService {
                     .data(SseEvent.of("CONNECTED", "SSE 连接已建立")));
         } catch (IOException e) {
             log.warn("SSE 初始握手失败: userId={}", userId, e);
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
+            return emitter;
         }
 
         log.info("SSE 客户端已连接: userId={}, 当前连接数={}", userId, emitters.size());
-        eventPublisher.publishEvent(new SseConnectionEvent(this, SseConnectionEvent.Type.CONNECTED, userId));
+        eventPublisher.publishEvent(new SseConnectionEvent(SseConnectionEvent.Type.CONNECTED, userId));
         return emitter;
     }
 
@@ -141,7 +151,7 @@ public class SseService {
     public String generateTicket(Long userId) {
         String ticket = UUID.randomUUID().toString().replace("-", "");
         RBucket<Long> bucket = redissonClient.getBucket(TICKET_PREFIX + ticket);
-        bucket.set(userId, TICKET_TTL_SECONDS, TimeUnit.SECONDS);
+        bucket.set(userId, Duration.ofSeconds(TICKET_TTL_SECONDS));
         return ticket;
     }
 
@@ -153,12 +163,11 @@ public class SseService {
      * @return 用户ID，若 ticket 无效或已过期返回 null
      */
     public Long consumeTicket(String ticket) {
-        if (ticket == null || ticket.isEmpty()) {
+        if (ticket == null || ticket.isBlank()) {
             return null;
         }
         RBucket<Long> bucket = redissonClient.getBucket(TICKET_PREFIX + ticket);
-        Long userId = bucket.getAndDelete();
-        return userId;
+        return bucket.getAndDelete();
     }
 
     private void sendEvent(Long userId, SseEmitter emitter, SseEvent event) {
@@ -168,7 +177,7 @@ public class SseService {
                     .data(event));
         } catch (IOException e) {
             log.debug("SSE 发送失败，移除连接: userId={}", userId);
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             emitter.completeWithError(e);
         }
     }

@@ -3,11 +3,13 @@ package com.istream.common.exception;
 import com.istream.common.enums.ResultCode;
 import lombok.Getter;
 
+import java.io.Serial;
+
 /**
  * 业务异常
  *
  * <p>用于业务逻辑中可预期的错误场景，携带错误码和消息，
- * 由 {@link com.istream.framework.web.GlobalExceptionHandler} 统一拦截并转换为标准响应体。</p>
+ * 由 {@code com.istream.framework.web.GlobalExceptionHandler} 统一拦截并转换为标准响应体。</p>
  *
  * @author istream
  * @since 2026-08-17
@@ -15,6 +17,7 @@ import lombok.Getter;
 @Getter
 public class BusinessException extends RuntimeException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final Integer code;

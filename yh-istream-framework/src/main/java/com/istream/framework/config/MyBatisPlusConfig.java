@@ -79,12 +79,7 @@ public class MyBatisPlusConfig {
             }
 
             private Long getSafeUserId() {
-                try {
-                    return SecurityUtils.getLoginUserId();
-                } catch (Exception e) {
-                    log.debug("自动填充获取用户ID失败（可能为匿名访问）: {}", e.getMessage());
-                    return null;
-                }
+                return SecurityUtils.getLoginUserId();
             }
         };
     }

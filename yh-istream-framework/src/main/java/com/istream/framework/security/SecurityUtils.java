@@ -48,8 +48,33 @@ public final class SecurityUtils {
 
     /**
      * 判断当前用户是否为超级管理员
+     *
+     * @return 是否超级管理员
      */
     public static boolean isSuperAdmin() {
-        return StpUtil.hasRole(Constants.SUPER_ADMIN_ROLE);
+        try {
+            return StpUtil.hasRole(Constants.SUPER_ADMIN_ROLE);
+        } catch (Exception e) {
+            log.debug("判断超级管理员失败（可能为匿名访问）: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 获取当前登录用户名（可选登录态）
+     *
+     * <p>适用于操作日志等允许匿名访问的场景。</p>
+     *
+     * @return 用户名，未登录时返回 null
+     */
+    public static String getLoginUsername() {
+        try {
+            if (StpUtil.isLogin()) {
+                return (String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY);
+            }
+        } catch (Exception e) {
+            log.debug("获取当前登录用户名失败（可能为匿名访问）: {}", e.getMessage());
+        }
+        return null;
     }
 }

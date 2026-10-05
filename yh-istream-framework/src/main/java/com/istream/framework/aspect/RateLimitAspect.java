@@ -55,14 +55,17 @@ public class RateLimitAspect {
         String fullKey = RATE_LIMITER_KEY_PREFIX + key;
 
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(fullKey);
-        if (!initializedKeys.contains(fullKey)) {
-            if (!rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1))) {
-                rateLimiter.setRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
-            }
-            initializedKeys.add(fullKey);
+        if (initializedKeys.add(fullKey)) {
+            rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
         }
 
-        if (rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()))) {
+        try {
+            if (rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()))) {
+                return joinPoint.proceed();
+            }
+        } catch (Exception e) {
+            initializedKeys.remove(fullKey);
+            log.warn("限流器异常，降级放行: key={}", key, e);
             return joinPoint.proceed();
         }
 

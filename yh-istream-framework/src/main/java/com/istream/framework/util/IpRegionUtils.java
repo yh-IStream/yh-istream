@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.lionsoul.ip2region.xdb.Searcher;
 
 import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
 
 /**
  * IP 归属地解析工具类
@@ -67,9 +66,8 @@ public final class IpRegionUtils {
                 return;
             }
             initialized = true;
-            try {
-                InputStream is = IpRegionUtils.class.getClassLoader()
-                        .getResourceAsStream(XDB_CLASSPATH);
+            try (InputStream is = IpRegionUtils.class.getClassLoader()
+                    .getResourceAsStream(XDB_CLASSPATH)) {
                 if (is == null) {
                     log.warn("ip2region.xdb 文件未找到，IP 归属地解析功能不可用。"
                             + "请将文件放入 src/main/resources/ip2region/ip2region.xdb");

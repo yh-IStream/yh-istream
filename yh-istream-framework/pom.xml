@@ -85,12 +85,6 @@
             <artifactId>ip2region</artifactId>
         </dependency>
 
-        <!-- Hutool JSON（OperLogAspect 参数序列化） -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-json</artifactId>
-        </dependency>
-
         <!-- EasyExcel（ExcelExportUtil 导出功能） -->
         <dependency>
             <groupId>com.alibaba</groupId>

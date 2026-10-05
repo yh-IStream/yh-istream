@@ -97,7 +97,7 @@ public interface CacheService {
      * 获取计数器剩余存活时间（毫秒）
      *
      * @param key 缓存键
-     * @return 剩余时间（毫秒），不存在时返回 -1
+     * @return 剩余时间（毫秒），key 不存在时返回 -2，key 存在但无过期时间时返回 -1
      */
     long remainTimeToLive(String key);
 
