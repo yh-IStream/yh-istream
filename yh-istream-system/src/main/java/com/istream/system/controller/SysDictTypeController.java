@@ -56,7 +56,11 @@ public class SysDictTypeController {
     @SaCheckPermission("system:dict:query")
     @GetMapping("/{id}")
     public R<SysDictTypeDTO> getById(@PathVariable Long id) {
-        return R.ok(sysDictTypeConverter.toDto(sysDictTypeService.getById(id)));
+        SysDictType dictType = sysDictTypeService.getById(id);
+        if (dictType == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysDictTypeConverter.toDto(dictType));
     }
 
     @OperLog(title = "字典类型管理", businessType = BusinessType.INSERT)

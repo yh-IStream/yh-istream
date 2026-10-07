@@ -67,6 +67,8 @@ public class AuthService {
 
     private static final Duration CAPTCHA_TTL = Duration.ofSeconds(Constants.CAPTCHA_EXPIRE_SECONDS);
 
+    private static final int USERNAME_ENUM_THRESHOLD_MULTIPLIER = 2;
+
     /**
      * 用户登录
      *
@@ -181,7 +183,7 @@ public class AuthService {
 
         saveLoginInfo(loginDTO.getUsername(), clientIp, loginLocation, 1, "用户不存在");
 
-        if (count >= Constants.MAX_LOGIN_FAIL_COUNT * 2) {
+        if (count >= Constants.MAX_LOGIN_FAIL_COUNT * USERNAME_ENUM_THRESHOLD_MULTIPLIER) {
             throw new BusinessException(ResultCode.USER_NOT_EXIST,
                     "尝试次数过多，请稍后重试");
         }
@@ -210,7 +212,6 @@ public class AuthService {
             String failKey = getFailCounterKey(username);
             long count = cacheService.incrementAndGet(failKey, Duration.ofSeconds(Constants.LOGIN_LOCK_SECONDS));
 
-            user.setLoginFailCount((int) count);
             sysUserService.updateLoginFailCount(user.getId(), (int) count);
 
             saveLoginInfo(username, clientIp, loginLocation, 1, "密码错误（第" + count + "次）");
@@ -229,7 +230,7 @@ public class AuthService {
         sysUserService.updateLoginFailCount(user.getId(), 0);
 
         StpUtil.login(user.getId());
-        StpUtil.getSession().set(Constants.SESSION_USERNAME_KEY, user.getUsername());
+        SecurityUtils.setSessionUsername(user.getUsername());
 
         sysUserService.updateLoginInfo(user.getId(), clientIp);
 

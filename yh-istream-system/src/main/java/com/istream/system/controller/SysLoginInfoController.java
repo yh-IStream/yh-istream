@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
 import com.istream.system.model.dto.logininfo.SysLoginInfoDTO;
 import com.istream.system.model.query.logininfo.SysLoginInfoQuery;
@@ -54,7 +55,11 @@ public class SysLoginInfoController {
     @SaCheckPermission("monitor:login-info:query")
     @GetMapping("/{id}")
     public R<SysLoginInfoDTO> getById(@PathVariable Long id) {
-        return R.ok(sysLoginInfoConverter.toDto(sysLoginInfoService.getById(id)));
+        SysLoginInfo loginInfo = sysLoginInfoService.getById(id);
+        if (loginInfo == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysLoginInfoConverter.toDto(loginInfo));
     }
 
     @OperLog(title = "登录日志管理", businessType = BusinessType.DELETE)

@@ -1,5 +1,6 @@
 package com.istream.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.istream.system.service.AuthService;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
@@ -44,6 +45,7 @@ public class AuthController {
         return R.ok(authService.login(loginDTO, request));
     }
 
+    @SaCheckLogin
     @OperLog(title = "用户登出", businessType = BusinessType.LOGOUT)
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
@@ -59,6 +61,7 @@ public class AuthController {
         return R.ok(authService.generateCaptcha());
     }
 
+    @SaCheckLogin
     @Operation(summary = "获取当前用户信息")
     @GetMapping("/user-info")
     public R<UserInfoVO> getUserInfo() {

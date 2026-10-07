@@ -26,15 +26,16 @@ public class SysLoginInfoServiceImpl extends ServiceImpl<SysLoginInfoMapper, Sys
     public IPage<SysLoginInfo> page(SysLoginInfoQuery query) {
         Page<SysLoginInfo> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysLoginInfo>()
-                .like(query.getUsername() != null && !query.getUsername().isEmpty(),
+                .like(query.getUsername() != null && !query.getUsername().isBlank(),
                         SysLoginInfo::getUsername, SqlUtils.escapeLike(query.getUsername()))
-                .like(query.getIpAddress() != null && !query.getIpAddress().isEmpty(),
+                .like(query.getIpAddress() != null && !query.getIpAddress().isBlank(),
                         SysLoginInfo::getIpAddress, SqlUtils.escapeLike(query.getIpAddress()))
                 .eq(query.getStatus() != null, SysLoginInfo::getStatus, query.getStatus())
                 .orderByDesc(SysLoginInfo::getLoginTime));
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void truncate() {
         baseMapper.truncate();
     }

@@ -30,7 +30,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,7 +50,6 @@ import java.util.List;
  * @author istream
  * @since 2026-08-17
  */
-@Slf4j
 @Tag(name = "角色管理")
 @RestController
 @RequestMapping("/system/role")
@@ -70,8 +68,6 @@ public class SysRoleController {
     @GetMapping("/list")
     public R<IPage<SysRoleDTO>> list(SysRoleQuery query) {
         IPage<SysRole> page = sysRoleService.page(query);
-        System.out.println("SOUT: " + page);
-        log.info("LOG : {}", page);
         return R.ok(PageUtils.toDtoPage(page, sysRoleConverter::toDto));
     }
 
@@ -89,6 +85,9 @@ public class SysRoleController {
     @GetMapping("/{id}")
     public R<SysRoleDTO> getById(@PathVariable Long id) {
         SysRole role = sysRoleService.getById(id);
+        if (role == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
         return R.ok(sysRoleConverter.toDto(role));
     }
 

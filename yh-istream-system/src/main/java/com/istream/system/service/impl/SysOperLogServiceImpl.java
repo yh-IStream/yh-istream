@@ -28,7 +28,7 @@ public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOper
     public IPage<SysOperLog> page(SysOperLogQuery query) {
         Page<SysOperLog> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysOperLog>()
-                .like(query.getTitle() != null && !query.getTitle().isEmpty(),
+                .like(query.getTitle() != null && !query.getTitle().isBlank(),
                         SysOperLog::getTitle, SqlUtils.escapeLike(query.getTitle()))
                 .eq(query.getBusinessType() != null, SysOperLog::getBusinessType, query.getBusinessType())
                 .eq(query.getStatus() != null, SysOperLog::getStatus, query.getStatus())
@@ -36,6 +36,7 @@ public class SysOperLogServiceImpl extends ServiceImpl<SysOperLogMapper, SysOper
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void truncate() {
         baseMapper.truncate();
     }

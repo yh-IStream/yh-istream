@@ -38,9 +38,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     public IPage<SysConfig> page(SysConfigQuery query) {
         Page<SysConfig> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysConfig>()
-                .like(query.getConfigName() != null && !query.getConfigName().isEmpty(),
+                .like(query.getConfigName() != null && !query.getConfigName().isBlank(),
                         SysConfig::getConfigName, SqlUtils.escapeLike(query.getConfigName()))
-                .like(query.getConfigKey() != null && !query.getConfigKey().isEmpty(),
+                .like(query.getConfigKey() != null && !query.getConfigKey().isBlank(),
                         SysConfig::getConfigKey, SqlUtils.escapeLike(query.getConfigKey()))
                 .orderByDesc(SysConfig::getCreateTime));
     }

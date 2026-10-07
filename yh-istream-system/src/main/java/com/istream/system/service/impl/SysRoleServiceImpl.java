@@ -77,6 +77,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean changeStatus(Long roleId, Integer status) {
         checkSuperAdminRole(roleId);
         SysRole role = new SysRole();
@@ -115,9 +116,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                         return rm;
                     })
                     .toList();
-            if (!roleMenus.isEmpty()) {
-                sysRoleMenuMapper.insertBatch(roleMenus);
-            }
+            sysRoleMenuMapper.insertBatch(roleMenus);
         }
         List<Long> userIds = getAffectedUserIds(roleId);
         userCacheHelper.evictAllBatch(userIds);
@@ -212,6 +211,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private List<Long> getAffectedUserIds(Long roleId) {
         return sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>()
+                        .select(SysUserRole::getUserId)
                         .eq(SysUserRole::getRoleId, roleId))
                 .stream().map(SysUserRole::getUserId).toList();
     }
@@ -304,9 +304,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 rd.setDeptId(deptId);
                 return rd;
             }).toList();
-            if (!roleDepts.isEmpty()) {
-                sysRoleDeptMapper.insertBatch(roleDepts);
-            }
+            sysRoleDeptMapper.insertBatch(roleDepts);
         }
         List<Long> userIds = getAffectedUserIds(roleId);
         userCacheHelper.evictAllBatch(userIds);

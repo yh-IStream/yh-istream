@@ -54,7 +54,11 @@ public class SysDeptController {
     @SaCheckPermission("system:dept:query")
     @GetMapping("/{id}")
     public R<SysDeptDTO> getById(@PathVariable Long id) {
-        return R.ok(sysDeptConverter.toDto(sysDeptService.getById(id)));
+        SysDept dept = sysDeptService.getById(id);
+        if (dept == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysDeptConverter.toDto(dept));
     }
 
     @OperLog(title = "部门管理", businessType = BusinessType.INSERT)

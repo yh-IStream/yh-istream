@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * 数据权限 AOP 切面
  *
  * <p>拦截 {@link DataScope} 注解的方法，根据当前用户角色动态拼接数据权限 SQL 条件，
- * 注入到 {@link BaseQuery#params} 中。</p>
+ * 注入到 {@link BaseQuery#getParams()} 中。</p>
  *
  * <p>别名白名单校验：仅允许 {@link #ALLOWED_ALIASES} 中的别名参与 SQL 拼接，
  * 防止注解参数被恶意构造导致 SQL 注入。</p>
@@ -101,7 +101,7 @@ public class DataScopeAspect {
         try {
             userId = SecurityUtils.getLoginUserId();
         } catch (Exception e) {
-            log.debug("数据权限处理跳过（非登录态）: {}", e.getMessage());
+            log.debug("数据权限处理跳过（非登录态）", e);
             return point.proceed();
         }
         if (userId == null) {
@@ -122,7 +122,7 @@ public class DataScopeAspect {
      * 校验 SQL 别名是否合法
      */
     private String validateAlias(String alias, String paramName) {
-        if (alias == null || alias.isEmpty()) {
+        if (alias == null || alias.isBlank()) {
             throw new IllegalArgumentException("DataScope " + paramName + " 不能为空");
         }
         if (!ALLOWED_ALIASES.contains(alias) && !ALIAS_PATTERN.matcher(alias).matches()) {
@@ -172,7 +172,7 @@ public class DataScopeAspect {
         }
 
         String scopeSql = sqlJoiner.toString();
-        if (scopeSql.isEmpty()) {
+        if (scopeSql.isBlank()) {
             return null;
         }
         return " AND (" + scopeSql + ")";
@@ -280,7 +280,7 @@ public class DataScopeAspect {
         if (deptId == null) {
             return;
         }
-        if (cache.userDeptAncestors != null && !cache.userDeptAncestors.isEmpty()) {
+        if (cache.userDeptAncestors != null && !cache.userDeptAncestors.isBlank()) {
             sqlJoiner.add(deptAlias
                     + ".id IN (SELECT id FROM sys_dept WHERE FIND_IN_SET(" + deptId + ", ancestors) > 0"
                     + " OR id = " + deptId + ")");
@@ -302,5 +302,6 @@ public class DataScopeAspect {
                 return;
             }
         }
+        log.warn("DataScope 注解生效但方法参数中未找到 BaseQuery，数据权限SQL被丢弃: {}", sql);
     }
 }

@@ -4,6 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.constant.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 /**
  * Sa-Token 安全工具类
  *
@@ -76,5 +78,30 @@ public final class SecurityUtils {
             log.debug("获取当前登录用户名失败（可能为匿名访问）: {}", e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * 设置当前会话的用户名
+     *
+     * <p>登录成功后调用，将用户名存入 Sa-Token Session，
+     * 供 {@link #getLoginUsername()} 等方法读取。</p>
+     *
+     * @param username 用户名
+     */
+    public static void setSessionUsername(String username) {
+        StpUtil.getSession().set(Constants.SESSION_USERNAME_KEY, username);
+    }
+
+    /**
+     * 搜索在线 Token 会话 ID 列表
+     *
+     * @param keyword  关键字（空串表示匹配所有）
+     * @param start    起始位置
+     * @param size     数量（-1 表示全部）
+     * @param reverse  是否反向排序
+     * @return Token 会话 ID 列表
+     */
+    public static List<String> searchTokenSessionId(String keyword, int start, int size, boolean reverse) {
+        return StpUtil.searchTokenSessionId(keyword, start, size, reverse);
     }
 }

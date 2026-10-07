@@ -149,12 +149,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     return ur;
                 })
                 .toList();
-        if (!userRoles.isEmpty()) {
-            sysUserRoleMapper.insertBatch(userRoles);
-        }
+        sysUserRoleMapper.insertBatch(userRoles);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean resetPassword(Long userId, String newPassword) {
         SysUser user = new SysUser();
         user.setId(userId);
@@ -164,6 +163,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public boolean changeStatus(Long userId, Integer status) {
         SysUser user = new SysUser();
         user.setId(userId);
@@ -292,6 +292,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateLoginFailCount(Long userId, int failCount) {
         update(new LambdaUpdateWrapper<SysUser>()
                 .set(SysUser::getLoginFailCount, failCount)
@@ -299,6 +300,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @Transactional(readOnly = true)
     public IPage<SysUser> pageExport(long pageNum, long pageSize) {
         Page<SysUser> page = new Page<>(pageNum, pageSize);
         IPage<SysUser> result = baseMapper.selectPage(page, new LambdaQueryWrapper<SysUser>()

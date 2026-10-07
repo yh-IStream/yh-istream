@@ -41,9 +41,9 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
     public IPage<SysDictType> page(SysDictTypeQuery query) {
         Page<SysDictType> page = new Page<>(query.getPageNum(), query.getPageSize());
         return baseMapper.selectPage(page, new LambdaQueryWrapper<SysDictType>()
-                .like(query.getDictName() != null && !query.getDictName().isEmpty(),
+                .like(query.getDictName() != null && !query.getDictName().isBlank(),
                         SysDictType::getDictName, SqlUtils.escapeLike(query.getDictName()))
-                .like(query.getDictType() != null && !query.getDictType().isEmpty(),
+                .like(query.getDictType() != null && !query.getDictType().isBlank(),
                         SysDictType::getDictType, SqlUtils.escapeLike(query.getDictType()))
                 .orderByDesc(SysDictType::getCreateTime));
     }

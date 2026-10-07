@@ -66,7 +66,11 @@ public class SysConfigController {
     @SaCheckPermission("system:config:query")
     @GetMapping("/{id}")
     public R<SysConfigDTO> getById(@PathVariable Long id) {
-        return R.ok(sysConfigConverter.toDto(sysConfigService.getById(id)));
+        SysConfig config = sysConfigService.getById(id);
+        if (config == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysConfigConverter.toDto(config));
     }
 
     @OperLog(title = "系统配置管理", businessType = BusinessType.INSERT)

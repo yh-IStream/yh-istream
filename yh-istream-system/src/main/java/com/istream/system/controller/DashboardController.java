@@ -1,8 +1,8 @@
 package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.model.R;
+import com.istream.framework.security.SecurityUtils;
 import com.istream.system.model.vo.dashboard.DashboardVO;
 import com.istream.system.service.SysUserService;
 import com.istream.system.service.SysRoleService;
@@ -28,6 +28,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class DashboardController {
 
+    private static final int ALL_TOKENS = -1;
+
     private final SysUserService sysUserService;
     private final SysRoleService sysRoleService;
     private final SysOperLogService sysOperLogService;
@@ -41,7 +43,7 @@ public class DashboardController {
                 .userCount(sysUserService.count())
                 .roleCount(sysRoleService.count())
                 .todayOperCount(sysOperLogService.countTodayOps(todayStart))
-                .onlineCount(StpUtil.searchTokenSessionId("", 0, -1, false).size())
+                .onlineCount(SecurityUtils.searchTokenSessionId("", 0, ALL_TOKENS, false).size())
                 .build());
     }
 }

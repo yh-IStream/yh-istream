@@ -1,8 +1,10 @@
 package com.istream.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
 import com.istream.common.validation.Groups;
 import com.istream.system.model.dto.menu.SysMenuSaveDTO;
@@ -49,6 +51,7 @@ public class SysMenuController {
                 .toList());
     }
 
+    @SaCheckLogin
     @Operation(summary = "查询当前用户菜单树（侧边栏用）")
     @GetMapping("/user-tree")
     public R<List<SysMenuDTO>> userTree() {
@@ -61,7 +64,11 @@ public class SysMenuController {
     @SaCheckPermission("system:menu:query")
     @GetMapping("/{id}")
     public R<SysMenuDTO> getById(@PathVariable Long id) {
-        return R.ok(sysMenuConverter.toDto(sysMenuService.getById(id)));
+        SysMenu menu = sysMenuService.getById(id);
+        if (menu == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysMenuConverter.toDto(menu));
     }
 
     @OperLog(title = "菜单管理", businessType = BusinessType.INSERT)

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.ResultCode;
 import com.istream.common.model.R;
 import com.istream.system.model.dto.operlog.SysOperLogDTO;
 import com.istream.system.model.query.operlog.SysOperLogQuery;
@@ -54,7 +55,11 @@ public class SysOperLogController {
     @SaCheckPermission("monitor:oper-log:query")
     @GetMapping("/{id}")
     public R<SysOperLogDTO> getById(@PathVariable Long id) {
-        return R.ok(sysOperLogConverter.toDto(sysOperLogService.getById(id)));
+        SysOperLog operLog = sysOperLogService.getById(id);
+        if (operLog == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysOperLogConverter.toDto(operLog));
     }
 
     @OperLog(title = "操作日志管理", businessType = BusinessType.DELETE)

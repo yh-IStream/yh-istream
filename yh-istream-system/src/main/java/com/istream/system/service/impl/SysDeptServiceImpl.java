@@ -177,7 +177,7 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
                     "父部门不存在: " + parentId);
         }
         String parentAncestors = parent.getAncestors();
-        if (parentAncestors == null || parentAncestors.isEmpty()) {
+        if (parentAncestors == null || parentAncestors.isBlank()) {
             return String.valueOf(parentId);
         }
         return parentAncestors + "," + parentId;

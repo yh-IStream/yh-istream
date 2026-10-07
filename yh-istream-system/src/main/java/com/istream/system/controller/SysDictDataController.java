@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.ResultCode;
 import com.istream.system.model.query.dict.SysDictDataQuery;
 import com.istream.common.model.R;
 import com.istream.common.validation.Groups;
@@ -82,7 +83,11 @@ public class SysDictDataController {
     @SaCheckPermission("system:dict:query")
     @GetMapping("/{id}")
     public R<SysDictDataDTO> getById(@PathVariable Long id) {
-        return R.ok(sysDictDataConverter.toDto(sysDictDataService.getById(id)));
+        SysDictData dictData = sysDictDataService.getById(id);
+        if (dictData == null) {
+            return R.fail(ResultCode.DATA_NOT_EXIST);
+        }
+        return R.ok(sysDictDataConverter.toDto(dictData));
     }
 
     @OperLog(title = "字典数据管理", businessType = BusinessType.INSERT)
