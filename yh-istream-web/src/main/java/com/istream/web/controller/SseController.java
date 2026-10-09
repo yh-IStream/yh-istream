@@ -57,7 +57,7 @@ public class SseController {
     public SseEmitter subscribe(
             @RequestParam(required = false) String ticket,
             @RequestParam(required = false) String token) {
-        if (ticket != null && !ticket.isEmpty()) {
+        if (ticket != null && !ticket.isBlank()) {
             Long userId = sseService.consumeTicket(ticket);
             if (userId == null) {
                 log.warn("SSE 订阅失败: ticket 无效或已过期");
@@ -67,7 +67,7 @@ public class SseController {
             return sseService.subscribe(userId);
         }
 
-        if (token != null && !token.isEmpty()) {
+        if (token != null && !token.isBlank()) {
             Object loginId = StpUtil.getLoginIdByToken(token);
             if (loginId == null) {
                 log.warn("SSE 订阅失败: token 无效");

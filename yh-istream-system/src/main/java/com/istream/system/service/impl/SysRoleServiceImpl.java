@@ -9,6 +9,8 @@ import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.exception.BusinessException;
 import com.istream.system.helper.UserCacheHelper;
+import com.istream.system.converter.SysRoleConverter;
+import com.istream.system.model.dto.role.SysRoleSaveDTO;
 import com.istream.system.model.query.role.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 import com.istream.system.entity.SysRoleMenu;
@@ -49,11 +51,35 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysMenuMapper sysMenuMapper;
     private final UserCacheHelper userCacheHelper;
+    private final SysRoleConverter sysRoleConverter;
 
     @Override
     @Transactional(readOnly = true)
     public IPage<SysRole> page(SysRoleQuery query) {
         return baseMapper.selectRolePage(new Page<>(query.getPageNum(), query.getPageSize()), query);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createRole(SysRoleSaveDTO dto) {
+        if (existsByRoleKey(dto.getRoleKey(), null)) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "角色标识已存在");
+        }
+        SysRole role = sysRoleConverter.toEntity(dto);
+        save(role);
+        return role.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateRole(SysRoleSaveDTO dto) {
+        if (dto.getRoleKey() != null && existsByRoleKey(dto.getRoleKey(), dto.getId())) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "角色标识已存在");
+        }
+        SysRole role = new SysRole();
+        role.setId(dto.getId());
+        sysRoleConverter.updateEntity(role, dto);
+        updateById(role);
     }
 
     @Override
@@ -158,11 +184,11 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         checkSuperAdminRole((Long) id);
         List<Long> userIds = getAffectedUserIds((Long) id);
         sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
-                .eq(SysRoleMenu::getRoleId, (Long) id));
+                .eq(SysRoleMenu::getRoleId, id));
         sysRoleDeptMapper.delete(new LambdaQueryWrapper<SysRoleDept>()
-                .eq(SysRoleDept::getRoleId, (Long) id));
+                .eq(SysRoleDept::getRoleId, id));
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
-                .eq(SysUserRole::getRoleId, (Long) id));
+                .eq(SysUserRole::getRoleId, id));
         boolean result = super.removeById(id);
         if (result) {
             userCacheHelper.evictAllBatch(userIds);

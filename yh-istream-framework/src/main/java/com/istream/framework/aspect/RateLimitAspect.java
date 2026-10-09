@@ -74,7 +74,7 @@ public class RateLimitAspect {
     }
 
     private String buildKey(ProceedingJoinPoint joinPoint, RateLimit rateLimit) {
-        if (!rateLimit.key().isEmpty()) {
+        if (!rateLimit.key().isBlank()) {
             return rateLimit.key();
         }
         String className = joinPoint.getSignature().getDeclaringType().getSimpleName();

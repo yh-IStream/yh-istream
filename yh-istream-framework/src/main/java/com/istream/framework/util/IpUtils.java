@@ -42,6 +42,6 @@ public final class IpUtils {
     }
 
     private static boolean isInvalid(String ip) {
-        return ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip);
+        return ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip);
     }
 }

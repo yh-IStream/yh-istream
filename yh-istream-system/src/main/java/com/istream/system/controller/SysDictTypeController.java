@@ -68,11 +68,7 @@ public class SysDictTypeController {
     @SaCheckPermission("system:dict:add")
     @PostMapping
     public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysDictTypeSaveDTO dto) {
-        if (sysDictTypeService.existsByDictType(dto.getDictType(), null)) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "字典类型已存在");
-        }
-        SysDictType dictType = sysDictTypeConverter.toEntity(dto);
-        sysDictTypeService.save(dictType);
+        sysDictTypeService.createDictType(dto);
         return R.ok();
     }
 
@@ -81,13 +77,7 @@ public class SysDictTypeController {
     @SaCheckPermission("system:dict:edit")
     @PutMapping
     public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysDictTypeSaveDTO dto) {
-        if (dto.getDictType() != null && sysDictTypeService.existsByDictType(dto.getDictType(), dto.getId())) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "字典类型已存在");
-        }
-        SysDictType dictType = new SysDictType();
-        dictType.setId(dto.getId());
-        sysDictTypeConverter.updateEntity(dictType, dto);
-        sysDictTypeService.updateById(dictType);
+        sysDictTypeService.updateDictType(dto);
         return R.ok();
     }
 

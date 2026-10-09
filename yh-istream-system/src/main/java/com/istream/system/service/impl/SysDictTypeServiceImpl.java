@@ -11,6 +11,10 @@ import com.istream.system.entity.SysDictType;
 import com.istream.system.mapper.SysDictDataMapper;
 import com.istream.system.mapper.SysDictTypeMapper;
 import com.istream.system.service.SysDictTypeService;
+import com.istream.system.converter.SysDictTypeConverter;
+import com.istream.system.model.dto.dict.SysDictTypeSaveDTO;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
 import com.istream.framework.cache.CacheService;
 import com.istream.framework.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,7 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
 
     private final SysDictDataMapper sysDictDataMapper;
     private final CacheService cacheService;
+    private final SysDictTypeConverter sysDictTypeConverter;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,6 +62,28 @@ public class SysDictTypeServiceImpl extends ServiceImpl<SysDictTypeMapper, SysDi
             wrapper.ne(SysDictType::getId, excludeId);
         }
         return count(wrapper) > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createDictType(SysDictTypeSaveDTO dto) {
+        if (existsByDictType(dto.getDictType(), null)) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "字典类型已存在");
+        }
+        SysDictType entity = sysDictTypeConverter.toEntity(dto);
+        save(entity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateDictType(SysDictTypeSaveDTO dto) {
+        if (dto.getDictType() != null && existsByDictType(dto.getDictType(), dto.getId())) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "字典类型已存在");
+        }
+        SysDictType entity = new SysDictType();
+        entity.setId(dto.getId());
+        sysDictTypeConverter.updateEntity(entity, dto);
+        updateById(entity);
     }
 
     @Override

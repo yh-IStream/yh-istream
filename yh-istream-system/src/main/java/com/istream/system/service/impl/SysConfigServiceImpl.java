@@ -8,6 +8,10 @@ import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.system.entity.SysConfig;
 import com.istream.system.mapper.SysConfigMapper;
 import com.istream.system.service.SysConfigService;
+import com.istream.system.converter.SysConfigConverter;
+import com.istream.system.model.dto.config.SysConfigSaveDTO;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
 import com.istream.framework.cache.CacheService;
 import com.istream.framework.util.SqlUtils;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,7 @@ import java.util.Collection;
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> implements SysConfigService {
 
     private final CacheService cacheService;
+    private final SysConfigConverter sysConfigConverter;
 
     private static final String CONFIG_KEY_PREFIX = "config:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
@@ -71,6 +76,28 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
             cacheService.set(cacheKey, value, CACHE_TTL);
         }
         return value;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void createConfig(SysConfigSaveDTO dto) {
+        if (existsByConfigKey(dto.getConfigKey(), null)) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "配置键已存在");
+        }
+        SysConfig config = sysConfigConverter.toEntity(dto);
+        save(config);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateConfig(SysConfigSaveDTO dto) {
+        if (dto.getConfigKey() != null && existsByConfigKey(dto.getConfigKey(), dto.getId())) {
+            throw new BusinessException(ResultCode.DATA_DUPLICATE, "配置键已存在");
+        }
+        SysConfig config = new SysConfig();
+        config.setId(dto.getId());
+        sysConfigConverter.updateEntity(config, dto);
+        updateById(config);
     }
 
     @Override

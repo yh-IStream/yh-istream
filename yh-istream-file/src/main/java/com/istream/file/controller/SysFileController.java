@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,15 +32,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.util.unit.DataSize;
-
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * 文件管理控制器
@@ -59,41 +53,6 @@ public class SysFileController {
     private final SysFileService sysFileService;
     private final SysFileConverter sysFileConverter;
 
-    /** 最大文件大小，默认 10MB，与 spring.servlet.multipart.max-file-size 保持一致 */
-    @Value("${spring.servlet.multipart.max-file-size:10MB}")
-    private String maxFileSize;
-
-    /** 允许上传的文件 MIME 类型 */
-    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp", "image/svg+xml",
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-powerpoint",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            "text/plain", "text/csv", "text/html",
-            "application/zip", "application/x-rar-compressed", "application/x-7z-compressed",
-            "application/json", "application/xml"
-    );
-
-    /** 允许的文件头部魔数签名（十六进制），用于校验文件真实类型 */
-    private static final Map<String, Set<String>> ALLOWED_MAGIC_NUMBERS = Map.of(
-            "image/jpeg", Set.of("FFD8FF"),
-            "image/png", Set.of("89504E47"),
-            "image/gif", Set.of("47494638"),
-            "image/bmp", Set.of("424D"),
-            "image/webp", Set.of("52494646"),
-            "application/pdf", Set.of("25504446"),
-            "application/zip", Set.of("504B0304", "504B0506", "504B0708"),
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", Set.of("504B0304"),
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Set.of("504B0304"),
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation", Set.of("504B0304")
-    );
-
-    private static final int MAGIC_BYTES_LENGTH = 4;
-
     @OperLog(title = "文件管理", businessType = BusinessType.INSERT)
     @RateLimit(key = "file:upload", rate = 3, timeout = 0)
     @Operation(summary = "上传文件")
@@ -101,23 +60,6 @@ public class SysFileController {
     @PostMapping("/upload")
     public R<SysFileDTO> upload(@RequestParam("file") MultipartFile file,
                                 @RequestParam(defaultValue = "common") String module) {
-        if (file.isEmpty()) {
-            return R.fail(ResultCode.PARAM_VALID_ERROR, "文件不能为空");
-        }
-        long maxBytes = DataSize.parse(maxFileSize).toBytes();
-        if (file.getSize() > maxBytes) {
-            return R.fail(ResultCode.PARAM_VALID_ERROR, "文件大小超过限制（最大" + maxFileSize + "）");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType)) {
-            return R.fail(ResultCode.PARAM_VALID_ERROR, "不支持的文件类型：" + contentType);
-        }
-
-        if (!validateMagicNumber(file, contentType)) {
-            return R.fail(ResultCode.PARAM_VALID_ERROR,
-                    "文件类型校验失败，文件内容与声明的类型不一致");
-        }
-
         return R.ok(sysFileConverter.toDto(sysFileService.upload(file, module)));
     }
 
@@ -186,35 +128,5 @@ public class SysFileController {
     public R<IPage<SysFileDTO>> list(SysFileQuery query) {
         IPage<SysFile> page = sysFileService.page(query);
         return R.ok(PageUtils.toDtoPage(page, sysFileConverter::toDto));
-    }
-
-    /**
-     * 校验文件头部魔数签名，防止文件类型伪装攻击
-     */
-    private boolean validateMagicNumber(MultipartFile file, String contentType) {
-        Set<String> expectedSignatures = ALLOWED_MAGIC_NUMBERS.get(contentType);
-        if (expectedSignatures == null) {
-            return true;
-        }
-        try {
-            byte[] header = new byte[MAGIC_BYTES_LENGTH];
-            try (InputStream is = file.getInputStream()) {
-                int read = is.read(header, 0, MAGIC_BYTES_LENGTH);
-                if (read < MAGIC_BYTES_LENGTH) {
-                    return false;
-                }
-            }
-            String hex = HexFormat.of().withUpperCase().formatHex(header);
-            for (String sig : expectedSignatures) {
-                if (hex.startsWith(sig)) {
-                    return true;
-                }
-            }
-            log.warn("File magic number mismatch: claimed={}, actual={}", contentType, hex);
-            return false;
-        } catch (Exception e) {
-            log.warn("Failed to read file magic number", e);
-            return false;
-        }
     }
 }

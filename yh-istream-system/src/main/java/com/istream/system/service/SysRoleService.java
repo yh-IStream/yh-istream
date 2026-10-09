@@ -2,6 +2,7 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
+import com.istream.system.model.dto.role.SysRoleSaveDTO;
 import com.istream.system.model.query.role.SysRoleQuery;
 import com.istream.system.entity.SysRole;
 
@@ -24,6 +25,21 @@ public interface SysRoleService extends IService<SysRole> {
      * @return 分页结果
      */
     IPage<SysRole> page(SysRoleQuery query);
+
+    /**
+     * 新增角色（含唯一性校验）
+     *
+     * @param dto 角色保存 DTO
+     * @return 新增角色的 ID
+     */
+    Long createRole(SysRoleSaveDTO dto);
+
+    /**
+     * 修改角色（含唯一性校验）
+     *
+     * @param dto 角色保存 DTO
+     */
+    void updateRole(SysRoleSaveDTO dto);
 
     /**
      * 变更角色状态

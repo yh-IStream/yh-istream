@@ -122,7 +122,7 @@ public class OperLogAspect {
             return paramJson.length() > MAX_PARAM_LENGTH
                     ? paramJson.substring(0, MAX_PARAM_LENGTH) + "..." : paramJson;
         } catch (Exception e) {
-            log.debug("操作日志序列化请求参数失败: {}", e.getMessage());
+            log.debug("操作日志序列化请求参数失败", e);
             return "[]";
         }
     }
@@ -133,7 +133,7 @@ public class OperLogAspect {
             return resultJson.length() > MAX_PARAM_LENGTH
                     ? resultJson.substring(0, MAX_PARAM_LENGTH) + "..." : resultJson;
         } catch (Exception e) {
-            log.debug("操作日志序列化返回结果失败: {}", e.getMessage());
+            log.debug("操作日志序列化返回结果失败", e);
             return "{}";
         }
     }

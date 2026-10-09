@@ -38,7 +38,7 @@ public final class IpRegionUtils {
      * @return 归属地字符串，如 "中国|广东省|深圳市"；解析失败返回 "未知"
      */
     public static String parseRegion(String ip) {
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip)) {
             return UNKNOWN;
         }
         if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
@@ -65,7 +65,6 @@ public final class IpRegionUtils {
             if (initialized) {
                 return;
             }
-            initialized = true;
             try (InputStream is = IpRegionUtils.class.getClassLoader()
                     .getResourceAsStream(XDB_CLASSPATH)) {
                 if (is == null) {
@@ -75,6 +74,7 @@ public final class IpRegionUtils {
                 }
                 byte[] bytes = is.readAllBytes();
                 searcher = Searcher.newWithBuffer(bytes);
+                initialized = true;
                 log.info("ip2region 初始化成功，数据文件大小: {} KB", bytes.length / 1024);
             } catch (Exception e) {
                 log.error("ip2region 初始化失败", e);
@@ -88,7 +88,7 @@ public final class IpRegionUtils {
      * <p>目标格式：国家|省份|城市（去除空段和 0）</p>
      */
     private static String formatRegion(String raw) {
-        if (raw == null || raw.isEmpty()) {
+        if (raw == null || raw.isBlank()) {
             return UNKNOWN;
         }
         String[] parts = raw.split("\\|");
@@ -106,7 +106,7 @@ public final class IpRegionUtils {
     }
 
     private static void appendNonEmpty(StringBuilder sb, String part) {
-        if (part == null || part.isEmpty() || "0".equals(part)) {
+        if (part == null || part.isBlank() || "0".equals(part)) {
             return;
         }
         if (!sb.isEmpty()) {

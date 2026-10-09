@@ -85,7 +85,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         if (customWhitelist != null && !customWhitelist.isBlank()) {
             for (String path : customWhitelist.split(",")) {
                 String trimmed = path.trim();
-                if (!trimmed.isEmpty()) {
+                if (!trimmed.isBlank()) {
                     whitelist.add(trimmed);
                 }
             }

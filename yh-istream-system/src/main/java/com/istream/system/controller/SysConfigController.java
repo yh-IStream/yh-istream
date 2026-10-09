@@ -78,11 +78,7 @@ public class SysConfigController {
     @SaCheckPermission("system:config:add")
     @PostMapping
     public R<Void> add(@Validated(Groups.Create.class) @RequestBody SysConfigSaveDTO dto) {
-        if (sysConfigService.existsByConfigKey(dto.getConfigKey(), null)) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "配置键已存在");
-        }
-        SysConfig config = sysConfigConverter.toEntity(dto);
-        sysConfigService.save(config);
+        sysConfigService.createConfig(dto);
         return R.ok();
     }
 
@@ -91,13 +87,7 @@ public class SysConfigController {
     @SaCheckPermission("system:config:edit")
     @PutMapping
     public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysConfigSaveDTO dto) {
-        if (dto.getConfigKey() != null && sysConfigService.existsByConfigKey(dto.getConfigKey(), dto.getId())) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "配置键已存在");
-        }
-        SysConfig config = new SysConfig();
-        config.setId(dto.getId());
-        sysConfigConverter.updateEntity(config, dto);
-        sysConfigService.updateById(config);
+        sysConfigService.updateConfig(dto);
         return R.ok();
     }
 

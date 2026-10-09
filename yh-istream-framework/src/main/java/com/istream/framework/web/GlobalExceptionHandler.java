@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public R<Void> handleNotLoginException(NotLoginException e) {
-        log.info("未登录: {}", e.getMessage());
+        log.info("未登录: {}", e.getType());
         return R.fail(ResultCode.UNAUTHORIZED);
     }
 
@@ -124,7 +124,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public R<String> handleMissingServletRequestParameter(MissingServletRequestParameterException e) {
-        log.warn("缺少请求参数: {}", e.getMessage());
+        log.warn("缺少请求参数: {}", e.getParameterName());
         return R.fail(ResultCode.BAD_REQUEST, "缺少请求参数: " + e.getParameterName());
     }
 
@@ -133,7 +133,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public R<String> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
-        log.warn("参数类型不匹配: {}", e.getMessage());
+        log.warn("参数类型不匹配: {}", e.getName());
         return R.fail(ResultCode.BAD_REQUEST, "参数类型不匹配: " + e.getName());
     }
 
@@ -142,7 +142,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public R<Void> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
-        log.warn("请求体解析失败: {}", e.getMessage());
+        log.warn("请求体解析失败");
         return R.fail(ResultCode.BAD_REQUEST, "请求体格式错误");
     }
 
@@ -153,7 +153,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public R<Void> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
-        log.warn("文件上传大小超限: {}", e.getMessage());
+        log.warn("文件上传大小超限");
         return R.fail(ResultCode.BAD_REQUEST, "上传文件大小超过限制");
     }
 
@@ -163,7 +163,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public R<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
-        log.warn("请求方法不支持: {}", e.getMessage());
+        log.warn("请求方法不支持: {}", e.getMethod());
         return R.fail(ResultCode.METHOD_NOT_ALLOWED);
     }
 
@@ -173,7 +173,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     public R<Void> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
-        log.warn("媒体类型不支持: {}", e.getMessage());
+        log.warn("媒体类型不支持: {}", e.getContentType());
         return R.fail(ResultCode.UNSUPPORTED_MEDIA_TYPE);
     }
 

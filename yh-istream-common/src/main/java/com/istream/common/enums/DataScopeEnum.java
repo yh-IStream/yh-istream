@@ -7,6 +7,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 数据权限范围枚举
+ *
+ * <p>定义角色可访问的数据范围，由 {@code DataScopeAspect} 根据此枚举
+ * 动态拼接 SQL 条件实现行级数据隔离。</p>
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Getter
 @AllArgsConstructor

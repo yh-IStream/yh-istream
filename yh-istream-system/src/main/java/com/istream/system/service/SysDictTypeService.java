@@ -2,6 +2,7 @@ package com.istream.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.spring.service.IService;
+import com.istream.system.model.dto.dict.SysDictTypeSaveDTO;
 import com.istream.system.model.query.dict.SysDictTypeQuery;
 import com.istream.system.entity.SysDictType;
 
@@ -29,4 +30,18 @@ public interface SysDictTypeService extends IService<SysDictType> {
      * @return 是否存在
      */
     boolean existsByDictType(String dictType, Long excludeId);
+
+    /**
+     * 新增字典类型（含唯一性校验）
+     *
+     * @param dto 字典类型保存 DTO
+     */
+    void createDictType(SysDictTypeSaveDTO dto);
+
+    /**
+     * 修改字典类型（含唯一性校验）
+     *
+     * @param dto 字典类型保存 DTO
+     */
+    void updateDictType(SysDictTypeSaveDTO dto);
 }

@@ -3,6 +3,7 @@ package com.istream.system.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
+import com.istream.system.model.dto.config.SysConfigSaveDTO;
 import com.istream.system.model.query.config.SysConfigQuery;
 import com.istream.system.entity.SysConfig;
 
@@ -38,6 +39,20 @@ public interface SysConfigService extends IService<SysConfig> {
      * @return 配置值
      */
     String getConfigValueByKey(String configKey);
+
+    /**
+     * 新增配置（含唯一性校验）
+     *
+     * @param dto 配置保存 DTO
+     */
+    void createConfig(SysConfigSaveDTO dto);
+
+    /**
+     * 修改配置（含唯一性校验）
+     *
+     * @param dto 配置保存 DTO
+     */
+    void updateConfig(SysConfigSaveDTO dto);
 
     /**
      * 清除配置缓存

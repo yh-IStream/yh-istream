@@ -31,7 +31,7 @@ public final class SecurityUtils {
         try {
             return StpUtil.getLoginIdAsLong();
         } catch (Exception e) {
-            log.debug("获取当前登录用户ID失败（可能为匿名访问）: {}", e.getMessage());
+            log.debug("获取当前登录用户ID失败（可能为匿名访问）", e);
             return null;
         }
     }
@@ -57,7 +57,7 @@ public final class SecurityUtils {
         try {
             return StpUtil.hasRole(Constants.SUPER_ADMIN_ROLE);
         } catch (Exception e) {
-            log.debug("判断超级管理员失败（可能为匿名访问）: {}", e.getMessage());
+            log.debug("判断超级管理员失败（可能为匿名访问）", e);
             return false;
         }
     }
@@ -75,7 +75,7 @@ public final class SecurityUtils {
                 return (String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY);
             }
         } catch (Exception e) {
-            log.debug("获取当前登录用户名失败（可能为匿名访问）: {}", e.getMessage());
+            log.debug("获取当前登录用户名失败（可能为匿名访问）", e);
         }
         return null;
     }

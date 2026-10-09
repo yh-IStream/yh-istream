@@ -43,7 +43,7 @@ public class TenantLineHandlerImpl implements TenantLineHandler {
         } else {
             ignoreTables = Arrays.stream(ignoreTablesConfig.split(","))
                     .map(String::trim)
-                    .filter(s -> !s.isEmpty())
+                    .filter(s -> !s.isBlank())
                     .collect(Collectors.toUnmodifiableSet());
         }
         log.debug("多租户配置: saasEnabled={}, ignoreTables={}", saasEnabled, ignoreTables);

@@ -71,7 +71,7 @@ public class SseService {
         });
 
         emitter.onError(ex -> {
-            log.debug("SSE 连接异常: userId={}, error={}", userId, ex.getMessage());
+            log.debug("SSE 连接异常: userId={}", userId, ex);
             if (emitters.remove(userId, emitter)) {
                 eventPublisher.publishEvent(new SseConnectionEvent(SseConnectionEvent.Type.DISCONNECTED, userId));
             }

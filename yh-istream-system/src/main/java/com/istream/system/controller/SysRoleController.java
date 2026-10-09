@@ -96,12 +96,7 @@ public class SysRoleController {
     @SaCheckPermission("system:role:add")
     @PostMapping
     public R<Long> add(@Validated(Groups.Create.class) @RequestBody SysRoleSaveDTO dto) {
-        if (sysRoleService.existsByRoleKey(dto.getRoleKey(), null)) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
-        }
-        SysRole role = sysRoleConverter.toEntity(dto);
-        sysRoleService.save(role);
-        return R.ok(role.getId());
+        return R.ok(sysRoleService.createRole(dto));
     }
 
     @OperLog(title = "角色管理", businessType = BusinessType.UPDATE)
@@ -109,13 +104,7 @@ public class SysRoleController {
     @SaCheckPermission("system:role:edit")
     @PutMapping
     public R<Void> update(@Validated(Groups.Update.class) @RequestBody SysRoleSaveDTO dto) {
-        if (dto.getRoleKey() != null && sysRoleService.existsByRoleKey(dto.getRoleKey(), dto.getId())) {
-            return R.fail(ResultCode.DATA_DUPLICATE, "角色标识已存在");
-        }
-        SysRole role = new SysRole();
-        role.setId(dto.getId());
-        sysRoleConverter.updateEntity(role, dto);
-        sysRoleService.updateById(role);
+        sysRoleService.updateRole(dto);
         return R.ok();
     }
 

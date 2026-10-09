@@ -25,7 +25,7 @@ public interface SysFileService extends IService<SysFile> {
     IPage<SysFile> page(SysFileQuery query);
 
     /**
-     * 上传文件
+     * 上传文件（含大小、MIME类型、魔数签名校验）
      *
      * @param file   文件
      * @param module 模块名
