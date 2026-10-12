@@ -59,18 +59,21 @@ public class RateLimitAspect {
             rateLimiter.trySetRate(RateType.OVERALL, rateLimit.rate(), Duration.ofSeconds(1));
         }
 
+        boolean acquired;
         try {
-            if (rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()))) {
-                return joinPoint.proceed();
-            }
+            acquired = rateLimiter.tryAcquire(Duration.ofSeconds(rateLimit.timeout()));
         } catch (Exception e) {
             initializedKeys.remove(fullKey);
             log.warn("限流器异常，降级放行: key={}", key, e);
             return joinPoint.proceed();
         }
 
-        log.warn("接口限流触发: key={}, rate={}/s", key, rateLimit.rate());
-        return R.fail(ResultCode.RATE_LIMIT);
+        if (!acquired) {
+            log.warn("接口限流触发: key={}, rate={}/s", key, rateLimit.rate());
+            return R.fail(ResultCode.RATE_LIMIT);
+        }
+
+        return joinPoint.proceed();
     }
 
     private String buildKey(ProceedingJoinPoint joinPoint, RateLimit rateLimit) {

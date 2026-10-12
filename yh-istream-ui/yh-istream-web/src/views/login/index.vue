@@ -2,12 +2,13 @@
 import { getCaptcha } from '@/api/modules/auth'
 import { createAbortController, isAbortError } from '@/api/request'
 import { LockClosedOutline, PersonOutline, ShieldCheckmarkOutline } from '@vicons/ionicons5'
+import type { FormInst } from 'naive-ui'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const message = useMessage()
 
-const formRef = ref()
+const formRef = ref<FormInst | null>(null)
 const loading = ref(false)
 const captchaImage = ref('')
 const captchaKey = ref('')
@@ -15,6 +16,36 @@ const cardVisible = ref(false)
 let captchaAbort: AbortController | null = null
 
 const REMEMBER_KEY = 'yh-istream-remember'
+const MIN_LOADING_MS = 800
+
+function encodeRemember(username: string, password: string): string {
+  return btoa(encodeURIComponent(JSON.stringify({ u: username, p: password })))
+}
+
+function decodeRemember(encoded: string): { username: string; password: string } | null {
+  try {
+    const obj = JSON.parse(decodeURIComponent(atob(encoded))) as Record<string, string>
+    return { username: obj.u ?? obj.username ?? '', password: obj.p ?? obj.password ?? '' }
+  } catch {
+    if (encoded && !encoded.startsWith('{')) {
+      return { username: encoded, password: '' }
+    }
+    return null
+  }
+}
+
+function loadRemembered(): { username: string; password: string; remember: boolean } {
+  const stored = localStorage.getItem(REMEMBER_KEY)
+  if (stored) {
+    const decoded = decodeRemember(stored)
+    if (decoded) {
+      return { username: decoded.username, password: decoded.password, remember: true }
+    }
+  }
+  return { username: '', password: '', remember: false }
+}
+
+const remembered = loadRemembered()
 
 const particleStyles = Array.from({ length: 20 }, () => ({
   left: `${Math.random() * 100}%`,
@@ -26,10 +57,10 @@ const particleStyles = Array.from({ length: 20 }, () => ({
 }))
 
 const formData = reactive({
-  username: localStorage.getItem(REMEMBER_KEY) ?? '',
-  password: '',
+  username: remembered.username,
+  password: remembered.password,
   captchaCode: '',
-  remember: !!localStorage.getItem(REMEMBER_KEY),
+  remember: remembered.remember,
 })
 
 const rules = {
@@ -65,17 +96,25 @@ async function handleLogin() {
   }
 
   loading.value = true
+  await nextTick()
+  const startTime = Date.now()
   try {
     await authStore.login(formData.username, formData.password, captchaKey.value, formData.captchaCode)
+    const elapsed = Date.now() - startTime
+    if (elapsed < MIN_LOADING_MS) {
+      await new Promise(r => setTimeout(r, MIN_LOADING_MS - elapsed))
+    }
     if (formData.remember) {
-      localStorage.setItem(REMEMBER_KEY, formData.username)
+      localStorage.setItem(REMEMBER_KEY, encodeRemember(formData.username, formData.password))
     } else {
       localStorage.removeItem(REMEMBER_KEY)
     }
     message.success('登录成功')
-    router.push(authStore.firstMenuPath)
+    const redirect = router.currentRoute.value.query.redirect as string | undefined
+    router.push(redirect || authStore.firstMenuPath)
   } catch (e: unknown) {
-    message.error((e as Error).message || '登录失败')
+    const msg = e instanceof Error ? e.message : '登录失败'
+    message.error(msg || '登录失败')
     refreshCaptcha()
   } finally {
     loading.value = false
@@ -105,12 +144,12 @@ onBeforeUnmount(() => {
       <div class="orb orb-3" />
       <div class="grid-lines" />
       <div class="particles">
-        <div v-for="(p, idx) in particleStyles" :key="idx" class="particle" :style="p" />
+        <div v-for="p in particleStyles" :key="p.id" class="particle" :style="p" />
       </div>
     </div>
 
     <transition name="card-enter">
-      <div v-if="cardVisible" class="login-card glass glow-strong p-8 w-420px flex flex-col gap-6">
+      <div v-if="cardVisible" class="login-card glass glow-strong p-8 w-420px flex flex-col gap-6" :class="{ 'card-loading': loading }">
         <div class="flex-col-center gap-3">
           <div class="logo-icon stream-animate float-animate">
             <svg viewBox="0 0 40 40" width="56" height="56">
@@ -193,21 +232,35 @@ onBeforeUnmount(() => {
             </n-checkbox>
           </div>
 
-          <n-button
-            type="primary"
-            block
-            :loading="loading"
-            class="login-btn"
-            @click="handleLogin"
-          >
-            登 录
-          </n-button>
+          <div class="login-btn-wrapper">
+            <n-button
+              type="primary"
+              block
+              :loading="loading"
+              class="login-btn"
+              @click="handleLogin"
+            >
+              登 录
+            </n-button>
+            <div class="login-progress-bar" :class="{ 'progress-active': loading }">
+              <div class="login-progress-glow" />
+            </div>
+          </div>
         </n-form>
 
-        <div class="flex-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-1">
+        <div class="flex-center gap-1.5 mt-1 text-xs text-gray-400 dark:text-gray-500">
           <span class="inline-block w-1.5 h-1.5 rounded-full bg-teal-400 pulse-glow-animate" />
           <span>Secure Connection</span>
         </div>
+
+        <transition name="overlay-fade">
+          <div v-if="loading" class="loading-overlay">
+            <div class="loading-overlay-content">
+              <div class="loading-spinner" />
+              <span class="loading-text">正在验证身份<span class="loading-dots" /></span>
+            </div>
+          </div>
+        </transition>
       </div>
     </transition>
   </div>
@@ -355,5 +408,109 @@ onBeforeUnmount(() => {
 
 :deep(.n-form-item-feedback-wrapper) {
   min-height: 20px;
+}
+
+.card-loading {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+  transform: scale(0.98);
+  filter: brightness(0.97);
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  border-radius: inherit;
+}
+
+.loading-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(20, 184, 166, 0.2);
+  border-top-color: #14b8a6;
+  border-right-color: #06b6d4;
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #14b8a6;
+  letter-spacing: 2px;
+}
+
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
+.overlay-fade-enter-active {
+  transition: opacity 0.25s ease;
+}
+.overlay-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
+}
+
+.login-btn-wrapper {
+  position: relative;
+}
+
+.login-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  background: rgba(20, 184, 166, 0.12);
+  overflow: hidden;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.login-progress-bar.progress-active {
+  opacity: 1;
+}
+
+.login-progress-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.9), rgba(6, 182, 212, 0.9), transparent);
+  animation: progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
 }
 </style>

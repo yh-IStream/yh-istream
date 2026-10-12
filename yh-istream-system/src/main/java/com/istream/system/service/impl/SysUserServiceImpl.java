@@ -238,7 +238,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean removeByIds(Collection<?> list) {
-        @SuppressWarnings("unchecked")
         List<Long> userIds = list.stream().map(id -> (Long) id).toList();
         checkSuperAdminBatch(userIds);
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
@@ -286,16 +285,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         update(new LambdaUpdateWrapper<SysUser>()
                 .set(SysUser::getLoginIp, ip)
                 .set(SysUser::getLoginDate, LocalDateTime.now())
-                .set(SysUser::getLoginFailCount, 0)
                 .setSql("login_count = login_count + 1")
-                .eq(SysUser::getId, userId));
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void updateLoginFailCount(Long userId, int failCount) {
-        update(new LambdaUpdateWrapper<SysUser>()
-                .set(SysUser::getLoginFailCount, failCount)
                 .eq(SysUser::getId, userId));
     }
 

@@ -196,6 +196,7 @@ npm run dev
 ---
 
 ## 在线预览
+[http://istream.fucku.top](http://istream.fucku.top) （不想本地配置跑的可在线预览，但因网络限制以及人数等问题视情况开启，也可私信开启）
 
 ![登录页](https://raw.gitcode.com/IStream/image/raw/image/yh-is/%E7%99%BB%E5%BD%95.png)
 

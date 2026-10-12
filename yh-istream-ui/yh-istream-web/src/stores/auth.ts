@@ -90,9 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /** 登出 */
-  async function logout(showExpiredTip = false) {
+  async function logout(showExpiredTip = false, skipServerLogout = false) {
     try {
-      if (token.value) {
+      if (token.value && !skipServerLogout) {
         await logoutApi()
       }
     } finally {

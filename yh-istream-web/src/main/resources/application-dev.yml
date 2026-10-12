@@ -47,6 +47,15 @@
           max-idle: 8
           min-idle: 0
           max-wait: 10000ms
+      redisson:
+        config: |
+          codec: !<org.redisson.codec.JsonJacksonCodec> {}
+          singleServerConfig:
+            address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
+            database: ${spring.data.redis.database}
+            timeout: 10000
+            connectionPoolSize: 64
+            connectionMinimumIdleSize: 10
 
   # ===== AI 模型连接（二选一，注释掉不用的） =====
   # 方式 A：Ollama 本地（免费，需先 ollama pull qwen2.5:7b && ollama serve）
@@ -65,20 +74,22 @@
       base-url: https://openrouter.ai/api/v1
       api-key: ${OPENROUTER_API_KEY:}
       chat:
-        model: cohere/north-mini-code:free
+        model: dots-studio/dots-3-note-preview:free
         temperature: 0.3
         max-tokens: 1500
 
-# Redisson 配置（JsonJacksonCodec：Redis 数据可读、可跨语言、更安全）
-redisson:
-  config: |
-    codec: !<org.redisson.codec.JsonJacksonCodec> {}
-    singleServerConfig:
-      address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
-      database: ${spring.data.redis.database}
-      timeout: 10000
-      connectionPoolSize: 64
-      connectionMinimumIdleSize: 10
+  # Redisson 配置（JsonJacksonCodec：Redis 数据可读、可跨语言、更安全）
+#  redis:
+#    redisson:
+#      config: |
+#        codec: !<org.redisson.codec.JsonJacksonCodec> {}
+#        singleServerConfig:
+#          address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
+#          database: ${spring.data.redis.database}
+#          timeout: 10000
+#          connectionPoolSize: 64
+#          connectionMinimumIdleSize: 10
+
 
 # Sa-Token 开发环境降低超时
 sa-token:

@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   NDrawer, NDrawerContent, NSpin, NEmpty, NButton, useMessage
 } from 'naive-ui'
@@ -57,8 +57,10 @@ function onSuggestionHandled(id: number) {
   suggestions.value = suggestions.value.filter(s => s.id !== id)
 }
 
-onMounted(() => {
-  fetchPending()
+watch(visible, (show) => {
+  if (show) {
+    fetchPending()
+  }
 })
 
 defineExpose({ fetchPending, pendingCount })

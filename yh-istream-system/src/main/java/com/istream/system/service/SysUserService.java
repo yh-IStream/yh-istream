@@ -115,14 +115,6 @@ public interface SysUserService extends IService<SysUser> {
     void updateLoginInfo(Long userId, String ip);
 
     /**
-     * 更新登录失败次数
-     *
-     * @param userId    用户ID
-     * @param failCount 失败次数
-     */
-    void updateLoginFailCount(Long userId, int failCount);
-
-    /**
      * 查询全部用户（导出用，按创建时间倒序，密码置空）
      *
      * @param pageNum 页码

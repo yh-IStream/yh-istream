@@ -58,9 +58,6 @@ public class SysUser extends BaseEntity {
     private Integer loginCount;
 
     @ExcelIgnore
-    private Integer loginFailCount;
-
-    @ExcelIgnore
     private LocalDateTime pwdResetTime;
 
     @ExcelProperty("部门")

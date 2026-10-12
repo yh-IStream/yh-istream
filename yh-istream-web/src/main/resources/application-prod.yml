@@ -29,6 +29,16 @@
           max-idle: 10
           min-idle: 5
           max-wait: 5000ms
+      redisson:
+        config: |
+          codec: !<org.redisson.codec.JsonJacksonCodec> {}
+          singleServerConfig:
+            address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
+            password: "${REDIS_PASSWORD}"
+            database: ${spring.data.redis.database}
+            timeout: 5000
+            connectionPoolSize: 128
+            connectionMinimumIdleSize: 20
 
   # 文件上传配置
   servlet:
@@ -42,18 +52,6 @@ oss:
   local:
     upload-path: ${OSS_PATH:/data/uploads}
     url-prefix: /files
-
-# Redisson 配置（JsonJacksonCodec：Redis 数据可读、可跨语言、更安全）
-redisson:
-  config: |
-    codec: !<org.redisson.codec.JsonJacksonCodec> {}
-    singleServerConfig:
-      address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
-      password: "${REDIS_PASSWORD}"
-      database: ${spring.data.redis.database}
-      timeout: 5000
-      connectionPoolSize: 128
-      connectionMinimumIdleSize: 20
 
 # Sa-Token 配置
 sa-token:

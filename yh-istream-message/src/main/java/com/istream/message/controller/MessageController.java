@@ -1,5 +1,6 @@
 package com.istream.message.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.model.R;
@@ -38,6 +39,7 @@ public class MessageController {
     private final MessageCenter messageCenter;
     private final SysMessageService sysMessageService;
 
+    @SaCheckLogin
     @Operation(summary = "分页查询消息列表")
     @GetMapping("/list")
     public R<IPage<SysMessageDTO>> list(SysMessageQuery query) {
@@ -45,6 +47,7 @@ public class MessageController {
         return R.ok(sysMessageService.page(userId, query));
     }
 
+    @SaCheckLogin
     @Operation(summary = "获取未读消息数")
     @GetMapping("/unread-count")
     public R<Map<String, Long>> getUnreadCount() {
@@ -53,6 +56,7 @@ public class MessageController {
         return R.ok(Map.of("count", count));
     }
 
+    @SaCheckLogin
     @Operation(summary = "标记消息为已读")
     @PutMapping("/{messageId}/read")
     public R<Void> markAsRead(@PathVariable Long messageId) {
@@ -61,6 +65,7 @@ public class MessageController {
         return R.ok();
     }
 
+    @SaCheckLogin
     @Operation(summary = "全部标记为已读")
     @PutMapping("/read-all")
     public R<Void> markAllAsRead() {

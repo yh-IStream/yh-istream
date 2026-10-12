@@ -20,10 +20,15 @@ const instance: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+let isLoggingOut = false
+
 function handleUnauthorized(url?: string) {
-  if (!url?.endsWith('/auth/logout')) {
+  if (!url?.endsWith('/auth/logout') && !isLoggingOut) {
+    isLoggingOut = true
     const authStore = useAuthStore()
-    authStore.logout(true)
+    authStore.logout(true, true).finally(() => {
+      isLoggingOut = false
+    })
   }
   return Promise.reject(new ApiError(401, '登录已过期，请重新登录'))
 }

@@ -36,7 +36,6 @@ public interface SysUserConverter extends BaseConverter<SysUser, SysUserDTO> {
     @Mapping(target = "loginIp", ignore = true)
     @Mapping(target = "loginDate", ignore = true)
     @Mapping(target = "loginCount", ignore = true)
-    @Mapping(target = "loginFailCount", ignore = true)
     @Mapping(target = "pwdResetTime", ignore = true)
     @Mapping(target = "deptName", ignore = true)
     @Mapping(target = "roles", ignore = true)
