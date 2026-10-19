@@ -1,14 +1,18 @@
-package com.istream.message.center;
+package com.istream.message.manager;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.istream.common.enums.EventType;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.framework.sse.SseService;
+import com.istream.framework.tenant.TenantContext;
 import com.istream.message.entity.SysMessage;
 import com.istream.message.entity.SysMessageUser;
+import com.istream.message.mapper.SysMessageMapper;
+import com.istream.message.mapper.SysMessageUserMapper;
 import com.istream.message.service.SysMessageService;
 import com.istream.message.service.SysMessageUserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.never;
@@ -50,12 +55,16 @@ import static org.mockito.Mockito.withSettings;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("MessageCenterImpl 消息中心")
-class MessageCenterImplTest {
+class MessageManagerImplTest {
 
     @Mock
     private SysMessageService sysMessageService;
     @Mock
     private SysMessageUserService sysMessageUserService;
+    @Mock
+    private SysMessageMapper sysMessageMapper;
+    @Mock
+    private SysMessageUserMapper sysMessageUserMapper;
     @Mock
     private SseService sseService;
     @Mock
@@ -68,10 +77,11 @@ class MessageCenterImplTest {
     private RAtomicLong atomicLong;
 
     @InjectMocks
-    private MessageCenterImpl messageCenter;
+    private MessageManagerImpl messageCenter;
 
     @BeforeEach
     void setUp() throws InterruptedException {
+        TenantContext.setTenantId(0L);
         when(sysMessageService.save(any(SysMessage.class))).thenAnswer(inv -> {
             SysMessage msg = inv.getArgument(0);
             msg.setId(1L);
@@ -83,6 +93,11 @@ class MessageCenterImplTest {
         });
         when(redissonClient.getLock(anyString())).thenReturn(lock);
         when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
     }
 
     @Test
@@ -109,20 +124,28 @@ class MessageCenterImplTest {
     }
 
     @Test
-    @DisplayName("sendToTenant 发送给租户并广播 SSE")
-    void shouldSendToTenant() {
+    @DisplayName("sendToTenant 发送给租户且 tenantId 正确设置并恢复上下文")
+    void shouldSendToTenantWithCorrectTenantId() {
+        TenantContext.setTenantId(99L);
         messageCenter.sendToTenant(1L, "公告", "内容", EventType.SYSTEM, "tenant", 1L);
 
-        verify(sysMessageService).save(any(SysMessage.class));
+        ArgumentCaptor<SysMessage> captor = ArgumentCaptor.forClass(SysMessage.class);
+        verify(sysMessageService).save(captor.capture());
+        SysMessage saved = captor.getValue();
+        assertEquals(1L, saved.getTenantId());
+        assertEquals(99L, TenantContext.getTenantId());
         verify(sseService).broadcast(any(SseEvent.class));
     }
 
     @Test
-    @DisplayName("broadcast 全量广播")
-    void shouldBroadcast() {
+    @DisplayName("broadcast 全量广播且 tenantId 为 0")
+    void shouldBroadcastWithTenantIdZero() {
         messageCenter.broadcast("全站公告", "内容", EventType.SYSTEM);
 
-        verify(sysMessageService).save(any(SysMessage.class));
+        ArgumentCaptor<SysMessage> captor = ArgumentCaptor.forClass(SysMessage.class);
+        verify(sysMessageService).save(captor.capture());
+        SysMessage saved = captor.getValue();
+        assertEquals(0L, saved.getTenantId());
         verify(sseService).broadcast(any(SseEvent.class));
     }
 
@@ -139,20 +162,25 @@ class MessageCenterImplTest {
     }
 
     @Test
-    @DisplayName("getUnreadCount Redis 未命中时降级 DB 查询")
+    @DisplayName("getUnreadCount Redis 未命中时降级为单条 SQL DB 查询")
     void shouldFallbackToDbWhenRedisMiss() {
         when(redissonClient.getAtomicLong("message:unread:100")).thenReturn(atomicLong);
         when(atomicLong.isExists()).thenReturn(false);
-        when(sysMessageUserService.count(any(LambdaQueryWrapper.class))).thenReturn(3L);
+        when(sysMessageMapper.countUserUnread(100L, 0L)).thenReturn(7L);
 
         long count = messageCenter.getUnreadCount(100L);
 
-        assertEquals(3L, count);
+        assertEquals(7L, count);
+        verify(sysMessageMapper).countUserUnread(100L, 0L);
     }
 
     @Test
-    @DisplayName("markAsRead 标记已读并减 Redis 计数")
+    @DisplayName("markAsRead 定向消息标记已读并减 Redis 计数")
     void shouldMarkAsRead() {
+        SysMessage directMsg = new SysMessage();
+        directMsg.setId(1L);
+        directMsg.setMessageType(0);
+        when(sysMessageService.getById(1L)).thenReturn(directMsg);
         when(sysMessageUserService.update(any())).thenReturn(true);
         when(redissonClient.getAtomicLong("message:unread:100")).thenReturn(atomicLong);
         when(atomicLong.isExists()).thenReturn(true);
@@ -170,6 +198,10 @@ class MessageCenterImplTest {
     @Test
     @DisplayName("markAsRead 未更新时不自减 Redis")
     void shouldNotDecrementWhenNotUpdated() {
+        SysMessage directMsg = new SysMessage();
+        directMsg.setId(1L);
+        directMsg.setMessageType(0);
+        when(sysMessageService.getById(1L)).thenReturn(directMsg);
         when(sysMessageUserService.update(any())).thenReturn(false);
 
         try (MockedConstruction<LambdaUpdateWrapper> ignored = mockConstruction(
@@ -184,14 +216,34 @@ class MessageCenterImplTest {
     @DisplayName("markAllAsRead 全部已读并归零 Redis")
     void shouldMarkAllAsRead() {
         when(sysMessageUserService.update(any())).thenReturn(true);
+        when(sysMessageUserMapper.insertIgnoreBroadcastRead(anyLong(), anyLong()))
+                .thenReturn(0);
         when(redissonClient.getAtomicLong("message:unread:100")).thenReturn(atomicLong);
 
-        try (MockedConstruction<LambdaUpdateWrapper> ignored = mockConstruction(
+        try (MockedConstruction<LambdaUpdateWrapper> updateMock = mockConstruction(
                 LambdaUpdateWrapper.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS))) {
             messageCenter.markAllAsRead(100L);
         }
 
         verify(sysMessageUserService).update(any());
+        verify(sysMessageUserMapper).insertIgnoreBroadcastRead(eq(100L), eq(0L));
+        verify(atomicLong).set(0);
+    }
+
+    @Test
+    @DisplayName("markAllAsRead 调用 insertIgnoreBroadcastRead 单条 SQL 批量插入")
+    void shouldUseInsertIgnoreBroadcastReadForMarkAllAsRead() {
+        when(sysMessageUserService.update(any())).thenReturn(true);
+        when(sysMessageUserMapper.insertIgnoreBroadcastRead(anyLong(), anyLong()))
+                .thenReturn(5);
+        when(redissonClient.getAtomicLong("message:unread:100")).thenReturn(atomicLong);
+
+        try (MockedConstruction<LambdaUpdateWrapper> updateMock = mockConstruction(
+                LambdaUpdateWrapper.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS))) {
+            messageCenter.markAllAsRead(100L);
+        }
+
+        verify(sysMessageUserMapper).insertIgnoreBroadcastRead(eq(100L), eq(0L));
         verify(atomicLong).set(0);
     }
 

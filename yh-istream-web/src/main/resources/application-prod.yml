@@ -8,7 +8,7 @@
       minimum-idle: 10
       maximum-pool-size: 30
       idle-timeout: 300000
-      max-lifetime: 1200000
+      max-lifetime: 1800000
       connection-timeout: 30000
       keepalive-time: 30000
       validation-timeout: 5000
@@ -29,16 +29,18 @@
           max-idle: 10
           min-idle: 5
           max-wait: 5000ms
-      redisson:
-        config: |
-          codec: !<org.redisson.codec.JsonJacksonCodec> {}
-          singleServerConfig:
-            address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
-            password: "${REDIS_PASSWORD}"
-            database: ${spring.data.redis.database}
-            timeout: 5000
-            connectionPoolSize: 128
-            connectionMinimumIdleSize: 20
+
+  redis:
+    redisson:
+      config: |
+        codec: !<org.redisson.codec.JsonJacksonCodec> {}
+        singleServerConfig:
+          address: "redis://${spring.data.redis.host}:${spring.data.redis.port}"
+          password: "${REDIS_PASSWORD}"
+          database: ${spring.data.redis.database}
+          timeout: 5000
+          connectionPoolSize: 128
+          connectionMinimumIdleSize: 20
 
   # 文件上传配置
   servlet:

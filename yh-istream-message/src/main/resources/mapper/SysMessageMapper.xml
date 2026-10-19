@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.istream.message.mapper.SysMessageMapper">
+
+    <resultMap id="messageDTOResultMap" type="com.istream.message.model.dto.SysMessageDTO">
+        <id property="id" column="id"/>
+        <result property="messageType" column="message_type"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="eventType" column="event_type"/>
+        <result property="entityType" column="entity_type"/>
+        <result property="entityId" column="entity_id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="senderName" column="sender_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="readFlag" column="read_flag"/>
+    </resultMap>
+
+    <select id="selectUserMessagePage" resultMap="messageDTOResultMap">
+        SELECT m.id, m.message_type, m.title, m.content, m.event_type,
+               m.entity_type, m.entity_id, m.sender_id, m.sender_name,
+               m.create_time, COALESCE(mu.read_flag, 0) AS read_flag
+        FROM sys_message m
+        LEFT JOIN sys_message_user mu ON m.id = mu.message_id AND mu.user_id = #{userId}
+        WHERE m.del_flag = 0
+          AND (
+              m.message_type = 2
+              OR (m.message_type = 1 AND m.tenant_id = #{tenantId})
+              OR mu.id IS NOT NULL
+          )
+        <if test="query.eventType != null and query.eventType != ''">
+            AND m.event_type = #{query.eventType}
+        </if>
+        <if test="query.unreadOnly != null and query.unreadOnly">
+            AND COALESCE(mu.read_flag, 0) = 0
+        </if>
+        ORDER BY m.create_time DESC
+    </select>
+
+</mapper>

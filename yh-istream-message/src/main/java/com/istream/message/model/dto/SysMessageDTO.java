@@ -16,6 +16,9 @@ public class SysMessageDTO {
 
     private Long id;
 
+    /** 消息类型（0=定向 1=租户广播 2=全量广播） */
+    private Integer messageType;
+
     /** 消息标题 */
     private String title;
 
@@ -42,5 +45,5 @@ public class SysMessageDTO {
     private LocalDateTime createTime;
 
     /** 是否已读（0=未读 1=已读） */
-    private Integer isRead;
+    private Integer readFlag;
 }

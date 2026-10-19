@@ -62,7 +62,7 @@ async function handleMarkAsRead(msg: SysMessage) {
   try {
     await markAsRead(msg.id)
     sse.decrementUnread()
-    msg.isRead = 1
+    msg.readFlag = 1
   } catch {
     message.error('标记已读失败')
   }
@@ -72,7 +72,7 @@ async function handleMarkAllAsRead() {
   try {
     await markAllAsRead()
     sse.resetUnread()
-    recentMessages.value.forEach((m) => { m.isRead = 1 })
+    recentMessages.value.forEach((m) => { m.readFlag = 1 })
     message.success('已全部标为已读')
   } catch {
     message.error('操作失败')
@@ -80,7 +80,7 @@ async function handleMarkAllAsRead() {
 }
 
 function handleClickMessage(msg: SysMessage) {
-  if (msg.isRead !== 1) {
+  if (msg.readFlag !== 1) {
     handleMarkAsRead(msg)
   }
   popoverVisible.value = false
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
             v-for="msg in recentMessages"
             :key="msg.id"
             class="bell-item"
-            :class="{ unread: msg.isRead !== 1 }"
+            :class="{ unread: msg.readFlag !== 1 }"
             @click="handleClickMessage(msg)"
           >
             <span class="bell-item-icon">{{ getEventIcon(msg.eventType) }}</span>
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
               <div class="bell-item-title">
                 <span class="text-sm font-medium truncate">{{ msg.title }}</span>
                 <span
-                  v-if="msg.isRead !== 1"
+                  v-if="msg.readFlag !== 1"
                   class="bell-item-dot"
                 />
               </div>

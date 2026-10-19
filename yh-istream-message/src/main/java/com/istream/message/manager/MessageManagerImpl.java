@@ -1,13 +1,17 @@
-package com.istream.message.center;
+package com.istream.message.manager;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.istream.common.enums.EventType;
+import com.istream.common.enums.MessageType;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.framework.security.SecurityUtils;
 import com.istream.framework.sse.SseService;
+import com.istream.framework.tenant.TenantContext;
 import com.istream.message.entity.SysMessage;
 import com.istream.message.entity.SysMessageUser;
+import com.istream.message.mapper.SysMessageMapper;
+import com.istream.message.mapper.SysMessageUserMapper;
 import com.istream.message.service.SysMessageService;
 import com.istream.message.service.SysMessageUserService;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +32,19 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>核心消息发送入口，提供消息落库 + SSE 即时推送 + 聚合去重。</p>
  *
+ * <h3>消息类型与可见性</h3>
+ * <ul>
+ *   <li>USER(0)：定向消息，sys_message_user 记录接收者，仅接收者可见</li>
+ *   <li>TENANT(1)：租户广播，同租户所有用户可见，已读状态按需创建</li>
+ *   <li>GLOBAL(2)：全量广播，所有用户可见，已读状态按需创建</li>
+ * </ul>
+ *
  * <h3>消息聚合策略</h3>
  * <p>同一 (entityType, entityId, eventType) 组合在 10 秒内的多次变更聚合为 1 条通知，
  * 更新现有消息的标题和内容，只推一次。</p>
  *
  * <h3>锁与事务顺序</h3>
- * <p>遵循项目原则：加锁 → 开事务 → 执行 → 提交事务 → 释放锁。
+ * <p>项目原则：加锁 → 开事务 → 执行 → 提交事务 → 释放锁。
  * {@code sendToUser}/{@code sendToTenant} 使用 Redisson 分布式锁 + {@link TransactionTemplate} 编程式事务，
  * 确保：① 多实例部署下聚合锁跨 JVM 生效；② 锁在事务外获取，避免事务内持锁时间过长；
  * ③ SSE 推送和 Redis 计数在事务提交后执行，保证数据一致性。</p>
@@ -52,18 +63,19 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MessageCenterImpl implements MessageCenter {
+public class MessageManagerImpl implements MessageManager {
 
     private static final Duration AGGREGATE_WINDOW = Duration.ofSeconds(10);
     private static final String UNREAD_KEY_PREFIX = "message:unread:";
+    private static final String AGGREGATE_LOCK_PREFIX = "message:aggregate:";
 
     private final SysMessageService sysMessageService;
     private final SysMessageUserService sysMessageUserService;
+    private final SysMessageMapper sysMessageMapper;
+    private final SysMessageUserMapper sysMessageUserMapper;
     private final SseService sseService;
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
-
-    private static final String AGGREGATE_LOCK_PREFIX = "message:aggregate:";
 
     @Override
     public void sendToUser(Long userId, String title, String content, EventType eventType,
@@ -74,10 +86,8 @@ public class MessageCenterImpl implements MessageCenter {
         RLock lock = acquireAggregateLock(entityType, entityId, eventType);
         try {
             SysMessage message = transactionTemplate.execute(status -> {
-                SysMessage msg = resolveAggregate(title, content, eventType, entityType, entityId);
-                if (msg != null) {
-                    saveMessageUser(msg.getId(), userId);
-                }
+                SysMessage msg = resolveAggregate(title, content, eventType, entityType, entityId, MessageType.USER);
+                saveMessageUser(msg.getId(), userId);
                 return msg;
             });
             if (message != null) {
@@ -95,24 +105,36 @@ public class MessageCenterImpl implements MessageCenter {
         if (tenantId == null) {
             return;
         }
-        RLock lock = acquireAggregateLock(entityType, entityId, eventType);
+        Long savedTenantId = TenantContext.getTenantId();
         try {
-            SysMessage message = transactionTemplate.execute(status ->
-                    resolveAggregate(title, content, eventType, entityType, entityId));
-            if (message != null) {
-                broadcastSse(message);
+            TenantContext.setTenantId(tenantId);
+            RLock lock = acquireAggregateLock(entityType, entityId, eventType);
+            try {
+                SysMessage message = transactionTemplate.execute(status ->
+                        resolveAggregate(title, content, eventType, entityType, entityId, MessageType.TENANT));
+                if (message != null) {
+                    broadcastSse(message);
+                }
+            } finally {
+                releaseLockSafely(lock);
             }
         } finally {
-            releaseLockSafely(lock);
+            TenantContext.setTenantId(savedTenantId);
         }
     }
 
     @Override
     public void broadcast(String title, String content, EventType eventType) {
-        SysMessage message = transactionTemplate.execute(status ->
-                createMessage(title, content, eventType, null, null));
-        if (message != null) {
-            broadcastSse(message);
+        Long savedTenantId = TenantContext.getTenantId();
+        try {
+            TenantContext.setTenantId(0L);
+            SysMessage message = transactionTemplate.execute(status ->
+                    createMessage(title, content, eventType, null, null, MessageType.GLOBAL));
+            if (message != null) {
+                broadcastSse(message);
+            }
+        } finally {
+            TenantContext.setTenantId(savedTenantId);
         }
     }
 
@@ -124,29 +146,28 @@ public class MessageCenterImpl implements MessageCenter {
         try {
             RAtomicLong counter = redissonClient.getAtomicLong(UNREAD_KEY_PREFIX + userId);
             if (counter.isExists()) {
-                long count = counter.get();
-                return Math.max(count, 0);
+                return Math.max(counter.get(), 0);
             }
         } catch (Exception e) {
             log.debug("Redis 未读计数查询失败，降级为 DB 查询: userId={}", userId, e);
         }
-        return getUnreadCountFromDb(userId);
+        return sysMessageMapper.countUserUnread(userId, TenantContext.getTenantId());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void markAsRead(Long messageId, Long userId) {
         if (messageId == null || userId == null) {
             return;
         }
-        LambdaUpdateWrapper<SysMessageUser> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(SysMessageUser::getMessageId, messageId)
-                .eq(SysMessageUser::getUserId, userId)
-                .eq(SysMessageUser::getIsRead, 0)
-                .set(SysMessageUser::getIsRead, 1)
-                .set(SysMessageUser::getReadTime, LocalDateTime.now());
-        boolean updated = sysMessageUserService.update(wrapper);
-        if (updated) {
-            decrementUnread(userId);
+        SysMessage message = sysMessageService.getById(messageId);
+        if (message == null) {
+            return;
+        }
+        if (message.isBroadcast()) {
+            markBroadcastAsRead(messageId, userId);
+        } else {
+            markDirectAsRead(messageId, userId);
         }
     }
 
@@ -156,13 +177,57 @@ public class MessageCenterImpl implements MessageCenter {
         if (userId == null) {
             return;
         }
+
         LambdaUpdateWrapper<SysMessageUser> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SysMessageUser::getUserId, userId)
-                .eq(SysMessageUser::getIsRead, 0)
-                .set(SysMessageUser::getIsRead, 1)
+                .eq(SysMessageUser::getReadFlag, 0)
+                .set(SysMessageUser::getReadFlag, 1)
                 .set(SysMessageUser::getReadTime, LocalDateTime.now());
         sysMessageUserService.update(wrapper);
+
+        sysMessageUserMapper.insertIgnoreBroadcastRead(userId, TenantContext.getTenantId());
+
         resetUnread(userId);
+    }
+
+    private void markDirectAsRead(Long messageId, Long userId) {
+        LambdaUpdateWrapper<SysMessageUser> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(SysMessageUser::getMessageId, messageId)
+                .eq(SysMessageUser::getUserId, userId)
+                .eq(SysMessageUser::getReadFlag, 0)
+                .set(SysMessageUser::getReadFlag, 1)
+                .set(SysMessageUser::getReadTime, LocalDateTime.now());
+        boolean updated = sysMessageUserService.update(wrapper);
+        if (updated) {
+            decrementUnread(userId);
+        }
+    }
+
+    private void markBroadcastAsRead(Long messageId, Long userId) {
+        LambdaQueryWrapper<SysMessageUser> existWrapper = new LambdaQueryWrapper<>();
+        existWrapper.eq(SysMessageUser::getMessageId, messageId)
+                .eq(SysMessageUser::getUserId, userId);
+        SysMessageUser existing = sysMessageUserService.getOne(existWrapper);
+        if (existing != null) {
+            if (existing.getReadFlag() == 0) {
+                LambdaUpdateWrapper<SysMessageUser> updateWrapper = new LambdaUpdateWrapper<>();
+                updateWrapper.eq(SysMessageUser::getId, existing.getId())
+                        .set(SysMessageUser::getReadFlag, 1)
+                        .set(SysMessageUser::getReadTime, LocalDateTime.now());
+                sysMessageUserService.update(updateWrapper);
+                decrementUnread(userId);
+            }
+            return;
+        }
+        SysMessageUser mu = new SysMessageUser();
+        mu.setMessageId(messageId);
+        mu.setUserId(userId);
+        mu.setReadFlag(1);
+        mu.setReadTime(LocalDateTime.now());
+        int rows = sysMessageUserMapper.insertIgnore(mu);
+        if (rows > 0) {
+            decrementUnread(userId);
+        }
     }
 
     private void incrementUnread(Long userId) {
@@ -195,21 +260,6 @@ public class MessageCenterImpl implements MessageCenter {
         }
     }
 
-    private long getUnreadCountFromDb(Long userId) {
-        LambdaQueryWrapper<SysMessageUser> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SysMessageUser::getUserId, userId)
-                .eq(SysMessageUser::getIsRead, 0);
-        return sysMessageUserService.count(wrapper);
-    }
-
-    /**
-     * 获取聚合分布式锁
-     *
-     * <p>当 entityType 或 entityId 为 null 时无需聚合，返回 null。
-     * 锁获取超时或被中断时降级为无锁模式（返回 null），最坏情况产生重复消息。</p>
-     *
-     * @return Redisson 锁实例，无需聚合时返回 null
-     */
     private RLock acquireAggregateLock(String entityType, Long entityId, EventType eventType) {
         if (entityType == null || entityId == null) {
             return null;
@@ -229,9 +279,6 @@ public class MessageCenterImpl implements MessageCenter {
         return lock;
     }
 
-    /**
-     * 安全释放分布式锁
-     */
     private void releaseLockSafely(RLock lock) {
         if (lock != null && lock.isHeldByCurrentThread()) {
             lock.unlock();
@@ -247,9 +294,9 @@ public class MessageCenterImpl implements MessageCenter {
      * @return null 表示已聚合（调用方跳过后续推送），非 null 表示新消息
      */
     private SysMessage resolveAggregate(String title, String content, EventType eventType,
-                                        String entityType, Long entityId) {
+                                        String entityType, Long entityId, MessageType messageType) {
         if (entityType == null || entityId == null) {
-            return createMessage(title, content, eventType, entityType, entityId);
+            return createMessage(title, content, eventType, entityType, entityId, messageType);
         }
 
         LocalDateTime since = LocalDateTime.now().minus(AGGREGATE_WINDOW);
@@ -270,20 +317,19 @@ public class MessageCenterImpl implements MessageCenter {
             log.debug("消息聚合: entityType={}, entityId={}, eventType={}", entityType, entityId, eventType);
             return existing;
         }
-        return createMessage(title, content, eventType, entityType, entityId);
+        return createMessage(title, content, eventType, entityType, entityId, messageType);
     }
 
-    /**
-     * 创建并保存消息
-     */
     private SysMessage createMessage(String title, String content, EventType eventType,
-                                     String entityType, Long entityId) {
+                                     String entityType, Long entityId, MessageType messageType) {
         SysMessage message = new SysMessage();
+        message.setMessageType(messageType.getCode());
         message.setTitle(title);
         message.setContent(content);
         message.setEventType(eventType.name());
         message.setEntityType(entityType);
         message.setEntityId(entityId);
+        message.setTenantId(TenantContext.getTenantId());
 
         try {
             Long loginUserId = SecurityUtils.getLoginUserId();
@@ -297,20 +343,14 @@ public class MessageCenterImpl implements MessageCenter {
         return message;
     }
 
-    /**
-     * 保存用户消息关联
-     */
     private void saveMessageUser(Long messageId, Long userId) {
         SysMessageUser messageUser = new SysMessageUser();
         messageUser.setMessageId(messageId);
         messageUser.setUserId(userId);
-        messageUser.setIsRead(0);
+        messageUser.setReadFlag(0);
         sysMessageUserService.save(messageUser);
     }
 
-    /**
-     * SSE 推送给指定用户（失败降级）
-     */
     private void pushToUser(Long userId, SysMessage message) {
         try {
             SseEvent event = buildSseEvent(message);
@@ -320,9 +360,6 @@ public class MessageCenterImpl implements MessageCenter {
         }
     }
 
-    /**
-     * SSE 全量广播（失败降级）
-     */
     private void broadcastSse(SysMessage message) {
         try {
             SseEvent event = buildSseEvent(message);
@@ -332,9 +369,6 @@ public class MessageCenterImpl implements MessageCenter {
         }
     }
 
-    /**
-     * 构建 SSE 事件
-     */
     private SseEvent buildSseEvent(SysMessage message) {
         return SseEvent.of(message.getEventType(), message);
     }

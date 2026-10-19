@@ -1,4 +1,4 @@
-package com.istream.message.center;
+package com.istream.message.manager;
 
 import com.istream.common.enums.EventType;
 
@@ -12,7 +12,7 @@ import com.istream.common.enums.EventType;
  * @author istream
  * @since 2026-09-21
  */
-public interface MessageCenter {
+public interface MessageManager {
 
     /**
      * 向指定用户发送消息（持久化 + 即时推送）

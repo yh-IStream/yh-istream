@@ -4,6 +4,7 @@ import type { AxiosRequestConfig } from 'axios'
 
 export interface SysMessage {
   id: string
+  messageType: number
   title: string
   content: string
   eventType: string
@@ -12,7 +13,7 @@ export interface SysMessage {
   senderId: string
   senderName: string
   createTime: string
-  isRead: number
+  readFlag: number
 }
 
 export interface SysMessageQuery extends Partial<PageParams> {

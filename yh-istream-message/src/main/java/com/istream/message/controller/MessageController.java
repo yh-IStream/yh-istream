@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.model.R;
-import com.istream.message.center.MessageCenter;
+import com.istream.message.manager.MessageManager;
 import com.istream.message.model.dto.SysMessageDTO;
 import com.istream.message.model.query.SysMessageQuery;
 import com.istream.message.service.SysMessageService;
@@ -36,7 +36,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MessageController {
 
-    private final MessageCenter messageCenter;
+    private final MessageManager messageManager;
     private final SysMessageService sysMessageService;
 
     @SaCheckLogin
@@ -52,7 +52,7 @@ public class MessageController {
     @GetMapping("/unread-count")
     public R<Map<String, Long>> getUnreadCount() {
         Long userId = StpUtil.getLoginIdAsLong();
-        long count = messageCenter.getUnreadCount(userId);
+        long count = messageManager.getUnreadCount(userId);
         return R.ok(Map.of("count", count));
     }
 
@@ -61,7 +61,7 @@ public class MessageController {
     @PutMapping("/{messageId}/read")
     public R<Void> markAsRead(@PathVariable Long messageId) {
         Long userId = StpUtil.getLoginIdAsLong();
-        messageCenter.markAsRead(messageId, userId);
+        messageManager.markAsRead(messageId, userId);
         return R.ok();
     }
 
@@ -70,7 +70,7 @@ public class MessageController {
     @PutMapping("/read-all")
     public R<Void> markAllAsRead() {
         Long userId = StpUtil.getLoginIdAsLong();
-        messageCenter.markAllAsRead(userId);
+        messageManager.markAllAsRead(userId);
         return R.ok();
     }
 }

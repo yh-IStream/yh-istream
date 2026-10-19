@@ -1,5 +1,5 @@
 ﻿-- ============================================================
--- V1__init_schema1.sql
+-- V1__init_schema.sql
 -- 数据库: MySQL 9.7.2 LTS（utf8mb4_0900_ai_ci）
 -- ============================================================
 
@@ -28,15 +28,12 @@ CREATE TABLE sys_dept
     remark      VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     INDEX idx_tenant_id (tenant_id),
-    INDEX idx_parent_id (parent_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_parent_id (parent_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='部门表';
 
--- 2. 用户表（含 login_fail_count）
+-- 2. 用户表
 CREATE TABLE sys_user
 (
     id               BIGINT       NOT NULL COMMENT '用户ID',
@@ -53,7 +50,6 @@ CREATE TABLE sys_user
     login_ip         VARCHAR(128)          DEFAULT NULL COMMENT '最后登录IP',
     login_date       DATETIME              DEFAULT NULL COMMENT '最后登录时间',
     login_count      INT          NOT NULL DEFAULT 0 COMMENT '登录次数',
-    login_fail_count INT          NOT NULL DEFAULT 0 COMMENT '登录失败次数',
     pwd_reset_time   DATETIME              DEFAULT NULL COMMENT '上次密码重置时间',
     create_by        BIGINT                DEFAULT NULL COMMENT '创建者',
     create_time      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -64,10 +60,7 @@ CREATE TABLE sys_user
     PRIMARY KEY (id),
     UNIQUE INDEX uk_username (username),
     INDEX idx_tenant_id (tenant_id),
-    INDEX idx_dept_id (dept_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_dept_id (dept_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='用户表';
@@ -90,10 +83,7 @@ CREATE TABLE sys_role
     remark      VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     UNIQUE INDEX uk_role_key (role_key),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_tenant_id (tenant_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='角色表';
@@ -122,10 +112,7 @@ CREATE TABLE sys_menu
     remark      VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     INDEX idx_tenant_id (tenant_id),
-    INDEX idx_parent_id (parent_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_parent_id (parent_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='菜单/权限表';
@@ -179,10 +166,7 @@ CREATE TABLE sys_dict_type
     remark      VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     UNIQUE INDEX uk_dict_type (dict_type),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_tenant_id (tenant_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='字典类型表';
@@ -208,10 +192,7 @@ CREATE TABLE sys_dict_data
     remark      VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     INDEX idx_dict_type (dict_type),
-    INDEX idx_tenant_id (tenant_id),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_tenant_id (tenant_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='字典数据表';
@@ -232,10 +213,7 @@ CREATE TABLE sys_config
     del_flag     TINYINT      NOT NULL DEFAULT 0 COMMENT '删除标记（0=正常 1=删除）',
     remark       VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
-    UNIQUE INDEX uk_config_key (config_key),
-    INDEX idx_del_flag (del_flag),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    UNIQUE INDEX uk_config_key (config_key)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='系统配置表';
@@ -261,9 +239,7 @@ CREATE TABLE sys_oper_log
     oper_time      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
     PRIMARY KEY (id),
     INDEX idx_oper_time (oper_time),
-    INDEX idx_oper_by (oper_by),
-    INDEX idx_status (status),
-    INDEX idx_oper_url (oper_url)
+    INDEX idx_oper_by (oper_by)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='操作日志表';
@@ -282,8 +258,7 @@ CREATE TABLE sys_login_info
     login_time     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
     PRIMARY KEY (id),
     INDEX idx_username (username),
-    INDEX idx_login_time (login_time),
-    INDEX idx_status (status)
+    INDEX idx_login_time (login_time)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='登录日志表';
@@ -310,9 +285,7 @@ CREATE TABLE sys_file
     remark        VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     PRIMARY KEY (id),
     INDEX idx_module (module),
-    INDEX idx_create_time (create_time),
-    INDEX idx_create_by (create_by),
-    INDEX idx_update_by (update_by)
+    INDEX idx_create_time (create_time)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci COMMENT ='文件管理表';

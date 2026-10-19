@@ -1,9 +1,8 @@
-package com.istream.message.event;
+package com.istream.message.listener;
 
 import com.istream.common.enums.EventType;
-import com.istream.common.enums.SyncEventType;
 import com.istream.common.event.DataChangeEvent;
-import com.istream.message.center.MessageCenter;
+import com.istream.message.manager.MessageManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 数据变更事件监听器
  *
- * <p>监听 {@link DataChangeEvent}，将数据变更路由到 {@link MessageCenter}，
+ * <p>监听 {@link DataChangeEvent}，将数据变更路由到 {@link MessageManager}，
  * 以 DATA_CHANGE 类型发送通知（SSE 即推 + MySQL 持久化）。</p>
  *
  * <p>异步执行，不阻塞主业务流。监听失败只 warn 不抛异常。</p>
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DataChangeListener {
 
-    private final MessageCenter messageCenter;
+    private final MessageManager messageManager;
 
     /**
      * 处理数据变更事件
@@ -35,19 +34,20 @@ public class DataChangeListener {
      */
     @Async("asyncExecutor")
     @EventListener
+//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDataChange(DataChangeEvent event) {
         try {
             String title = buildTitle(event);
             String content = buildContent(event);
 
             if (event.operatorId() != null) {
-                messageCenter.sendToUser(event.operatorId(), title, content,
+                messageManager.sendToUser(event.operatorId(), title, content,
                         EventType.DATA_CHANGE, event.entityType(), event.entityId());
             } else if (event.tenantId() != null) {
-                messageCenter.sendToTenant(event.tenantId(), title, content,
+                messageManager.sendToTenant(event.tenantId(), title, content,
                         EventType.DATA_CHANGE, event.entityType(), event.entityId());
             } else {
-                messageCenter.broadcast(title, content, EventType.DATA_CHANGE);
+                messageManager.broadcast(title, content, EventType.DATA_CHANGE);
             }
 
             log.debug("DataChangeListener: 已路由数据变更事件 entityType={}, entityId={}, eventType={}",
