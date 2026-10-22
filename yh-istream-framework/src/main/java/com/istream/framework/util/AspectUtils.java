@@ -1,4 +1,4 @@
-package com.istream.framework.aspect;
+package com.istream.framework.util;
 
 import com.istream.framework.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;

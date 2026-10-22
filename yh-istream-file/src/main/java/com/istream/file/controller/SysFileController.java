@@ -54,7 +54,7 @@ public class SysFileController {
     private final SysFileConverter sysFileConverter;
 
     @OperLog(title = "文件管理", businessType = BusinessType.INSERT)
-    @RateLimit(key = "file:upload", rate = 3, timeout = 0)
+    @RateLimit(key = "file:upload", rate = 10, timeout = 0)
     @Operation(summary = "上传文件")
     @SaCheckPermission("system:file:upload")
     @PostMapping("/upload")
@@ -71,7 +71,7 @@ public class SysFileController {
         if (sysFile == null) {
             throw new BusinessException(ResultCode.DATA_NOT_EXIST);
         }
-        try (InputStream inputStream = sysFileService.getFileStream(id)) {
+        try (InputStream inputStream = sysFileService.getFileStream(sysFile)) {
             response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
             String encodedName = URLEncoder.encode(sysFile.getOriginalName(), StandardCharsets.UTF_8)
                     .replace("+", "%20");
@@ -93,7 +93,7 @@ public class SysFileController {
         if (sysFile == null) {
             throw new BusinessException(ResultCode.DATA_NOT_EXIST);
         }
-        try (InputStream inputStream = sysFileService.getFileStream(id)) {
+        try (InputStream inputStream = sysFileService.getFileStream(sysFile)) {
             String mimeType = sysFile.getMimeType() != null
                     ? sysFile.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
             response.setContentType(mimeType);

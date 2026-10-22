@@ -10,14 +10,17 @@ import java.lang.annotation.Target;
 
 /**
  * 数据权限注解
- * <p>
- * 标注在 Service/Mapper 方法上，自动根据当前用户角色拼接数据权限 SQL 条件
+ *
+ * <p>标注在 Service/Mapper 方法上，自动根据当前用户角色拼接数据权限 SQL 条件</p>
  * <pre>{@code
  * @DataScope(deptAlias = "d", userAlias = "u")
  * List<SysUser> selectUserList(SysUserQuery query);
  * }</pre>
  * <p>
  * 注入到 {@link BaseQuery#params} 中的 key 为 {@value #DATA_SCOPE_KEY}
+ *
+ * @author istream
+ * @since 2026-08-17
  */
 @Documented
 @Target(ElementType.METHOD)

@@ -47,7 +47,8 @@ function loadRemembered(): { username: string; password: string; remember: boole
 
 const remembered = loadRemembered()
 
-const particleStyles = Array.from({ length: 20 }, () => ({
+const particleStyles = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
   left: `${Math.random() * 100}%`,
   top: `${Math.random() * 100}%`,
   animationDelay: `${Math.random() * 6}s`,

@@ -9,7 +9,6 @@ import com.istream.common.exception.BusinessException;
 import com.istream.common.enums.ResultCode;
 import com.istream.file.model.query.file.SysFileQuery;
 import com.istream.file.entity.SysFile;
-import com.istream.file.enums.StorageType;
 import com.istream.file.mapper.SysFileMapper;
 import com.istream.file.service.SysFileService;
 import com.istream.file.storage.FileStorageService;
@@ -111,56 +110,38 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         sysFile.setFileSize(file.getSize());
         sysFile.setMimeType(mimeType);
         sysFile.setFileExt(ext);
-        sysFile.setStorageType(StorageType.LOCAL);
+        sysFile.setStorageType(fileStorageService.getStorageType());
         sysFile.setStorageUrl(fileStorageService.getAccessUrl(filePath));
         sysFile.setModule(module);
 
-        save(sysFile);
+        try {
+            save(sysFile);
+        } catch (Exception e) {
+            log.error("文件记录保存失败，回滚磁盘文件: {}", filePath, e);
+            fileStorageService.delete(filePath);
+            throw new BusinessException(ResultCode.FILE_UPLOAD_ERROR);
+        }
         return sysFile;
     }
 
     @Override
-    public InputStream getFileStream(Long id) {
-        SysFile sysFile = getById(id);
-        if (sysFile == null) {
-            throw new BusinessException(ResultCode.DATA_NOT_EXIST);
-        }
+    public InputStream getFileStream(SysFile sysFile) {
         return fileStorageService.load(sysFile.getFilePath());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteFile(Long id) {
-        SysFile sysFile = getById(id);
-        if (sysFile == null) {
-            throw new BusinessException(ResultCode.DATA_NOT_EXIST);
-        }
-        removeById(id);
-        try {
-            fileStorageService.delete(sysFile.getFilePath());
-        } catch (Exception e) {
-            log.error("磁盘文件删除失败，但数据库记录已删除: {}", sysFile.getFilePath(), e);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
     public boolean removeByIds(Collection<?> list) {
-        List<? extends Serializable> ids = list.stream()
-                .map(id -> id instanceof Serializable ? (Serializable) id : Long.valueOf(id.toString()))
-                .toList();
-        List<SysFile> files = listByIds(ids);
-        boolean result = super.removeByIds(list);
-        if (result) {
-            for (SysFile file : files) {
-                try {
-                    fileStorageService.delete(file.getFilePath());
-                } catch (Exception e) {
-                    log.error("磁盘文件删除失败，但数据库记录已删除: {}", file.getFilePath(), e);
-                }
+        @SuppressWarnings("unchecked")
+        List<SysFile> files = listByIds((Collection<? extends Serializable>) list);
+        for (SysFile file : files) {
+            try {
+                fileStorageService.delete(file.getFilePath());
+            } catch (Exception e) {
+                log.error("磁盘文件删除失败: {}", file.getFilePath(), e);
             }
         }
-        return result;
+        return super.removeByIds(list);
     }
 
     private void validateFile(MultipartFile file) {

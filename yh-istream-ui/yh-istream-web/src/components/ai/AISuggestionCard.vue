@@ -66,8 +66,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  confirmed: [id: number]
-  rejected: [id: number]
+  confirmed: [id: string]
+  rejected: [id: string]
 }>()
 
 const message = useMessage()

@@ -19,7 +19,7 @@ const message = useMessage()
 const suggestions = ref<ActionSuggestion[]>([])
 const tools = ref<ToolDefinition[]>([])
 const loading = ref(true)
-const confirming = ref<Set<number>>(new Set())
+const confirming = ref<Set<string>>(new Set())
 const triggering = ref(false)
 const lastTrigger = ref<string | null>(null)
 
@@ -59,7 +59,7 @@ async function fetchData() {
   try {
     const [suggRes, toolsRes] = await Promise.all([
       getPendingSuggestions(),
-      getMcpTools().catch(() => ({ data: [] as ToolDefinition[] })),
+      getMcpTools().catch(() => ({ code: 200, data: [] as ToolDefinition[], msg: '' })),
     ])
     suggestions.value = suggRes.data ?? []
     tools.value = toolsRes.data ?? []
@@ -70,7 +70,7 @@ async function fetchData() {
   }
 }
 
-async function handleConfirm(id: number) {
+async function handleConfirm(id: string) {
   confirming.value.add(id)
   try {
     await confirmSuggestion(id)
@@ -83,7 +83,7 @@ async function handleConfirm(id: number) {
   }
 }
 
-async function handleReject(id: number) {
+async function handleReject(id: string) {
   confirming.value.add(id)
   try {
     await rejectSuggestion(id)
@@ -150,7 +150,7 @@ onMounted(() => {
 })
 
 const recipients = ref<AiAlertRecipient[]>([])
-const newUserId = ref<number | null>(null)
+const newUserId = ref('')
 const newUserName = ref('')
 const recipientLoading = ref(false)
 
@@ -175,7 +175,7 @@ async function handleAddRecipient() {
       userName: newUserName.value || undefined,
     })
     message.success('接收人已添加')
-    newUserId.value = null
+    newUserId.value = ''
     newUserName.value = ''
     await fetchRecipients()
   } catch (e: unknown) {
@@ -187,14 +187,14 @@ async function handleAddRecipient() {
 
 async function handleToggleRecipient(recipient: AiAlertRecipient) {
   try {
-    await updateAlertRecipient(recipient.id, { enabled: recipient.enabled === 1 ? 0 : 1 })
+    await updateAlertRecipient(recipient.id, { enabled: !recipient.enabled })
     await fetchRecipients()
   } catch {
     message.error('操作失败')
   }
 }
 
-async function handleDeleteRecipient(id: number) {
+async function handleDeleteRecipient(id: string) {
   try {
     await deleteAlertRecipient(id)
     message.success('已删除')
@@ -349,7 +349,7 @@ async function handleDeleteRecipient(id: number) {
             </n-alert>
 
             <n-space align="center" style="margin-bottom: 16px;">
-              <n-input-number v-model:value="newUserId" :min="1" placeholder="用户ID" style="width: 160px;" />
+              <n-input v-model:value="newUserId" placeholder="用户ID" style="width: 160px;" />
               <n-input v-model:value="newUserName" placeholder="用户名称（可选）" style="width: 200px;" />
               <n-button type="primary" size="small" :loading="recipientLoading" @click="handleAddRecipient">
                 添加接收人
@@ -364,14 +364,14 @@ async function handleDeleteRecipient(id: number) {
                   <n-space justify="space-between" align="center">
                     <n-space align="center">
                       <n-text strong>{{ r.userName || ('用户' + r.userId) }}</n-text>
-                      <n-tag size="small" :type="r.enabled === 1 ? 'success' : 'default'">
-                        {{ r.enabled === 1 ? '启用' : '停用' }}
+                      <n-tag size="small" :type="r.enabled ? 'success' : 'default'">
+                        {{ r.enabled ? '启用' : '停用' }}
                       </n-tag>
                       <n-text depth="3" style="font-size: 12px;">ID: {{ r.userId }}</n-text>
                     </n-space>
                     <n-space>
                       <n-switch
-                        :value="r.enabled === 1"
+                        :value="r.enabled"
                         @update:value="handleToggleRecipient(r)"
                         size="small"
                       />

@@ -53,7 +53,7 @@ async function fetchPending() {
   }
 }
 
-function onSuggestionHandled(id: number) {
+function onSuggestionHandled(id: string) {
   suggestions.value = suggestions.value.filter(s => s.id !== id)
 }
 

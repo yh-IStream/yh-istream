@@ -34,9 +34,12 @@ public class TenantFilter implements Filter {
             throws IOException, ServletException {
         try {
             if (StpUtil.isLogin()) {
-                Object tenantId = StpUtil.getSession().get(Constants.SESSION_TENANT_KEY);
-                if (tenantId instanceof Long tid) {
-                    TenantContext.setTenantId(tid);
+                var session = StpUtil.getSession(false);
+                if (session != null) {
+                    Object tenantId = session.get(Constants.SESSION_TENANT_KEY);
+                    if (tenantId instanceof Long tid) {
+                        TenantContext.setTenantId(tid);
+                    }
                 }
             }
             chain.doFilter(request, response);

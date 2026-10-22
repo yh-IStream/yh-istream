@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * 预加载 ip2region 数据
+ *
+ * @author istream
+ * @since 2026-10-17
  */
 @Slf4j
 @Component

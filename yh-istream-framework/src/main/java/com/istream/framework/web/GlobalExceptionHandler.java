@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotPermissionException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<Void> handleNotPermissionException(NotPermissionException e) {
-        log.warn("权限不足: {}", e.getMessage(), e);
+        log.info("权限不足: {}", e.getPermission());
         return R.fail(ResultCode.FORBIDDEN, "权限不足: " + e.getPermission());
     }
 
@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotRoleException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public R<Void> handleNotRoleException(NotRoleException e) {
-        log.warn("角色不匹配: {}", e.getMessage(), e);
+        log.info("角色不匹配: {}", e.getRole());
         return R.fail(ResultCode.FORBIDDEN, "角色不匹配: " + e.getRole());
     }
 

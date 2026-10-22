@@ -36,15 +36,8 @@ public interface SysFileService extends IService<SysFile> {
     /**
      * 获取文件流
      *
-     * @param id 文件ID
+     * @param sysFile 文件实体
      * @return 文件输入流
      */
-    InputStream getFileStream(Long id);
-
-    /**
-     * 删除文件（含物理文件）
-     *
-     * @param id 文件ID
-     */
-    void deleteFile(Long id);
+    InputStream getFileStream(SysFile sysFile);
 }

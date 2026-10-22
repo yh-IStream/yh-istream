@@ -13,7 +13,6 @@ const { loading, tableData, pagination, fetchData, handleSearch, handleReset, ha
   searchDefaults,
 })
 const { downloadFile } = useExport()
-const uploadRef = ref()
 const uploadLoading = ref(false)
 
 const columns = [
@@ -76,16 +75,18 @@ async function handleDelete(id: string) {
   catch (e: unknown) { message.error((e as Error).message || '删除失败') }
 }
 
-async function handleUpload({ file }: { file: { file: File | null } }) {
+async function handleUpload({ file, onFinish, onError }: { file: { file: File | null }; onFinish: () => void; onError: () => void }) {
   if (!file.file) return
   const formData = new FormData()
   formData.append('file', file.file)
   uploadLoading.value = true
   try {
     await uploadFile(formData)
+    onFinish()
     message.success('上传成功')
     fetchData()
   } catch (e: unknown) {
+    onError()
     message.error((e as Error).message || '上传失败')
   } finally {
     uploadLoading.value = false

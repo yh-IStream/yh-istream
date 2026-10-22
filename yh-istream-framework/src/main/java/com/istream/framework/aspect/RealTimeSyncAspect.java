@@ -5,6 +5,7 @@ import com.istream.common.annotation.SyncEvent;
 import com.istream.common.enums.SyncEventType;
 import com.istream.common.event.DataChangeEvent;
 import com.istream.framework.tenant.TenantContext;
+import com.istream.framework.util.AspectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;

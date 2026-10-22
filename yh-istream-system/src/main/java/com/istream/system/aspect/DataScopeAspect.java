@@ -1,6 +1,7 @@
 package com.istream.system.aspect;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.istream.common.annotation.DataScope;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.DataScopeEnum;
@@ -75,7 +76,11 @@ public class DataScopeAspect {
 
     /**
      * 用户数据权限缓存对象（可序列化存入 Redis）
+     *
+     * <p> Record 是 final 类，{@code DefaultTyping} 不会为其写入 {@code @class} 属性，
+     * 注解覆盖默认行为，强制写入 {@code @class}。</p>
      */
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
     private record UserDataScopeCache(
             Set<Long> allAccessRoleIds,
             Set<Long> deptAndChildRoleIds,

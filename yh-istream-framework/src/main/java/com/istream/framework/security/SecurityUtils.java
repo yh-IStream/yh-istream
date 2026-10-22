@@ -72,7 +72,10 @@ public final class SecurityUtils {
     public static String getLoginUsername() {
         try {
             if (StpUtil.isLogin()) {
-                return (String) StpUtil.getSession().get(Constants.SESSION_USERNAME_KEY);
+                var session = StpUtil.getSession(false);
+                if (session != null) {
+                    return (String) session.get(Constants.SESSION_USERNAME_KEY);
+                }
             }
         } catch (Exception e) {
             log.debug("获取当前登录用户名失败（可能为匿名访问）: {}", e.getMessage());

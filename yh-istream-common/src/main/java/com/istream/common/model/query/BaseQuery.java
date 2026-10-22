@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 分页查询基类
  *
- * <p>所有列表查询 DTO 的公共基类，包含分页、排序和扩展参数。
+ * <p>所有列表查询 DTO 的公共基类，包含分页参数和扩展参数。
  * 扩展参数 {@code params} 用于数据权限 SQL 注入等场景。</p>
  *
  * <p>{@code params} 采用懒初始化，仅在首次访问时创建 HashMap，
@@ -19,12 +19,6 @@ import java.util.Map;
  */
 @Data
 public class BaseQuery {
-
-    /** 排序字段 */
-    private String orderBy;
-
-    /** 排序方向（asc/desc） */
-    private String orderDirection;
 
     /** 当前页码 */
     private Long pageNum = 1L;

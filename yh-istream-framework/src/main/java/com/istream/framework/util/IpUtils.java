@@ -2,6 +2,8 @@ package com.istream.framework.util;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.regex.Pattern;
+
 /**
  * IP 地址工具类
  * <p>
@@ -12,6 +14,14 @@ import jakarta.servlet.http.HttpServletRequest;
  * @since 2026-08-17
  */
 public final class IpUtils {
+
+    private static final Pattern IPV4_PATTERN = Pattern.compile(
+            "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$"
+    );
+
+    private static final Pattern IPV6_PATTERN = Pattern.compile(
+            "^[0-9a-fA-F:]+$"
+    );
 
     private IpUtils() {
     }
@@ -38,10 +48,17 @@ public final class IpUtils {
         if (ip != null && ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }
+        if (ip != null && !isValidIp(ip)) {
+            return "unknown";
+        }
         return ip;
     }
 
     private static boolean isInvalid(String ip) {
         return ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip);
+    }
+
+    private static boolean isValidIp(String ip) {
+        return IPV4_PATTERN.matcher(ip).matches() || IPV6_PATTERN.matcher(ip).matches();
     }
 }

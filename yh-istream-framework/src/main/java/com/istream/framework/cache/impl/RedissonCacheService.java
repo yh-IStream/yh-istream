@@ -31,7 +31,13 @@ public class RedissonCacheService implements CacheService {
     @Override
     public <T> T get(String key) {
         RBucket<T> bucket = redissonClient.getBucket(key);
-        return bucket.get();
+        try {
+            return bucket.get();
+        } catch (Exception e) {
+            log.warn("缓存反序列化失败，清除坏缓存: key={}", key, e);
+            bucket.delete();
+            return null;
+        }
     }
 
     @Override
@@ -103,6 +109,12 @@ public class RedissonCacheService implements CacheService {
     @Override
     public <T> T getAndDelete(String key) {
         RBucket<T> bucket = redissonClient.getBucket(key);
-        return bucket.getAndDelete();
+        try {
+            return bucket.getAndDelete();
+        } catch (Exception e) {
+            log.warn("缓存反序列化失败，清除坏缓存: key={}", key, e);
+            bucket.delete();
+            return null;
+        }
     }
 }

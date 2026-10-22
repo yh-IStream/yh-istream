@@ -7,7 +7,7 @@ import com.istream.ai.config.AIProperties;
 import com.istream.ai.provider.AnomalyGuardRequest;
 import com.istream.ai.provider.AnomalyGuardResult;
 import com.istream.ai.provider.AIProvider;
-import com.istream.framework.aspect.AspectUtils;
+import com.istream.framework.util.AspectUtils;
 import com.istream.framework.sse.SseService;
 import com.istream.framework.tenant.TenantContext;
 import lombok.extern.slf4j.Slf4j;
