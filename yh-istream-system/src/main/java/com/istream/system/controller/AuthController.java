@@ -1,6 +1,7 @@
 package com.istream.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.istream.common.enums.LimitType;
 import com.istream.system.service.AuthService;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
@@ -54,7 +55,7 @@ public class AuthController {
         return R.ok();
     }
 
-    @RateLimit(key = "captcha", rate = 10, timeout = 0)
+    @RateLimit(key = "captcha", rate = 10, timeout = 0, limitType = LimitType.IP)
     @Operation(summary = "获取图形验证码")
     @GetMapping("/captcha")
     public R<CaptchaVO> captcha() {

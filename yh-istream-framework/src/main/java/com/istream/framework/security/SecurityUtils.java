@@ -96,6 +96,39 @@ public final class SecurityUtils {
     }
 
     /**
+     * 获取当前登录用户昵称（可选登录态）
+     *
+     * <p>适用于消息发送者等需要展示名称的场景。</p>
+     *
+     * @return 用户昵称，未登录或未设置时返回 null
+     */
+    public static String getLoginNickname() {
+        try {
+            if (StpUtil.isLogin()) {
+                var session = StpUtil.getSession(false);
+                if (session != null) {
+                    return (String) session.get(Constants.SESSION_NICKNAME_KEY);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("获取当前登录用户昵称失败（可能为匿名访问）: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 设置当前会话的用户昵称
+     *
+     * <p>登录成功后调用，将用户昵称存入 Sa-Token Session，
+     * 供 {@link #getLoginNickname()} 等方法读取。</p>
+     *
+     * @param nickname 用户昵称
+     */
+    public static void setSessionNickname(String nickname) {
+        StpUtil.getSession().set(Constants.SESSION_NICKNAME_KEY, nickname);
+    }
+
+    /**
      * 搜索在线 Token 会话 ID 列表
      *
      * @param keyword  关键字（空串表示匹配所有）

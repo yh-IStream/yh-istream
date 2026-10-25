@@ -13,7 +13,7 @@ export interface SysMessage {
   senderId: string
   senderName: string
   createTime: string
-  readFlag: number
+  readFlag: boolean
 }
 
 export interface SysMessageQuery extends Partial<PageParams> {

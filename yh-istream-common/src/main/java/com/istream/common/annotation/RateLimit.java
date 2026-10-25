@@ -1,5 +1,7 @@
 package com.istream.common.annotation;
 
+import com.istream.common.enums.LimitType;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,7 +16,7 @@ import java.lang.annotation.Target;
  *
  * <p>使用示例：</p>
  * <pre>{@code
- *   @RateLimit(key = "login", rate = 5, timeout = 0)
+ *   @RateLimit(key = "login", rate = 5, timeout = 0, limitType = LimitType.IP)
  *   @PostMapping("/login")
  *   public R<LoginDTO> login(@RequestBody LoginRequest request) { ... }
  * }</pre>
@@ -42,4 +44,11 @@ public @interface RateLimit {
      * <p>设为 0 表示不等待，立即返回限流结果</p>
      */
     long timeout() default 1;
+
+    /**
+     * 限流维度，默认 {@link LimitType#GLOBAL} 全局限流
+     *
+     * <p>{@link LimitType#IP} 按来源 IP 限流；{@link LimitType#USER} 按登录用户 ID 限流</p>
+     */
+    LimitType limitType() default LimitType.GLOBAL;
 }

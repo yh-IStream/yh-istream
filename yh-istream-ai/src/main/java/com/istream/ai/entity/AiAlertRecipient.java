@@ -25,6 +25,6 @@ public class AiAlertRecipient extends BaseEntity {
     /** 接收用户名称 */
     private String userName;
 
-    /** 是否启用（1=启用 0=停用） */
-    private Integer enabled;
+    /** 是否启用 */
+    private Boolean enabled;
 }

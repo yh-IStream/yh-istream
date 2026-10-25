@@ -57,7 +57,7 @@ public class GuardDemoService {
         log.info("GuardDemoService: 创建订单 orderId={}, amount={}, userId={}, creditScore={}",
                 orderId, orderAmount, userId, creditScore);
         Map<String, Object> result = new HashMap<>();
-        result.put("orderId", orderId);
+        result.put("orderId", String.valueOf(orderId));
         result.put("status", "created");
         result.put("amount", orderAmount);
         return result;
@@ -88,7 +88,7 @@ public class GuardDemoService {
         log.info("GuardDemoService: 修改配置 configId={}, key={}, operator={}",
                 configId, configKey, operator);
         Map<String, Object> result = new HashMap<>();
-        result.put("configId", configId);
+        result.put("configId", String.valueOf(configId));
         result.put("status", "updated");
         return result;
     }
@@ -117,7 +117,7 @@ public class GuardDemoService {
         log.info("GuardDemoService: 导出数据 userId={}, type={}, count={}, pii={}",
                 userId, dataType, recordCount, containsPii);
         Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
+        result.put("userId", String.valueOf(userId));
         result.put("dataType", dataType);
         result.put("exported", recordCount);
         return result;
@@ -148,7 +148,7 @@ public class GuardDemoService {
         log.info("GuardDemoService: 用户登录 userId={}, city={}, usualCity={}",
                 userId, loginCity, usualCity);
         Map<String, Object> result = new HashMap<>();
-        result.put("userId", userId);
+        result.put("userId", String.valueOf(userId));
         result.put("loginCity", loginCity);
         result.put("status", "logged_in");
         return result;

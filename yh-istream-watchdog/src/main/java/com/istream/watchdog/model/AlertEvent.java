@@ -25,13 +25,22 @@ import java.util.Map;
 @AllArgsConstructor
 public class AlertEvent {
 
+    /** 严重级别：低 */
+    public static final int SEVERITY_LOW = 1;
+    /** 严重级别：中 */
+    public static final int SEVERITY_MEDIUM = 2;
+    /** 严重级别：高 */
+    public static final int SEVERITY_HIGH = 3;
+    /** 严重级别：紧急 */
+    public static final int SEVERITY_CRITICAL = 4;
+
     /** 告警ID（雪花算法） */
     private Long id;
 
     /** 触发告警的规则名称 */
     private String ruleName;
 
-    /** 告警严重级别（1=低, 2=中, 3=高, 4=紧急） */
+    /** 告警严重级别（参见 SEVERITY_* 常量） */
     private int severity;
 
     /** 实体类型（如 "SysOrder"） */
@@ -52,8 +61,11 @@ public class AlertEvent {
     /** 告警上下文数据（规则评估时的变量值） */
     private Map<String, Object> context;
 
-    /** 接收人用户ID列表 */
+    /** 接收人用户ID列表（SSE 通道使用） */
     private List<Long> receiverIds;
+
+    /** 接收人邮箱列表（Email 通道使用） */
+    private List<String> receiverEmails;
 
     /** 指定推送通道（为空时由路由策略决定） */
     private List<String> channels;
@@ -61,8 +73,8 @@ public class AlertEvent {
     /** 告警时间 */
     private LocalDateTime alertTime;
 
-    /** 确认状态（0=未确认, 1=已确认） */
-    private int confirmed;
+    /** 确认状态 */
+    private Boolean confirmed;
 
     /** 确认人ID */
     private Long confirmedBy;

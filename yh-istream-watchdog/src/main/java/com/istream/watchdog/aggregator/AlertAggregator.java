@@ -51,15 +51,20 @@ public class AlertAggregator {
         try {
             String key = buildKey(event);
             RBucket<LocalDateTime> bucket = redissonClient.getBucket(key);
+            LocalDateTime now = LocalDateTime.now();
+
+            if (bucket.trySet(now, window.toSeconds(), TimeUnit.SECONDS)) {
+                return true;
+            }
 
             LocalDateTime lastAlert = bucket.get();
-            if (lastAlert != null && lastAlert.plus(window).isAfter(LocalDateTime.now())) {
+            if (lastAlert != null && lastAlert.plus(window).isAfter(now)) {
                 log.debug("AlertAggregator: 告警被聚合抑制 rule={}, entity={}/{}",
                         event.getRuleName(), event.getEntityType(), event.getEntityId());
                 return false;
             }
 
-            bucket.set(LocalDateTime.now(), window.toSeconds(), TimeUnit.SECONDS);
+            bucket.set(now, window.toSeconds(), TimeUnit.SECONDS);
             return true;
         } catch (Exception e) {
             log.warn("AlertAggregator: Redis 操作失败，降级为允许推送 rule={}", event.getRuleName(), e);

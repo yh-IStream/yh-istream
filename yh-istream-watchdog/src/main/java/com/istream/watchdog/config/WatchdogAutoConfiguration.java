@@ -29,6 +29,8 @@ import org.springframework.web.client.RestClient;
 public class WatchdogAutoConfiguration {
 
     @Bean
+    @ConditionalOnProperty(prefix = "istream.watchdog.channels.sse", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
     public SseAlertChannel sseAlertChannel(SseService sseService) {
         return new SseAlertChannel(sseService);
     }
@@ -38,10 +40,15 @@ public class WatchdogAutoConfiguration {
     @ConditionalOnProperty(prefix = "istream.watchdog.channels.email", name = "enabled", havingValue = "true")
     public EmailChannel emailChannel(JavaMailSender mailSender, WatchdogProperties properties) {
         String from = properties.getChannels().getEmail().getFrom();
+        if (from == null || from.isBlank()) {
+            throw new IllegalArgumentException(
+                    "istream.watchdog.channels.email.from 不能为空，请配置发件人邮箱地址");
+        }
         return new EmailChannel(mailSender, from);
     }
 
     @Bean
+    @ConditionalOnBean(RestClient.Builder.class)
     public RestClient watchdogRestClient(RestClient.Builder restClientBuilder) {
         return restClientBuilder.build();
     }

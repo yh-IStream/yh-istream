@@ -8,6 +8,8 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 import java.util.Map;
 
+import static com.istream.watchdog.model.AlertEvent.*;
+
 /**
  * 飞书告警通道
  *
@@ -67,9 +69,9 @@ public class FeishuChannel implements AlertChannel {
 
     private String severityColor(int severity) {
         return switch (severity) {
-            case 4 -> "red";
-            case 3 -> "orange";
-            case 2 -> "yellow";
+            case SEVERITY_CRITICAL -> "red";
+            case SEVERITY_HIGH -> "orange";
+            case SEVERITY_MEDIUM -> "yellow";
             default -> "blue";
         };
     }

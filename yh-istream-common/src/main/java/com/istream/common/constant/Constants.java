@@ -47,6 +47,9 @@ public final class Constants {
     /** Session中用户名的Key */
     public static final String SESSION_USERNAME_KEY = "username";
 
+    /** Session中用户昵称的Key */
+    public static final String SESSION_NICKNAME_KEY = "nickname";
+
     /** Session中租户ID的Key */
     public static final String SESSION_TENANT_KEY = "tenantId";
 

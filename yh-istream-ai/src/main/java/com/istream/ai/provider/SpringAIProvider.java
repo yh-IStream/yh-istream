@@ -1,9 +1,9 @@
 package com.istream.ai.provider;
 
+import tools.jackson.databind.ObjectMapper;
 import com.istream.ai.config.AIProperties;
 import com.istream.ai.mcp.ToolScanResult;
 import com.istream.ai.mcp.ToolScanResult.ToolDefinition;
-import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 
@@ -11,7 +11,6 @@ import java.lang.reflect.Parameter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Spring AI 统一提供者
@@ -31,12 +30,14 @@ public class SpringAIProvider implements AIProvider {
     private final ChatClient chatClient;
     private final AIProperties properties;
     private final List<ToolDefinition> toolDefinitions;
+    private final ObjectMapper objectMapper;
 
     public SpringAIProvider(ChatClient chatClient, AIProperties properties,
-                            List<ToolDefinition> toolDefinitions) {
+                            List<ToolDefinition> toolDefinitions, ObjectMapper objectMapper) {
         this.chatClient = chatClient;
         this.properties = properties;
         this.toolDefinitions = Collections.unmodifiableList(toolDefinitions);
+        this.objectMapper = objectMapper;
         log.info("SpringAIProvider: 初始化完成，已索引 {} 个 @Tool 方法", toolDefinitions.size());
     }
 
@@ -58,25 +59,9 @@ public class SpringAIProvider implements AIProvider {
                     .call()
                     .chatResponse();
 
-            if (chatResponse != null) {
-                chatResponse.getResults();
-                log.info("SpringAIProvider: ChatResponse results={}, metadata={}",
-                        chatResponse.getResults().size(),
-                        chatResponse.getMetadata());
-            }
-
             String rawText = null;
-            if (chatResponse != null) {
-                chatResponse.getResults();
-            }
             if (chatResponse != null && !chatResponse.getResults().isEmpty()) {
                 var output = chatResponse.getResults().getFirst().getOutput();
-                log.info("SpringAIProvider: output type={}, text=[{}], mediaCount={}, toolCallCount={}, toString=[{}]",
-                        output.getClass().getSimpleName(),
-                        output.getText() != null ? output.getText() : "null",
-                        output.getMedia().size(),
-                        output.getToolCalls().size(),
-                        output.toString().length() > 300 ? output.toString().substring(0, 300) + "..." : output.toString());
                 rawText = output.getText();
             }
 
@@ -89,7 +74,7 @@ public class SpringAIProvider implements AIProvider {
                     rawText.length(), rawText.length() > 200 ? rawText.substring(0, 200) + "..." : rawText);
 
             String jsonText = cleanJsonResponse(rawText);
-            AnomalyGuardResult result = JSONUtil.toBean(jsonText, AnomalyGuardResult.class);
+            AnomalyGuardResult result = objectMapper.readValue(jsonText, AnomalyGuardResult.class);
 
             if (result == null) {
                 return new AnomalyGuardResult(false, "AI 返回空结果", 0.0, null, Collections.emptyMap());

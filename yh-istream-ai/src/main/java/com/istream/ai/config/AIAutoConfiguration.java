@@ -1,5 +1,7 @@
 package com.istream.ai.config;
 
+import tools.jackson.databind.ObjectMapper;
+import com.istream.ai.config.AIProperties;
 import com.istream.ai.aspect.AnomalyGuardAspect;
 import com.istream.ai.mcp.ActionSuggestionManager;
 import com.istream.ai.mcp.McpToolRegistry;
@@ -27,6 +29,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * AI 模块自动配置
@@ -58,7 +61,8 @@ public class AIAutoConfiguration {
     @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
     public AIProvider aiProvider(AIProperties properties,
                                   ObjectProvider<ChatModel> chatModelProvider,
-                                  ObjectProvider<ToolScanResult> toolScanResultProvider) {
+                                  ObjectProvider<ToolScanResult> toolScanResultProvider,
+                                  ObjectMapper objectMapper) {
         ChatModel chatModel = chatModelProvider.getIfAvailable();
         if (chatModel == null) {
             log.warn("AIAutoConfiguration: 未检测到 ChatModel，使用 NoOp 降级提供者");
@@ -69,27 +73,30 @@ public class AIAutoConfiguration {
                 .defaultSystem("你是 iStream 智能守护的 AI 分析引擎。")
                 .build();
 
-        List<ToolScanResult.ToolDefinition> definitions = toolScanResultProvider
-                .getIfAvailable() != null ? toolScanResultProvider.getIfAvailable().toolDefinitions()
+        ToolScanResult scanResult = toolScanResultProvider.getIfAvailable();
+        List<ToolScanResult.ToolDefinition> definitions = scanResult != null
+                ? scanResult.toolDefinitions()
                 : Collections.emptyList();
         log.info("AIAutoConfiguration: 注册 SpringAIProvider，provider={}，工具索引={}",
                 properties.getProvider(), definitions.size());
-        return new SpringAIProvider(chatClient, properties, definitions);
+        return new SpringAIProvider(chatClient, properties, definitions, objectMapper);
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
     public AnomalyGuardAspect anomalyGuardAspect(AIProvider aiProvider, AIProperties properties,
                                                  ApplicationEventPublisher eventPublisher,
-                                                 ObjectProvider<SseService> sseServiceProvider) {
+                                                 ObjectProvider<SseService> sseServiceProvider,
+                                                 Executor asyncExecutor) {
         log.info("AIAutoConfiguration: 注册 AnomalyGuardAspect");
-        return new AnomalyGuardAspect(aiProvider, properties, eventPublisher, sseServiceProvider);
+        return new AnomalyGuardAspect(aiProvider, properties, eventPublisher, sseServiceProvider, asyncExecutor);
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
-    public ActionSuggestionManager actionSuggestionManager(AiSuggestionMapper aiSuggestionMapper) {
-        return new ActionSuggestionManager(aiSuggestionMapper);
+    public ActionSuggestionManager actionSuggestionManager(AiSuggestionMapper aiSuggestionMapper,
+                                                            ObjectMapper objectMapper) {
+        return new ActionSuggestionManager(aiSuggestionMapper, objectMapper);
     }
 
     @Bean
@@ -101,9 +108,12 @@ public class AIAutoConfiguration {
         String[] beanNames = applicationContext.getBeanDefinitionNames();
         for (String beanName : beanNames) {
             try {
-                Object bean = applicationContext.getBean(beanName);
+                Class<?> beanType = applicationContext.getType(beanName);
+                if (beanType == null) {
+                    continue;
+                }
                 boolean hasTool = false;
-                for (Method method : bean.getClass().getDeclaredMethods()) {
+                for (Method method : beanType.getDeclaredMethods()) {
                     Tool annotation = method.getAnnotation(Tool.class);
                     if (annotation != null) {
                         definitions.add(new ToolScanResult.ToolDefinition(beanName, method, annotation.description()));
@@ -111,7 +121,7 @@ public class AIAutoConfiguration {
                     }
                 }
                 if (hasTool) {
-                    toolObjectList.add(bean);
+                    toolObjectList.add(applicationContext.getBean(beanName));
                 }
             } catch (Exception ignored) {
             }
@@ -124,6 +134,7 @@ public class AIAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
     @ConditionalOnProperty(prefix = "istream.ai.mcp", name = "enabled", havingValue = "true")
     public ToolCallbackProvider istreamToolCallbackProvider(ToolScanResult toolScanResult) {
         if (toolScanResult.toolObjects().length == 0) {
@@ -139,13 +150,12 @@ public class AIAutoConfiguration {
     public McpToolRegistry mcpToolRegistry(ApplicationContext applicationContext,
                                           AIProperties properties,
                                           ActionSuggestionManager suggestionManager,
-                                          ObjectProvider<ToolScanResult> toolScanResultProvider) {
-        ToolScanResult scanResult = toolScanResultProvider.getIfAvailable();
-        List<ToolScanResult.ToolDefinition> definitions = scanResult != null
-                ? scanResult.toolDefinitions()
+                                          ToolScanResult toolScanResult) {
+        List<ToolScanResult.ToolDefinition> definitions = toolScanResult != null
+                ? toolScanResult.toolDefinitions()
                 : Collections.emptyList();
 
-        if (scanResult == null) {
+        if (toolScanResult == null || definitions.isEmpty()) {
             log.info("AIAutoConfiguration: MCP Server 未启用，McpToolRegistry 索引空工具集");
         }
 

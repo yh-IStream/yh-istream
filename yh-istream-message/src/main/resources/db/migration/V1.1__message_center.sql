@@ -34,7 +34,7 @@ CREATE TABLE sys_message_user
     id         BIGINT   NOT NULL AUTO_INCREMENT COMMENT '主键ID（自增，关联表无业务含义）',
     message_id BIGINT   NOT NULL COMMENT '消息ID',
     user_id    BIGINT   NOT NULL COMMENT '接收用户ID',
-    read_flag  TINYINT  NOT NULL DEFAULT 0 COMMENT '是否已读（0=未读 1=已读）',
+    read_flag  TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '是否已读',
     read_time  DATETIME          DEFAULT NULL COMMENT '阅读时间',
     PRIMARY KEY (id),
     INDEX idx_user_unread (user_id, read_flag),

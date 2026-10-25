@@ -22,12 +22,6 @@
             <artifactId>yh-istream-framework</artifactId>
         </dependency>
 
-        <!-- Hutool JSON（SpringAIProvider AI 响应解析） -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-json</artifactId>
-        </dependency>
-
         <!-- Spring AI OpenAI 兼容模型（含 OpenRouter / vLLM / LM Studio 等 OpenAI 兼容端点） -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

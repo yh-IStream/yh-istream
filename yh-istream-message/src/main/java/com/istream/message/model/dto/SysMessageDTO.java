@@ -44,6 +44,6 @@ public class SysMessageDTO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 
-    /** 是否已读（0=未读 1=已读） */
-    private Integer readFlag;
+    /** 是否已读 */
+    private Boolean readFlag;
 }

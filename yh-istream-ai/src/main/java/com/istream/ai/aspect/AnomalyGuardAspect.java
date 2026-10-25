@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * 异常守护 AOP 切面（传感器）
@@ -44,14 +45,17 @@ public class AnomalyGuardAspect {
     private final AIProperties properties;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectProvider<SseService> sseServiceProvider;
+    private final Executor asyncExecutor;
 
     public AnomalyGuardAspect(AIProvider aiProvider, AIProperties properties,
                               ApplicationEventPublisher eventPublisher,
-                              ObjectProvider<SseService> sseServiceProvider) {
+                              ObjectProvider<SseService> sseServiceProvider,
+                              Executor asyncExecutor) {
         this.aiProvider = aiProvider;
         this.properties = properties;
         this.eventPublisher = eventPublisher;
         this.sseServiceProvider = sseServiceProvider;
+        this.asyncExecutor = asyncExecutor;
     }
 
     /**
@@ -71,58 +75,52 @@ public class AnomalyGuardAspect {
             return;
         }
 
-        try {
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            Method method = signature.getMethod();
-            String methodName = method.getName();
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        String methodName = method.getName();
+        String entityType = resolveEntityType(joinPoint, method);
+        Long entityId = AspectUtils.extractEntityId(joinPoint.getArgs());
+        Map<String, Object> context = extractContext(joinPoint, method, anomalyGuard);
 
-            Map<String, Object> context = extractContext(joinPoint, method, anomalyGuard);
+        Long operatorId = AspectUtils.resolveOperatorId();
+        Long tenantId = TenantContext.getTenantId();
 
-            String entityType = resolveEntityType(joinPoint, method);
-            Long entityId = AspectUtils.extractEntityId(joinPoint.getArgs());
+        String prompt = anomalyGuard.prompt();
+        double confidence = anomalyGuard.confidence();
 
-            AnomalyGuardRequest request = new AnomalyGuardRequest(
-                    anomalyGuard.prompt(),
-                    entityType,
-                    entityId,
-                    context,
-                    anomalyGuard.confidence()
-            );
+        AnomalyGuardRequest request = new AnomalyGuardRequest(prompt, entityType, entityId, context, confidence);
 
-            AnomalyGuardResult result = aiProvider.analyze(request);
+        asyncExecutor.execute(() -> {
+            try {
+                AnomalyGuardResult result = aiProvider.analyze(request);
 
-            if (result.anomalyDetected()) {
-                Long operatorId = AspectUtils.resolveOperatorId();
-                Long tenantId = TenantContext.getTenantId();
+                if (result.anomalyDetected()) {
+                    AnomalyGuardEvent event = new AnomalyGuardEvent(
+                            entityType, entityId,
+                            prompt, result.conclusion(), result.confidence(),
+                            result.suggestedAction(), result.actionParams(),
+                            context, operatorId, tenantId, LocalDateTime.now());
 
-                AnomalyGuardEvent event = new AnomalyGuardEvent(
-                        entityType, entityId,
-                        anomalyGuard.prompt(), result.conclusion(), result.confidence(),
-                        result.suggestedAction(), result.actionParams(),
-                        context, operatorId, tenantId, LocalDateTime.now());
+                    eventPublisher.publishEvent(event);
 
-                eventPublisher.publishEvent(event);
-
-                log.info("AnomalyGuardAspect: AI 发现异常 entityType={}, entityId={}, confidence={}, action={}",
-                        entityType, entityId, String.format("%.2f", result.confidence()), result.suggestedAction());
-            } else if (result.conclusion() != null && result.conclusion().startsWith("AI 分析失败")) {
-                log.warn("AnomalyGuardAspect: AI 调用失败 entityType={}, entityId={}, method={}, 原因={}",
-                        entityType, entityId, methodName, result.conclusion());
-                SseService sseService = sseServiceProvider.getIfAvailable();
-                if (sseService != null) {
-                    Long operatorId = AspectUtils.resolveOperatorId();
-                    if (operatorId != null) {
+                    log.info("AnomalyGuardAspect: AI 发现异常 entityType={}, entityId={}, confidence={}, action={}",
+                            entityType, entityId, String.format("%.2f", result.confidence()), result.suggestedAction());
+                } else if (result.conclusion() != null && result.conclusion().startsWith("AI 分析失败")) {
+                    log.warn("AnomalyGuardAspect: AI 调用失败 entityType={}, entityId={}, method={}, 原因={}",
+                            entityType, entityId, methodName, result.conclusion());
+                    SseService sseService = sseServiceProvider.getIfAvailable();
+                    if (sseService != null && operatorId != null) {
                         sseService.sendToUser(operatorId,
                                 SseEvent.of("SYSTEM", "AI 调用异常，请检查模型连接。原因: " + result.conclusion()));
                     }
+                } else {
+                    log.debug("AnomalyGuardAspect: AI 未发现异常 method={}", methodName);
                 }
-            } else {
-                log.debug("AnomalyGuardAspect: AI 未发现异常 method={}", methodName);
-            }
 
-        } catch (Exception e) {
-            log.warn("AnomalyGuardAspect: AI 分析失败（降级，不影响主业务流）", e);
-        }
+            } catch (Exception e) {
+                log.warn("AnomalyGuardAspect: AI 分析失败（降级，不影响主业务流）", e);
+            }
+        });
     }
 
     private Map<String, Object> extractContext(JoinPoint joinPoint, Method method, AnomalyGuard anomalyGuard) {

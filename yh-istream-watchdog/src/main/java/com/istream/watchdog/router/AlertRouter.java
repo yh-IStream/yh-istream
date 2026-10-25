@@ -3,6 +3,8 @@ package com.istream.watchdog.router;
 import com.istream.watchdog.channel.AlertChannel;
 import com.istream.watchdog.config.WatchdogProperties;
 import com.istream.watchdog.model.AlertEvent;
+
+import static com.istream.watchdog.model.AlertEvent.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -36,7 +38,10 @@ public class AlertRouter {
 
     public AlertRouter(List<AlertChannel> channels, WatchdogProperties properties) {
         this.channelMap = channels.stream()
-                .collect(Collectors.toMap(AlertChannel::getName, Function.identity(), (a, b) -> a));
+                .collect(Collectors.toMap(AlertChannel::getName, Function.identity(), (a, b) -> {
+                    log.warn("AlertRouter: 通道名称冲突 {}，保留先注册的 {}", a.getName(), a.getClass().getSimpleName());
+                    return a;
+                }));
         this.properties = properties;
     }
 
@@ -68,23 +73,22 @@ public class AlertRouter {
         }
 
         return switch (event.getSeverity()) {
-            case 1 -> List.of("sse");
-            case 2 -> List.of("sse", "email");
-            case 3 -> List.of("sse", "email", "wecom");
-            case 4 -> List.of("sse", "email", "wecom", "dingtalk", "feishu");
+            case SEVERITY_LOW -> List.of("sse");
+            case SEVERITY_MEDIUM -> List.of("sse", "email");
+            case SEVERITY_HIGH -> List.of("sse", "email", "wecom");
+            case SEVERITY_CRITICAL -> List.of("sse", "email", "wecom", "dingtalk", "feishu");
             default -> List.of("sse");
         };
     }
 
     private List<String> resolveTargets(String channelName, AlertEvent event) {
-        if (event.getReceiverIds() == null || event.getReceiverIds().isEmpty()) {
-            return List.of();
-        }
-
         return switch (channelName) {
-            case "sse", "email" -> event.getReceiverIds().stream()
-                    .map(String::valueOf)
-                    .toList();
+            case "sse" -> (event.getReceiverIds() != null)
+                    ? event.getReceiverIds().stream().map(String::valueOf).toList()
+                    : List.of();
+            case "email" -> (event.getReceiverEmails() != null)
+                    ? event.getReceiverEmails()
+                    : List.of();
             case "wecom" -> properties.getChannels().getWecom().getWebhookUrl() != null
                     ? List.of(properties.getChannels().getWecom().getWebhookUrl())
                     : List.of();

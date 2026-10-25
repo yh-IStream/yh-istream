@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.LimitType;
 import com.istream.common.model.R;
 import com.istream.generator.model.dto.GenRequestDTO;
 import com.istream.generator.model.vo.ColumnInfoVO;
@@ -80,7 +81,7 @@ public class GeneratorController {
     }
 
     @OperLog(title = "代码生成器", businessType = BusinessType.OTHER)
-    @RateLimit(key = "generator:download", rate = 5, timeout = 0)
+    @RateLimit(key = "generator:download", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "生成并下载代码")
     @SaCheckPermission("generator:code:download")
     @PostMapping("/download/{tableName}")
@@ -101,7 +102,7 @@ public class GeneratorController {
     }
 
     @OperLog(title = "代码生成器", businessType = BusinessType.OTHER)
-    @RateLimit(key = "generator:download", rate = 5, timeout = 0)
+    @RateLimit(key = "generator:download", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "批量生成并下载代码")
     @SaCheckPermission("generator:code:download")
     @PostMapping("/batch-download")

@@ -1,6 +1,8 @@
 package com.istream.watchdog.listener;
 
+import com.istream.watchdog.engine.RuleEngine;
 import com.istream.watchdog.model.AlertRule;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +22,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026-09-24
  */
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class RuleProvider {
+
+    private final RuleEngine ruleEngine;
 
     private final Map<String, List<AlertRule>> rulesByEntity = new ConcurrentHashMap<>();
 
@@ -63,7 +68,25 @@ public class RuleProvider {
      */
     public void remove(String ruleName) {
         rulesByEntity.values().forEach(rules ->
-                rules.removeIf(rule -> ruleName.equals(rule.getName())));
+                rules.removeIf(rule -> {
+                    if (ruleName.equals(rule.getName())) {
+                        ruleEngine.evictCache(rule.getCondition());
+                        return true;
+                    }
+                    return false;
+                }));
+    }
+
+    /**
+     * 按实体类型移除所有规则
+     *
+     * @param entityType 实体类型名称
+     */
+    public void removeByEntity(String entityType) {
+        List<AlertRule> removed = rulesByEntity.remove(entityType);
+        if (removed != null) {
+            removed.forEach(rule -> ruleEngine.evictCache(rule.getCondition()));
+        }
     }
 
     /**
@@ -71,5 +94,6 @@ public class RuleProvider {
      */
     public void clear() {
         rulesByEntity.clear();
+        ruleEngine.clearCache();
     }
 }

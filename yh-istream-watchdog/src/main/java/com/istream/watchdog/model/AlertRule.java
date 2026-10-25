@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 告警规则
@@ -51,7 +50,7 @@ public class AlertRule {
     /** SpEL 条件表达式（如 "#data.amount > 10000"） */
     private String condition;
 
-    /** 告警严重级别（1=低, 2=中, 3=高, 4=紧急） */
+    /** 告警严重级别（参见 AlertEvent.SEVERITY_* 常量） */
     private int severity;
 
     /** 告警标题模板（支持 {{变量}} 占位符） */
@@ -62,6 +61,9 @@ public class AlertRule {
 
     /** 默认接收人用户ID列表 */
     private List<Long> receivers;
+
+    /** 默认接收人邮箱列表 */
+    private List<String> receiverEmails;
 
     /** 默认推送通道 */
     private List<String> channels;

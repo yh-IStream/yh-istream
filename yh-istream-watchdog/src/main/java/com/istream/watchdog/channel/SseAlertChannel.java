@@ -31,11 +31,19 @@ public class SseAlertChannel implements AlertChannel {
     public void send(AlertEvent event, String target) {
         try {
             Long userId = Long.parseLong(target);
-            SseEvent sseEvent = SseEvent.of(EventType.ALERT.name(), event);
+            String typeName = resolveEventType(event).name();
+            SseEvent sseEvent = SseEvent.of(typeName, event);
             sseService.sendToUser(userId, sseEvent);
-            log.info("SSE 告警推送成功: userId={}, rule={}", userId, event.getRuleName());
+            log.info("SSE 告警推送成功: userId={}, rule={}, type={}", userId, event.getRuleName(), typeName);
         } catch (Exception e) {
             log.warn("SSE 告警推送失败: target={}, rule={}", target, event.getRuleName(), e);
         }
+    }
+
+    private EventType resolveEventType(AlertEvent event) {
+        if (event.getRuleName() != null && event.getRuleName().startsWith("AI_INSIGHT:")) {
+            return EventType.AI_INSIGHT;
+        }
+        return EventType.ALERT;
     }
 }

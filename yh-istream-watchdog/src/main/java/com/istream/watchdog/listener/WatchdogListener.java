@@ -4,20 +4,24 @@ import com.istream.common.enums.SyncEventType;
 import com.istream.common.event.AnomalyGuardEvent;
 import com.istream.common.event.DataChangeEvent;
 import com.istream.watchdog.aggregator.AlertAggregator;
-import com.istream.watchdog.config.WatchdogProperties;
 import com.istream.watchdog.engine.RuleEngine;
 import com.istream.watchdog.model.AlertEvent;
 import com.istream.watchdog.model.AlertRule;
 import com.istream.watchdog.router.AlertRouter;
+
+import static com.istream.watchdog.model.AlertEvent.*;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Watchdog 核心监听器
@@ -45,8 +49,8 @@ public class WatchdogListener {
     private final RuleEngine ruleEngine;
     private final AlertAggregator alertAggregator;
     private final AlertRouter alertRouter;
-    private final WatchdogProperties properties;
     private final RuleProvider ruleProvider;
+    private final ObjectMapper objectMapper;
 
     /**
      * 处理数据变更事件
@@ -56,10 +60,6 @@ public class WatchdogListener {
     @Async("asyncExecutor")
     @EventListener
     public void onDataChange(DataChangeEvent event) {
-        if (!properties.isEnabled()) {
-            return;
-        }
-
         try {
             List<AlertRule> rules = ruleProvider.getRules(event.entityType());
             if (rules.isEmpty()) {
@@ -67,7 +67,8 @@ public class WatchdogListener {
                 return;
             }
 
-            List<AlertEvent> alerts = ruleEngine.evaluate(rules, event, event.dataSummary());
+            Object data = resolveData(event.dataSummary());
+            List<AlertEvent> alerts = ruleEngine.evaluate(rules, event, data);
 
             for (AlertEvent alert : alerts) {
                 if (alertAggregator.shouldEmit(alert)) {
@@ -89,20 +90,17 @@ public class WatchdogListener {
      * <p>AI 发现未知异常后，构建 AI 洞察告警走 Watchdog 管道推送。
      * AI 洞察告警的严重级别由置信度决定：≥0.9 紧急，≥0.7 高，≥0.5 中，其余低。</p>
      *
+     * <p>由 {@link com.istream.ai.aspect.AnomalyGuardAspect} 的异步线程同步调用，</p>
+     *
      * @param event 异常守护事件
      */
-    @Async("asyncExecutor")
     @EventListener
     public void onAnomalyGuard(AnomalyGuardEvent event) {
-        if (!properties.isEnabled()) {
-            return;
-        }
-
         try {
             int severity = resolveSeverity(event.confidence());
 
             AlertEvent alert = AlertEvent.builder()
-                    .id(System.currentTimeMillis())
+                    .id(IdWorker.getId())
                     .ruleName("AI_INSIGHT:" + event.entityType())
                     .severity(severity)
                     .entityType(event.entityType())
@@ -111,8 +109,9 @@ public class WatchdogListener {
                     .title("AI 洞察：" + event.entityType())
                     .content(event.conclusion())
                     .context(event.context())
+                    .receiverIds(event.operatorId() != null ? List.of(event.operatorId()) : null)
                     .alertTime(LocalDateTime.now())
-                    .confirmed(0)
+                    .confirmed(false)
                     .tenantId(event.tenantId())
                     .build();
 
@@ -130,14 +129,32 @@ public class WatchdogListener {
 
     private int resolveSeverity(double confidence) {
         if (confidence >= 0.9) {
-            return 4;
+            return SEVERITY_CRITICAL;
         }
         if (confidence >= 0.7) {
-            return 3;
+            return SEVERITY_HIGH;
         }
         if (confidence >= 0.5) {
-            return 2;
+            return SEVERITY_MEDIUM;
         }
-        return 1;
+        return SEVERITY_LOW;
+    }
+
+    /**
+     * 将 dataSummary JSON 字符串解析为结构化对象供 SpEL 表达式和模板使用
+     *
+     * @param dataSummary JSON 字符串（可能为 null 或空）
+     * @return 解析后的 Map，解析失败时返回 null
+     */
+    private Object resolveData(String dataSummary) {
+        if (dataSummary == null || dataSummary.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(dataSummary, Map.class);
+        } catch (Exception e) {
+            log.warn("WatchdogListener: dataSummary JSON 解析失败，SpEL/模板将不可用", e);
+            return null;
+        }
     }
 }

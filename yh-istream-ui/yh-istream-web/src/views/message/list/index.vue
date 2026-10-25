@@ -43,15 +43,13 @@ function formatTime(createTime: string): string {
   return `${y}-${M}-${d} ${h}:${m}`
 }
 
-const READ_FLAG = 1
-
 async function handleMarkAsRead(row: SysMessage) {
-  if (row.readFlag === READ_FLAG) {
+  if (row.readFlag) {
     return
   }
   try {
     await markAsRead(row.id)
-    row.readFlag = READ_FLAG
+    row.readFlag = true
     sse.decrementUnread()
     message.success('已标记为已读')
   } catch {
@@ -63,7 +61,7 @@ async function handleMarkAllAsRead() {
   try {
     await markAllAsRead()
     sse.resetUnread()
-    tableData.value.forEach((row) => { row.readFlag = READ_FLAG })
+    tableData.value.forEach((row) => { row.readFlag = true })
     message.success('已全部标为已读')
   } catch {
     message.error('操作失败')
@@ -79,14 +77,14 @@ const columns = [
     title: '状态',
     key: 'readFlag',
     width: 80,
-    render: (row: SysMessage) => row.readFlag === READ_FLAG ? '已读' : '未读',
+    render: (row: SysMessage) => row.readFlag ? '已读' : '未读',
   },
   {
     title: '操作',
     key: 'action',
     width: 100,
     render: (row: SysMessage) => {
-      if (row.readFlag === READ_FLAG) {
+      if (row.readFlag) {
         return h('span', { class: 'text-gray-400 text-xs' }, '已读')
       }
       return h(
@@ -158,7 +156,7 @@ onMounted(() => {
       :loading="loading"
       :pagination="pagination"
       :row-key="(row: SysMessage) => row.id"
-      :row-class-name="(row: SysMessage) => row.readFlag !== READ_FLAG ? 'unread-row' : ''"
+      :row-class-name="(row: SysMessage) => !row.readFlag ? 'unread-row' : ''"
       size="small"
       striped
       flex-height

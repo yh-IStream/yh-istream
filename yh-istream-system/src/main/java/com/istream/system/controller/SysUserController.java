@@ -6,6 +6,7 @@ import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.constant.Constants;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.LimitType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.enums.StatusEnum;
 import com.istream.common.model.R;
@@ -110,7 +111,7 @@ public class SysUserController {
     }
 
     @OperLog(title = "用户管理", businessType = BusinessType.UPDATE)
-    @RateLimit(key = "user:reset-pwd", rate = 3, timeout = 60)
+    @RateLimit(key = "user:reset-pwd", rate = 3, timeout = 60, limitType = LimitType.USER)
     @Operation(summary = "重置密码")
     @SaCheckPermission("system:user:reset-pwd")
     @PutMapping("/{userId}/reset-pwd")

@@ -221,6 +221,7 @@ public class AuthService {
 
         StpUtil.login(user.getId());
         SecurityUtils.setSessionUsername(user.getUsername());
+        SecurityUtils.setSessionNickname(user.getNickname());
 
         sysUserService.updateLoginInfo(user.getId(), clientIp);
 

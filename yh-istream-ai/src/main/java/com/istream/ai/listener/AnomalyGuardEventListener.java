@@ -10,10 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,11 +55,8 @@ public class AnomalyGuardEventListener {
     /**
      * AI 发现异常后，创建处置建议并推送 SSE 通知
      *
-     * <p>异步执行，不阻塞主业务流。</p>
-     *
      * @param event 异常守护事件
      */
-    @Async("asyncExecutor")
     @EventListener
     public void onAnomalyGuard(AnomalyGuardEvent event) {
         if (event.suggestedAction() == null || event.suggestedAction().isBlank()) {
@@ -72,7 +67,7 @@ public class AnomalyGuardEventListener {
 
         try {
             suggestionManager.create(
-                    event.entityId(),
+                    null,
                     event.entityType(),
                     event.entityId(),
                     event.suggestedAction(),
@@ -113,7 +108,7 @@ public class AnomalyGuardEventListener {
         try {
             List<AiAlertRecipient> recipients = recipientMapper.selectList(
                     new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiAlertRecipient>()
-                            .eq(AiAlertRecipient::getEnabled, 1));
+                            .eq(AiAlertRecipient::getEnabled, true));
             if (recipients != null) {
                 for (AiAlertRecipient r : recipients) {
                     userIds.add(r.getUserId());

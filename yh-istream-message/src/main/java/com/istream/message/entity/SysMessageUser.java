@@ -34,8 +34,8 @@ public class SysMessageUser {
     /** 接收用户ID */
     private Long userId;
 
-    /** 是否已读（0=未读 1=已读） */
-    private Integer readFlag;
+    /** 是否已读 */
+    private Boolean readFlag;
 
     /** 阅读时间 */
     private LocalDateTime readTime;

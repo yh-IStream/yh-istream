@@ -1,10 +1,12 @@
 package com.istream.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.istream.common.enums.SyncEventType;
 import com.istream.common.event.AnomalyGuardEvent;
 import com.istream.common.model.R;
 import com.istream.framework.tenant.TenantContext;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
 /**
  * AI 闭环演示控制器（仅供 demo）
@@ -88,19 +89,20 @@ public class DemoTriggerController {
      */
     @SaCheckLogin
     @PostMapping("/trigger")
-    public R<Map<String, Object>> triggerRandom() {
+    public R<DemoTriggerResult> triggerRandom() {
         DemoScenario scenario = SCENARIOS.get(random.nextInt(SCENARIOS.size()));
 
         AnomalyGuardEvent event = buildEvent(scenario);
         eventPublisher.publishEvent(event);
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("action", scenario.action);
-        result.put("conclusion", scenario.conclusion);
-        result.put("confidence", scenario.confidence);
-        result.put("entityType", scenario.params.get("entityType"));
-        result.put("entityId", scenario.params.get("entityId"));
-        result.put("timestamp", LocalDateTime.now().toString());
+        DemoTriggerResult result = new DemoTriggerResult(
+                scenario.action,
+                scenario.conclusion,
+                scenario.confidence,
+                (String) scenario.params.get("entityType"),
+                (Long) scenario.params.get("entityId"),
+                LocalDateTime.now().toString()
+        );
 
         log.info("DemoTriggerController: 发布模拟异常检测 action={}, confidence={}",
                 scenario.action, String.format("%.2f", scenario.confidence));
@@ -113,23 +115,26 @@ public class DemoTriggerController {
      */
     @SaCheckLogin
     @PostMapping("/trigger-batch")
-    public R<List<Map<String, Object>>> triggerBatch() {
+    public R<List<DemoTriggerResult>> triggerBatch() {
         List<DemoScenario> batch = SCENARIOS.size() <= 3
                 ? SCENARIOS
                 : List.of(
-                        SCENARIOS.get(0),  // freezeEntity - 订单异常
-                        SCENARIOS.get(1),  // escalateToManager - 高危操作
-                        SCENARIOS.get(3)   // markAsFalseAlarm - 促销正常
+                        SCENARIOS.get(0),
+                        SCENARIOS.get(1),
+                        SCENARIOS.get(3)
                 );
 
-        List<Map<String, Object>> results = batch.stream().map(scenario -> {
+        List<DemoTriggerResult> results = batch.stream().map(scenario -> {
             AnomalyGuardEvent event = buildEvent(scenario);
             eventPublisher.publishEvent(event);
-            Map<String, Object> r = new HashMap<>();
-            r.put("action", scenario.action);
-            r.put("conclusion", scenario.conclusion);
-            r.put("confidence", scenario.confidence);
-            return r;
+            return new DemoTriggerResult(
+                    scenario.action,
+                    scenario.conclusion,
+                    scenario.confidence,
+                    (String) scenario.params.get("entityType"),
+                    (Long) scenario.params.get("entityId"),
+                    LocalDateTime.now().toString()
+            );
         }).toList();
 
         log.info("DemoTriggerController: 批量发布 {} 条模拟检测", results.size());
@@ -159,4 +164,16 @@ public class DemoTriggerController {
             double confidence,
             Map<String, Object> params
     ) {}
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DemoTriggerResult {
+        private String action;
+        private String conclusion;
+        private double confidence;
+        private String entityType;
+        private Long entityId;
+        private String timestamp;
+    }
 }

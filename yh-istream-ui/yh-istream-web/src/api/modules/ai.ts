@@ -56,16 +56,16 @@ export interface GuardResult {
   conclusion: string
   confidence: number
   entityType: string
-  entityId: number
+  entityId: string
   timestamp: string
 }
 
 export interface DemoTriggerResult extends GuardResult {}
 
 export function guardOrder(params: {
-  orderId?: number
+  orderId?: string
   orderAmount?: number
-  userId?: number
+  userId?: string
   creditScore?: number
   deliveryAddress?: string
   ordersInLastHour?: number
@@ -74,7 +74,7 @@ export function guardOrder(params: {
 }
 
 export function guardConfig(params: {
-  configId?: number
+  configId?: string
   configKey?: string
   changeDetail?: string
   operator?: string
@@ -84,7 +84,7 @@ export function guardConfig(params: {
 }
 
 export function guardExport(params: {
-  userId?: number
+  userId?: string
   dataType?: string
   recordCount?: number
   dailyAvgRecords?: number
@@ -94,7 +94,7 @@ export function guardExport(params: {
 }
 
 export function guardLogin(params: {
-  userId?: number
+  userId?: string
   loginCity?: string
   usualCity?: string
   recentLoginCities?: number

@@ -3,14 +3,13 @@ package com.istream.ai.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.istream.ai.entity.AiAlertRecipient;
-import com.istream.ai.mapper.AiAlertRecipientMapper;
+import com.istream.ai.service.AIRecipientService;
 import com.istream.common.model.R;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -28,7 +27,7 @@ import java.util.List;
 @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
 public class AIRecipientController {
 
-    private final AiAlertRecipientMapper recipientMapper;
+    private final AIRecipientService recipientService;
 
     /**
      * 查询所有告警接收人
@@ -36,10 +35,7 @@ public class AIRecipientController {
     @SaCheckLogin
     @GetMapping("/list")
     public R<List<AiAlertRecipient>> list() {
-        List<AiAlertRecipient> recipients = recipientMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiAlertRecipient>()
-                        .orderByDesc(AiAlertRecipient::getCreateTime));
-        return R.ok(recipients);
+        return R.ok(recipientService.list());
     }
 
     /**
@@ -48,23 +44,8 @@ public class AIRecipientController {
     @SaCheckLogin
     @PostMapping("/add")
     public R<AiAlertRecipient> add(@RequestBody AiAlertRecipient recipient) {
-        if (recipient.getUserId() == null) {
-            return R.fail("用户ID不能为空");
-        }
-        if (recipient.getUserName() == null || recipient.getUserName().isBlank()) {
-            recipient.setUserName("用户" + recipient.getUserId());
-        }
-        if (recipient.getEnabled() == null) {
-            recipient.setEnabled(1);
-        }
-
         Long currentUserId = StpUtil.getLoginIdAsLong();
-        recipient.setCreateBy(currentUserId);
-        recipient.setCreateTime(LocalDateTime.now());
-
-        recipientMapper.insert(recipient);
-        log.info("AIRecipientController: 添加告警接收人 userId={}, name={}", recipient.getUserId(), recipient.getUserName());
-        return R.ok(recipient);
+        return R.ok(recipientService.add(recipient, currentUserId));
     }
 
     /**
@@ -73,21 +54,8 @@ public class AIRecipientController {
     @SaCheckLogin
     @PutMapping("/{id}")
     public R<AiAlertRecipient> update(@PathVariable Long id, @RequestBody AiAlertRecipient recipient) {
-        AiAlertRecipient existing = recipientMapper.selectById(id);
-        if (existing == null) {
-            return R.fail("接收人不存在");
-        }
-        if (recipient.getEnabled() != null) {
-            existing.setEnabled(recipient.getEnabled());
-        }
-        if (recipient.getUserName() != null && !recipient.getUserName().isBlank()) {
-            existing.setUserName(recipient.getUserName());
-        }
-        existing.setUpdateBy(StpUtil.getLoginIdAsLong());
-        existing.setUpdateTime(LocalDateTime.now());
-        recipientMapper.updateById(existing);
-        log.info("AIRecipientController: 更新告警接收人 id={}, enabled={}", id, existing.getEnabled());
-        return R.ok(existing);
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        return R.ok(recipientService.update(id, recipient, currentUserId));
     }
 
     /**
@@ -96,8 +64,7 @@ public class AIRecipientController {
     @SaCheckLogin
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
-        recipientMapper.deleteById(id);
-        log.info("AIRecipientController: 删除告警接收人 id={}", id);
+        recipientService.delete(id);
         return R.ok();
     }
 }

@@ -2,7 +2,6 @@ package com.istream.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
-import com.istream.ai.config.AIProperties;
 import com.istream.ai.mcp.ActionSuggestionManager;
 import com.istream.ai.mcp.McpToolRegistry;
 import com.istream.ai.model.ActionSuggestion;
@@ -33,7 +32,6 @@ public class AISuggestionController {
 
     private final ActionSuggestionManager suggestionManager;
     private final McpToolRegistry mcpToolRegistry;
-    private final AIProperties properties;
 
     /**
      * 查询待确认的处置建议

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.ai.tool.annotation.Tool;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 异常守护演示工具集（执行器）
@@ -35,8 +35,13 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
 public class GuardToolsDemo {
 
+    private static final int MAX_FROZEN_REGISTRY_SIZE = 10_000;
+
     /**
      * 模拟冻结记录：entityType + entityId → 冻结状态
+     *
+     * <p>有容量上限（{@value MAX_FROZEN_REGISTRY_SIZE}），以免内存泄漏。
+     * 生产环境请使用 Redis 等外部存储替代内存 Map。</p>
      */
     private final Map<String, Boolean> frozenRegistry = new ConcurrentHashMap<>();
 
@@ -55,7 +60,11 @@ public class GuardToolsDemo {
     @Tool(description = "冻结异常实体，阻止继续操作。需要提供实体ID、实体类型和冻结原因")
     public String freezeEntity(Long entityId, String entityType, String reason) {
         String key = entityType + ":" + entityId;
-        frozenRegistry.put(key, true);
+        if (frozenRegistry.size() >= MAX_FROZEN_REGISTRY_SIZE) {
+            log.warn("GuardToolsDemo: frozenRegistry 已达上限 {}，跳过新增冻结 key={}", MAX_FROZEN_REGISTRY_SIZE, key);
+        } else {
+            frozenRegistry.put(key, true);
+        }
 
         String result = String.format("实体 %s/%s 已于 %s 冻结，原因：%s",
                 entityType, entityId, LocalDateTime.now(), reason);

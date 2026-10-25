@@ -1,9 +1,9 @@
 package com.istream.watchdog.engine;
 
-import com.istream.common.enums.SyncEventType;
 import com.istream.common.event.DataChangeEvent;
 import com.istream.watchdog.model.AlertEvent;
 import com.istream.watchdog.model.AlertRule;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.expression.EvaluationContext;
@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 规则引擎
@@ -39,8 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 @ConditionalOnProperty(prefix = "istream.watchdog", name = "enabled", havingValue = "true")
 public class RuleEngine {
-
-    private static final AtomicLong ALERT_ID_SEQ = new AtomicLong(0);
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
@@ -116,7 +113,7 @@ public class RuleEngine {
 
     private AlertEvent buildAlert(AlertRule rule, DataChangeEvent event, Object data) {
         return AlertEvent.builder()
-                .id(ALERT_ID_SEQ.incrementAndGet())
+                .id(IdWorker.getId())
                 .ruleName(rule.getName())
                 .severity(rule.getSeverity())
                 .entityType(event.entityType())
@@ -125,11 +122,30 @@ public class RuleEngine {
                 .title(resolveTemplate(rule.getTitle(), data))
                 .content(resolveTemplate(rule.getContent(), data))
                 .receiverIds(rule.getReceivers())
+                .receiverEmails(rule.getReceiverEmails())
                 .channels(rule.getChannels())
                 .alertTime(LocalDateTime.now())
-                .confirmed(0)
+                .confirmed(false)
                 .tenantId(event.tenantId())
                 .build();
+    }
+
+    /**
+     * 清除指定条件的 SpEL 表达式缓存
+     *
+     * @param condition SpEL 条件表达式
+     */
+    public void evictCache(String condition) {
+        if (condition != null) {
+            expressionCache.remove(condition);
+        }
+    }
+
+    /**
+     * 清空所有 SpEL 表达式缓存
+     */
+    public void clearCache() {
+        expressionCache.clear();
     }
 
     /**

@@ -180,8 +180,8 @@ public class MessageManagerImpl implements MessageManager {
 
         LambdaUpdateWrapper<SysMessageUser> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SysMessageUser::getUserId, userId)
-                .eq(SysMessageUser::getReadFlag, 0)
-                .set(SysMessageUser::getReadFlag, 1)
+                .eq(SysMessageUser::getReadFlag, false)
+                .set(SysMessageUser::getReadFlag, true)
                 .set(SysMessageUser::getReadTime, LocalDateTime.now());
         sysMessageUserService.update(wrapper);
 
@@ -194,8 +194,8 @@ public class MessageManagerImpl implements MessageManager {
         LambdaUpdateWrapper<SysMessageUser> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(SysMessageUser::getMessageId, messageId)
                 .eq(SysMessageUser::getUserId, userId)
-                .eq(SysMessageUser::getReadFlag, 0)
-                .set(SysMessageUser::getReadFlag, 1)
+                .eq(SysMessageUser::getReadFlag, false)
+                .set(SysMessageUser::getReadFlag, true)
                 .set(SysMessageUser::getReadTime, LocalDateTime.now());
         boolean updated = sysMessageUserService.update(wrapper);
         if (updated) {
@@ -209,10 +209,10 @@ public class MessageManagerImpl implements MessageManager {
                 .eq(SysMessageUser::getUserId, userId);
         SysMessageUser existing = sysMessageUserService.getOne(existWrapper);
         if (existing != null) {
-            if (existing.getReadFlag() == 0) {
+            if (!existing.getReadFlag()) {
                 LambdaUpdateWrapper<SysMessageUser> updateWrapper = new LambdaUpdateWrapper<>();
                 updateWrapper.eq(SysMessageUser::getId, existing.getId())
-                        .set(SysMessageUser::getReadFlag, 1)
+                        .set(SysMessageUser::getReadFlag, true)
                         .set(SysMessageUser::getReadTime, LocalDateTime.now());
                 sysMessageUserService.update(updateWrapper);
                 decrementUnread(userId);
@@ -222,7 +222,7 @@ public class MessageManagerImpl implements MessageManager {
         SysMessageUser mu = new SysMessageUser();
         mu.setMessageId(messageId);
         mu.setUserId(userId);
-        mu.setReadFlag(1);
+        mu.setReadFlag(true);
         mu.setReadTime(LocalDateTime.now());
         int rows = sysMessageUserMapper.insertIgnore(mu);
         if (rows > 0) {
@@ -334,7 +334,8 @@ public class MessageManagerImpl implements MessageManager {
         try {
             Long loginUserId = SecurityUtils.getLoginUserId();
             message.setSenderId(loginUserId);
-            message.setSenderName(loginUserId != null ? String.valueOf(loginUserId) : null);
+            String nickname = SecurityUtils.getLoginNickname();
+            message.setSenderName(nickname != null ? nickname : SecurityUtils.getLoginUsername());
         } catch (Exception e) {
             log.debug("无法获取当前登录用户信息，使用系统发送者");
         }
@@ -347,7 +348,7 @@ public class MessageManagerImpl implements MessageManager {
         SysMessageUser messageUser = new SysMessageUser();
         messageUser.setMessageId(messageId);
         messageUser.setUserId(userId);
-        messageUser.setReadFlag(0);
+        messageUser.setReadFlag(false);
         sysMessageUserService.save(messageUser);
     }
 

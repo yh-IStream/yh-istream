@@ -1,8 +1,8 @@
 package com.istream.ai.mcp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.istream.ai.entity.AiSuggestion;
 import com.istream.ai.mapper.AiSuggestionMapper;
 import com.istream.ai.model.ActionSuggestion;
@@ -29,12 +29,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ActionSuggestionManager {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
     private final AiSuggestionMapper mapper;
+    private final ObjectMapper objectMapper;
 
-    public ActionSuggestionManager(AiSuggestionMapper mapper) {
+    public ActionSuggestionManager(AiSuggestionMapper mapper, ObjectMapper objectMapper) {
         this.mapper = mapper;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -123,6 +123,10 @@ public class ActionSuggestionManager {
             log.warn("ActionSuggestionManager: 处置建议不存在 id={}", id);
             return null;
         }
+        if (entity.getStatus() != null && entity.getStatus() != 0) {
+            log.warn("ActionSuggestionManager: 处置建议已处理 id={}, status={}", id, entity.getStatus());
+            return toDto(entity);
+        }
         entity.setStatus(2);
         entity.setConfirmedBy(confirmedBy);
         entity.setConfirmedTime(LocalDateTime.now());
@@ -156,7 +160,7 @@ public class ActionSuggestionManager {
         }
         try {
             return objectMapper.writeValueAsString(params);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("ActionSuggestionManager: 参数序列化失败", e);
             return null;
         }
@@ -170,7 +174,7 @@ public class ActionSuggestionManager {
         try {
             return objectMapper.readValue(json,
                     new TypeReference<Map<String, Object>>() {});
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("ActionSuggestionManager: 参数反序列化失败 json={}", json, e);
             return Collections.emptyMap();
         }

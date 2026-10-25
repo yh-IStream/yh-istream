@@ -3,6 +3,7 @@ package com.istream.web.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.istream.common.annotation.RateLimit;
+import com.istream.common.enums.LimitType;
 import com.istream.common.model.R;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
@@ -51,7 +52,7 @@ public class SseController {
         return R.ok(Map.of("ticket", ticket));
     }
 
-    @RateLimit(key = "sse:subscribe", rate = 5, timeout = 0)
+    @RateLimit(key = "sse:subscribe", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "订阅实时推送")
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(

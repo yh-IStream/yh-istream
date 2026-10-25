@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.istream.common.annotation.OperLog;
 import com.istream.common.annotation.RateLimit;
 import com.istream.common.enums.BusinessType;
+import com.istream.common.enums.LimitType;
 import com.istream.common.enums.ResultCode;
 import com.istream.common.exception.BusinessException;
 import com.istream.common.model.R;
@@ -54,7 +55,7 @@ public class SysFileController {
     private final SysFileConverter sysFileConverter;
 
     @OperLog(title = "文件管理", businessType = BusinessType.INSERT)
-    @RateLimit(key = "file:upload", rate = 10, timeout = 0)
+    @RateLimit(key = "file:upload", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "上传文件")
     @SaCheckPermission("system:file:upload")
     @PostMapping("/upload")
