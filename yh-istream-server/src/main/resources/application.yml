@@ -69,6 +69,9 @@ saas:
 
 # iStream 配置（渐进式架构 L0→L3）
 istream:
+  # 代码生成器配置（L1，默认关闭，生产环境不应开启）
+  generator:
+    enabled: false
   # Watchdog 智能守护配置（L2，默认关闭）
   watchdog:
     enabled: false

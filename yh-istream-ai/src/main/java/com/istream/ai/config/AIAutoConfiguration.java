@@ -3,7 +3,7 @@ package com.istream.ai.config;
 import tools.jackson.databind.ObjectMapper;
 import com.istream.ai.config.AIProperties;
 import com.istream.ai.aspect.AnomalyGuardAspect;
-import com.istream.ai.mcp.ActionSuggestionManager;
+import com.istream.ai.service.ActionSuggestionManager;
 import com.istream.ai.mcp.McpToolRegistry;
 import com.istream.ai.mcp.ToolScanResult;
 import com.istream.ai.provider.AIProvider;
@@ -134,8 +134,7 @@ public class AIAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "istream.ai", name = "enabled", havingValue = "true")
-    @ConditionalOnProperty(prefix = "istream.ai.mcp", name = "enabled", havingValue = "true")
+    @ConditionalOnProperty(prefix = "istream.ai", name = {"enabled", "mcp.enabled"}, havingValue = "true")
     public ToolCallbackProvider istreamToolCallbackProvider(ToolScanResult toolScanResult) {
         if (toolScanResult.toolObjects().length == 0) {
             log.info("AIAutoConfiguration: 未发现 @Tool 注解方法，MCP Server 注册空工具集");

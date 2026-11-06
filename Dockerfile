@@ -1,4 +1,19 @@
-FROM eclipse-temurin:21-jre-alpine
+# ============================================================
+# 构建阶段：镜像内从源码编译
+# ============================================================
+FROM maven:3.9-eclipse-temurin-25 AS builder
+
+WORKDIR /build
+
+# 保证镜像与代码版本一致
+COPY . .
+
+RUN mvn -B -ntp -DskipTests package
+
+# ============================================================
+# 运行阶段：仅保留 JRE 与可执行 jar
+# ============================================================
+FROM eclipse-temurin:25-jre-alpine
 
 RUN addgroup --system --gid 1001 appgroup \
     && adduser --system --uid 1001 --ingroup appgroup appuser
@@ -10,7 +25,7 @@ WORKDIR /app
 RUN mkdir -p /data/uploads /data/logs \
     && chown -R appuser:appgroup /app /data
 
-COPY --chown=appuser:appgroup yh-istream-web/target/*.jar app.jar
+COPY --from=builder --chown=appuser:appgroup /build/yh-istream-server/target/yh-istream-server-*.jar app.jar
 
 RUN chmod 500 app.jar
 

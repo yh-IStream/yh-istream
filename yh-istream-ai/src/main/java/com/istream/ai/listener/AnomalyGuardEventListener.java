@@ -1,8 +1,9 @@
 package com.istream.ai.listener;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.istream.ai.entity.AiAlertRecipient;
 import com.istream.ai.mapper.AiAlertRecipientMapper;
-import com.istream.ai.mcp.ActionSuggestionManager;
+import com.istream.ai.service.ActionSuggestionManager;
 import com.istream.common.event.AnomalyGuardEvent;
 import com.istream.common.model.sse.SseEvent;
 import com.istream.framework.sse.SseService;
@@ -107,7 +108,7 @@ public class AnomalyGuardEventListener {
 
         try {
             List<AiAlertRecipient> recipients = recipientMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiAlertRecipient>()
+                    new LambdaQueryWrapper<AiAlertRecipient>()
                             .eq(AiAlertRecipient::getEnabled, true));
             if (recipients != null) {
                 for (AiAlertRecipient r : recipients) {

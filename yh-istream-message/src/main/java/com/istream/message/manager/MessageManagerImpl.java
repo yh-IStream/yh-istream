@@ -51,7 +51,8 @@ import java.util.concurrent.TimeUnit;
  *
  * <h3>Redis 未读计数</h3>
  * <p>每用户维护一个 Redis AtomicLong（key: message:unread:{userId}），
- * 发送 +1、已读 -1、全部已读归零。Redis 不可用时降级为 DB count 查询。</p>
+ * 发送 +1、已读 -1、全部已读归零。计数器不存在时查询 DB 并回填（24 小时过期），
+ * 避免从未收到消息的用户每次查询都触发全表 COUNT。Redis 不可用时降级为 DB count 查询。</p>
  *
  * <h3>降级约束</h3>
  * <p>SSE 推送失败只 warn 不抛异常，不阻塞主业务流。
@@ -66,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 public class MessageManagerImpl implements MessageManager {
 
     private static final Duration AGGREGATE_WINDOW = Duration.ofSeconds(10);
+    private static final Duration UNREAD_COUNTER_TTL = Duration.ofHours(24);
     private static final String UNREAD_KEY_PREFIX = "message:unread:";
     private static final String AGGREGATE_LOCK_PREFIX = "message:aggregate:";
 
@@ -143,15 +145,18 @@ public class MessageManagerImpl implements MessageManager {
         if (userId == null) {
             return 0;
         }
+        RAtomicLong counter = redissonClient.getAtomicLong(UNREAD_KEY_PREFIX + userId);
         try {
-            RAtomicLong counter = redissonClient.getAtomicLong(UNREAD_KEY_PREFIX + userId);
             if (counter.isExists()) {
                 return Math.max(counter.get(), 0);
             }
         } catch (Exception e) {
             log.debug("Redis 未读计数查询失败，降级为 DB 查询: userId={}", userId, e);
+            return sysMessageMapper.countUserUnread(userId, TenantContext.getTenantId());
         }
-        return sysMessageMapper.countUserUnread(userId, TenantContext.getTenantId());
+        long count = sysMessageMapper.countUserUnread(userId, TenantContext.getTenantId());
+        backfillUnreadCounter(counter, count);
+        return count;
     }
 
     @Override
@@ -227,6 +232,26 @@ public class MessageManagerImpl implements MessageManager {
         int rows = sysMessageUserMapper.insertIgnore(mu);
         if (rows > 0) {
             decrementUnread(userId);
+        }
+    }
+
+    /**
+     * 回填未读计数缓存
+     *
+     * <p>计数器仅在消息发送时才被创建，因此从未收到消息的用户每次查询都会走 DB。
+     * 此处把 DB 查询结果回填到 Redis，避免常态化的全表 COUNT。
+     * 使用 {@code compareAndSet} 而非 {@code set}，防止覆盖并发的自增操作。
+     * 设置 24 小时过期，使缓存可自愈，无需额外的对账任务。</p>
+     *
+     * @param counter 未读计数器
+     * @param count   DB 查询得到的未读数
+     */
+    private void backfillUnreadCounter(RAtomicLong counter, long count) {
+        try {
+            counter.compareAndSet(0L, count);
+            counter.expire(UNREAD_COUNTER_TTL);
+        } catch (Exception e) {
+            log.debug("Redis 未读计数回填失败（下次查询继续走 DB）", e);
         }
     }
 

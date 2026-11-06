@@ -2,9 +2,11 @@ package com.istream.ai.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
-import com.istream.ai.mcp.ActionSuggestionManager;
+import com.istream.ai.service.ActionSuggestionManager;
 import com.istream.ai.mcp.McpToolRegistry;
 import com.istream.ai.model.ActionSuggestion;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
 import com.istream.common.model.R;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * AI 处置建议控制器
@@ -39,10 +40,7 @@ public class AISuggestionController {
     @SaCheckLogin
     @GetMapping("/pending")
     public R<List<ActionSuggestion>> pending() {
-        List<ActionSuggestion> all = suggestionManager.getAll().stream()
-                .filter(s -> s.getStatus() == 0)
-                .collect(Collectors.toList());
-        return R.ok(all);
+        return R.ok(suggestionManager.listPending());
     }
 
     /**
@@ -68,6 +66,9 @@ public class AISuggestionController {
     public R<Object> confirm(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
         Object result = mcpToolRegistry.executeConfirmed(id, userId);
+        if (result == null) {
+            throw new BusinessException(ResultCode.CONFLICT, "处置建议不存在或已被处理，请刷新后重试");
+        }
         return R.ok(result);
     }
 
@@ -78,7 +79,9 @@ public class AISuggestionController {
     @PostMapping("/{id}/reject")
     public R<Void> reject(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
-        suggestionManager.reject(id, userId);
+        if (suggestionManager.reject(id, userId) == null) {
+            throw new BusinessException(ResultCode.CONFLICT, "处置建议不存在或已被处理，请刷新后重试");
+        }
         return R.ok();
     }
 

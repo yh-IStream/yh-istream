@@ -43,7 +43,7 @@ public class SseController {
     private final SseService sseService;
 
     @SaCheckLogin
-    @RateLimit(key = "sse:ticket:gen", rate = 5, timeout = 0)
+    @RateLimit(key = "sse:ticket:gen", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "获取 SSE 一次性连接凭证")
     @GetMapping("/ticket")
     public R<Map<String, String>> ticket() {
@@ -55,33 +55,18 @@ public class SseController {
     @RateLimit(key = "sse:subscribe", rate = 5, timeout = 0, limitType = LimitType.USER)
     @Operation(summary = "订阅实时推送")
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(
-            @RequestParam(required = false) String ticket,
-            @RequestParam(required = false) String token) {
+    public SseEmitter subscribe(@RequestParam(required = false) String ticket) {
         if (ticket != null && !ticket.isBlank()) {
             Long userId = sseService.consumeTicket(ticket);
             if (userId == null) {
                 log.warn("SSE 订阅失败: ticket 无效或已过期");
                 return createErrorEmitter();
             }
-            log.info("SSE 订阅(ticket): userId={}", userId);
-            return sseService.subscribe(userId);
-        }
-
-        if (token != null && !token.isBlank()) {
-            Object loginId = StpUtil.getLoginIdByToken(token);
-            if (loginId == null) {
-                log.warn("SSE 订阅失败: token 无效");
-                return createErrorEmitter();
-            }
-            Long userId = Long.parseLong(String.valueOf(loginId));
-            log.info("SSE 订阅: userId={}", userId);
             return sseService.subscribe(userId);
         }
 
         try {
             Long userId = StpUtil.getLoginIdAsLong();
-            log.info("SSE 订阅: userId={}", userId);
             return sseService.subscribe(userId);
         } catch (Exception e) {
             log.warn("SSE 订阅失败: 未登录", e);

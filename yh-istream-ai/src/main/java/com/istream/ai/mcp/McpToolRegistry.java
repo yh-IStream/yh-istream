@@ -1,6 +1,9 @@
 package com.istream.ai.mcp;
 
 import com.istream.ai.model.ActionSuggestion;
+import com.istream.ai.service.ActionSuggestionManager;
+import com.istream.common.enums.ResultCode;
+import com.istream.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -63,8 +66,8 @@ public class McpToolRegistry {
      */
     public Object executeConfirmed(Long suggestionId, Long confirmedBy) {
         ActionSuggestion suggestion = suggestionManager.confirm(suggestionId, confirmedBy);
-        if (suggestion == null || suggestion.getStatus() != 1) {
-            log.warn("McpToolRegistry: 处置建议未确认或不存在 id={}", suggestionId);
+        if (suggestion == null || suggestion.getStatus() != ActionSuggestionManager.STATUS_EXECUTED) {
+            log.warn("McpToolRegistry: 处置建议不存在或已处理，拒绝执行 id={}", suggestionId);
             return null;
         }
 
@@ -87,7 +90,7 @@ public class McpToolRegistry {
         }
 
         log.warn("McpToolRegistry: 未找到匹配的 @Tool 方法 action={}", action);
-        return null;
+        throw new BusinessException(ResultCode.ERROR, "未找到匹配的处置工具：" + action);
     }
 
     private static final DefaultConversionService conversionService = new DefaultConversionService();

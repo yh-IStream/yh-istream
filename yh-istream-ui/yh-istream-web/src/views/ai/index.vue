@@ -54,8 +54,10 @@ const confidenceColor = (confidence: number) => {
   return '#2080f0'
 }
 
-async function fetchData() {
-  loading.value = true
+async function fetchData(showLoading = true) {
+  if (showLoading) {
+    loading.value = true
+  }
   try {
     const [suggRes, toolsRes] = await Promise.all([
       getPendingSuggestions(),
@@ -64,9 +66,13 @@ async function fetchData() {
     suggestions.value = suggRes.data ?? []
     tools.value = toolsRes.data ?? []
   } catch (e: unknown) {
-    message.error(`加载失败：${e instanceof Error ? e.message : '未知错误'}`)
+    if (showLoading) {
+      message.error(`加载失败：${e instanceof Error ? e.message : '未知错误'}`)
+    }
   } finally {
-    loading.value = false
+    if (showLoading) {
+      loading.value = false
+    }
   }
 }
 
@@ -125,18 +131,35 @@ async function handleTriggerBatch() {
   }
 }
 
+const GUARD_POLL_INTERVAL_MS = 1500
+const GUARD_POLL_MAX_ATTEMPTS = 10
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
+
+async function pollNewSuggestion(baselineIds: Set<string>): Promise<boolean> {
+  for (let attempt = 0; attempt < GUARD_POLL_MAX_ATTEMPTS; attempt++) {
+    await delay(GUARD_POLL_INTERVAL_MS)
+    await fetchData(false)
+    if (suggestions.value.some(s => !baselineIds.has(s.id))) {
+      return true
+    }
+  }
+  return false
+}
+
 async function handleGuard(action: string, fn: () => Promise<unknown>) {
   triggering.value = true
   try {
+    const baselineIds = new Set(suggestions.value.map(s => s.id))
     await fn()
     message.success(`真实 AI 检测已触发：${action}，等待 AI 返回结果...`)
     lastTrigger.value = `[真实AI] ${action}`
-    setTimeout(async () => {
-      await fetchData()
-      if (suggestions.value.length === 0) {
-        message.warning('未收到 AI 建议 — AI 模型可能调用失败（限流/超时/无免费额度），请查看后端控制台日志')
-      }
-    }, 2000)
+    const found = await pollNewSuggestion(baselineIds)
+    if (!found) {
+      message.warning('未收到新的 AI 建议 — 请查看后端日志确认 AI 模型调用是否成功（限流/超时/无额度均可能导致无结果）')
+    }
   } catch (e: unknown) {
     message.error(`AI 检测失败：${e instanceof Error ? e.message : '请确认 AI 模型连接正常'}`)
   } finally {
@@ -397,7 +420,7 @@ async function handleDeleteRecipient(id: string) {
         </n-h3>
         <n-spin :show="loading">
           <n-empty v-if="suggestions.length === 0 && !loading"
-            description="暂无 AI 建议，点击上方场景按钮触发检测后稍等 1-2 秒" />
+            description="暂无 AI 建议，点击上方场景按钮触发检测后稍等 5-15 秒" />
 
           <n-grid v-else cols="2" :x-gap="12" :y-gap="12" responsive="screen">
             <n-gi v-for="item in suggestions" :key="item.id">

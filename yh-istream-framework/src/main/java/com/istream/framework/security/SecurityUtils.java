@@ -129,6 +129,45 @@ public final class SecurityUtils {
     }
 
     /**
+     * 获取当前登录用户的租户ID（可选登录态）
+     *
+     * <p>会话中的租户ID经过 Redis 序列化后可能是 Integer 或 Long，
+     * 因此统一按 {@link Number} 读取，避免类型判断失效导致租户上下文丢失。</p>
+     *
+     * @return 租户ID，未登录或未设置时返回 null
+     */
+    public static Long getLoginTenantId() {
+        try {
+            if (StpUtil.isLogin()) {
+                var session = StpUtil.getSession(false);
+                if (session != null) {
+                    Object value = session.get(Constants.SESSION_TENANT_KEY);
+                    if (value instanceof Number number) {
+                        return number.longValue();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("获取当前登录用户租户ID失败（可能为匿名访问）: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 设置当前会话的租户ID
+     *
+     * <p>登录成功后调用，在每次请求进入时读取并写入 {@code TenantContext}。</p>
+     *
+     * @param tenantId 租户ID，为 null 时不写入
+     */
+    public static void setSessionTenantId(Long tenantId) {
+        if (tenantId == null) {
+            return;
+        }
+        StpUtil.getSession().set(Constants.SESSION_TENANT_KEY, tenantId);
+    }
+
+    /**
      * 搜索在线 Token 会话 ID 列表
      *
      * @param keyword  关键字（空串表示匹配所有）

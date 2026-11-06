@@ -1,13 +1,15 @@
-package com.istream.message.connection;
+package com.istream.framework.sse;
 
-import com.istream.framework.sse.SseConnectionEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -27,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RedisConnectionRegistry implements ConnectionRegistry {
 
     private static final String REDIS_KEY = "sse:connections";
+    private static final String NODE_ID_PROPERTY = "node.id";
+    private static final String NODE_ID = resolveNodeId();
 
     private final Map<Long, String> localConnections = new ConcurrentHashMap<>();
 
@@ -99,6 +103,28 @@ public class RedisConnectionRegistry implements ConnectionRegistry {
      * 获取当前节点标识
      */
     private String getNodeId() {
-        return System.getProperty("node.id", "default");
+        return NODE_ID;
+    }
+
+    /**
+     * 解析当前节点标识
+     *
+     * <p>优先读取系统属性 {@code node.id}（容器编排时可显式指定）；
+     * 未指定时使用「主机名 + 实例随机后缀」，确保多实例部署下节点标识唯一。</p>
+     *
+     * @return 节点标识
+     */
+    private static String resolveNodeId() {
+        String configured = System.getProperty(NODE_ID_PROPERTY);
+        if (configured != null && !configured.isBlank()) {
+            return configured.trim();
+        }
+        String instanceSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        try {
+            return InetAddress.getLocalHost().getHostName() + "-" + instanceSuffix;
+        } catch (UnknownHostException e) {
+            log.warn("获取主机名失败，使用纯随机节点标识", e);
+            return instanceSuffix;
+        }
     }
 }

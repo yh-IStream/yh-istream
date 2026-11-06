@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,8 @@ import java.util.zip.ZipOutputStream;
 /**
  * 代码生成器 Controller
  *
+ * <p>开发环境注册，生产环境默认关闭。</p>
+ *
  * @author istream
  * @since 2026-08-17
  */
@@ -43,6 +46,7 @@ import java.util.zip.ZipOutputStream;
 @RestController
 @RequestMapping("/generator")
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "istream.generator", name = "enabled", havingValue = "true")
 public class GeneratorController {
 
     private final GeneratorService generatorService;

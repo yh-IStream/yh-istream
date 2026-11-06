@@ -1,14 +1,11 @@
 package com.istream.framework.tenant;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.istream.common.constant.Constants;
+import com.istream.framework.security.SecurityUtils;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +21,6 @@ import java.io.IOException;
  * @author istream
  * @since 2026-09-08
  */
-@Slf4j
 @Component
 @Order(200)
 public class TenantFilter implements Filter {
@@ -33,14 +29,9 @@ public class TenantFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         try {
-            if (StpUtil.isLogin()) {
-                var session = StpUtil.getSession(false);
-                if (session != null) {
-                    Object tenantId = session.get(Constants.SESSION_TENANT_KEY);
-                    if (tenantId instanceof Long tid) {
-                        TenantContext.setTenantId(tid);
-                    }
-                }
+            Long tenantId = SecurityUtils.getLoginTenantId();
+            if (tenantId != null) {
+                TenantContext.setTenantId(tenantId);
             }
             chain.doFilter(request, response);
         } finally {

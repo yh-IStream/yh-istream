@@ -11,10 +11,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>yh-istream-web</artifactId>
+    <artifactId>yh-istream-server</artifactId>
     <packaging>jar</packaging>
-    <name>yh-istream-web</name>
-    <description>Web 入口模块：启动类、配置文件、SSE 等基础设施端点</description>
+    <name>yh-istream-server</name>
+    <description>服务端启动装配模块：启动类、全局配置、SSE 等基础设施端点</description>
 
     <dependencies>
         <!-- 内部依赖 -->

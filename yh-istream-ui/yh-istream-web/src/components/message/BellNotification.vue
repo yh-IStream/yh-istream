@@ -10,10 +10,16 @@ const sse = useSSE()
 const popoverVisible = ref(false)
 const recentMessages = ref<SysMessage[]>([])
 const loadingMessages = ref(false)
-let pollTimer: ReturnType<typeof setInterval> | null = null
 let cleanupNotif: (() => void) | null = null
 let cleanupSystem: (() => void) | null = null
 let cleanupAIInsight: (() => void) | null = null
+
+interface AiInsightPayload {
+  eventType?: string
+  title: string
+  content: string
+  confidence?: string
+}
 
 const EVENT_ICON_MAP: Record<string, string> = {
   SYSTEM: '⚙️',
@@ -97,22 +103,24 @@ function handlePopoverShow() {
 }
 
 onMounted(() => {
+  sse.fetchUnreadCount()
   cleanupNotif = sse.on('NOTIFICATION', () => {
     sse.fetchUnreadCount()
   })
   cleanupSystem = sse.on('SYSTEM', () => {
     sse.fetchUnreadCount()
   })
-  cleanupAIInsight = sse.on('ai_insight', (data: any) => {
-    if (data?.eventType === 'AI_INSIGHT') {
+  cleanupAIInsight = sse.on('ai_insight', (data) => {
+    const insight = data as AiInsightPayload | undefined
+    if (insight?.eventType === 'AI_INSIGHT') {
       const notification = window.Notification
       if (notification && notification.permission === 'granted') {
-        new notification(`🧠 ${data.title}`, {
-          body: data.content,
+        new notification(`🧠 ${insight.title}`, {
+          body: insight.content,
           icon: '/favicon.ico',
         })
       }
-      message.info(`🧠 ${data.title}: ${data.confidence}`, {
+      message.info(`🧠 ${insight.title}: ${insight.confidence}`, {
         closable: true,
         duration: 8000,
         onAfterLeave: () => {},
@@ -122,28 +130,16 @@ onMounted(() => {
   })
 
   watch(() => sse.status.value, (newStatus) => {
-    if (newStatus !== 'connected') {
-      if (!pollTimer) {
-        sse.fetchUnreadCount()
-        pollTimer = setInterval(() => sse.fetchUnreadCount(), 15000)
-      }
-    } else {
-      if (pollTimer) {
-        clearInterval(pollTimer)
-        pollTimer = null
-      }
+    if (newStatus === 'connected') {
+      sse.fetchUnreadCount()
     }
-  }, { immediate: true })
+  })
 })
 
 onBeforeUnmount(() => {
   cleanupNotif?.()
   cleanupSystem?.()
   cleanupAIInsight?.()
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
 })
 </script>
 

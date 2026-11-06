@@ -123,3 +123,6 @@ istream:
    provider: openai
    mcp:
      enabled: true
+ # 代码生成器（开发环境开启）
+ generator:
+  enabled: true

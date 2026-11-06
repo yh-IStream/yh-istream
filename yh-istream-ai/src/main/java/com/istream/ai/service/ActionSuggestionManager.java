@@ -1,12 +1,15 @@
-package com.istream.ai.mcp;
+package com.istream.ai.service;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.istream.ai.entity.AiSuggestion;
 import com.istream.ai.mapper.AiSuggestionMapper;
 import com.istream.ai.model.ActionSuggestion;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -28,6 +31,18 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class ActionSuggestionManager {
+
+    /** 处置建议状态：待确认 */
+    public static final int STATUS_PENDING = 0;
+
+    /** 处置建议状态：已执行 */
+    public static final int STATUS_EXECUTED = 1;
+
+    /** 处置建议状态：已拒绝 */
+    public static final int STATUS_REJECTED = 2;
+
+    /** 待确认建议单次查询上限 */
+    private static final int PENDING_QUERY_LIMIT = 100;
 
     private final AiSuggestionMapper mapper;
     private final ObjectMapper objectMapper;
@@ -62,7 +77,7 @@ public class ActionSuggestionManager {
         entity.setConfidence(BigDecimal.valueOf(confidence).setScale(2, RoundingMode.HALF_UP));
         entity.setConclusion(conclusion);
         entity.setSuggestTime(LocalDateTime.now());
-        entity.setStatus(0);
+        entity.setStatus(STATUS_PENDING);
         entity.setTenantId(tenantId);
 
         mapper.insert(entity);
@@ -80,12 +95,16 @@ public class ActionSuggestionManager {
     }
 
     /**
-     * 查询所有处置建议
+     * 查询待确认的处置建议
+     *
+     * @return 待确认建议列表，无数据时返回空集合
      */
-    public List<ActionSuggestion> getAll() {
-        List<AiSuggestion> entities = mapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<AiSuggestion>()
-                        .orderByDesc(AiSuggestion::getSuggestTime));
+    public List<ActionSuggestion> listPending() {
+        Page<AiSuggestion> page = new Page<>(1, PENDING_QUERY_LIMIT, false);
+        List<AiSuggestion> entities = mapper.selectPage(page,
+                new LambdaQueryWrapper<AiSuggestion>()
+                        .eq(AiSuggestion::getStatus, STATUS_PENDING)
+                        .orderByDesc(AiSuggestion::getSuggestTime)).getRecords();
         if (entities == null || entities.isEmpty()) {
             return Collections.emptyList();
         }
@@ -94,46 +113,54 @@ public class ActionSuggestionManager {
 
     /**
      * 人工确认执行处置建议
+     *
+     * <p>采用条件更新（CAS）保证幂等与并发安全</p>
+     *
+     * @param id          处置建议 ID
+     * @param confirmedBy 确认人 ID
+     * @return 确认后的处置建议；不存在、已处理或并发抢占失败时返回 null
      */
     public ActionSuggestion confirm(Long id, Long confirmedBy) {
-        AiSuggestion entity = mapper.selectById(id);
-        if (entity == null) {
-            log.warn("ActionSuggestionManager: 处置建议不存在 id={}", id);
+        AiSuggestion patch = new AiSuggestion();
+        patch.setStatus(STATUS_EXECUTED);
+        patch.setConfirmedBy(confirmedBy);
+        patch.setConfirmedTime(LocalDateTime.now());
+
+        int rows = mapper.update(patch, new LambdaUpdateWrapper<AiSuggestion>()
+                .eq(AiSuggestion::getId, id)
+                .eq(AiSuggestion::getStatus, STATUS_PENDING));
+        if (rows == 0) {
+            log.warn("ActionSuggestionManager: 处置建议不存在或已处理，拒绝确认 id={}, confirmedBy={}", id, confirmedBy);
             return null;
         }
-        if (entity.getStatus() != null && entity.getStatus() != 0) {
-            log.warn("ActionSuggestionManager: 处置建议已处理 id={}, status={}", id, entity.getStatus());
-            return toDto(entity);
-        }
-        entity.setStatus(1);
-        entity.setConfirmedBy(confirmedBy);
-        entity.setConfirmedTime(LocalDateTime.now());
-        mapper.updateById(entity);
-        log.info("ActionSuggestionManager: 处置建议已确认 id={}, action={}, confirmedBy={}",
-                id, entity.getAction(), confirmedBy);
-        return toDto(entity);
+        log.info("ActionSuggestionManager: 处置建议已确认 id={}, confirmedBy={}", id, confirmedBy);
+        return get(id);
     }
 
     /**
      * 拒绝处置建议
+     *
+     * <p>与 {@link #confirm} 采用相同的条件更新策略</p>
+     *
+     * @param id          处置建议 ID
+     * @param rejectedBy  拒绝人 ID
+     * @return 拒绝后的处置建议；不存在、已处理或并发抢占失败时返回 null
      */
-    public ActionSuggestion reject(Long id, Long confirmedBy) {
-        AiSuggestion entity = mapper.selectById(id);
-        if (entity == null) {
-            log.warn("ActionSuggestionManager: 处置建议不存在 id={}", id);
+    public ActionSuggestion reject(Long id, Long rejectedBy) {
+        AiSuggestion patch = new AiSuggestion();
+        patch.setStatus(STATUS_REJECTED);
+        patch.setConfirmedBy(rejectedBy);
+        patch.setConfirmedTime(LocalDateTime.now());
+
+        int rows = mapper.update(patch, new LambdaUpdateWrapper<AiSuggestion>()
+                .eq(AiSuggestion::getId, id)
+                .eq(AiSuggestion::getStatus, STATUS_PENDING));
+        if (rows == 0) {
+            log.warn("ActionSuggestionManager: 处置建议不存在或已处理，无法拒绝 id={}, rejectedBy={}", id, rejectedBy);
             return null;
         }
-        if (entity.getStatus() != null && entity.getStatus() != 0) {
-            log.warn("ActionSuggestionManager: 处置建议已处理 id={}, status={}", id, entity.getStatus());
-            return toDto(entity);
-        }
-        entity.setStatus(2);
-        entity.setConfirmedBy(confirmedBy);
-        entity.setConfirmedTime(LocalDateTime.now());
-        mapper.updateById(entity);
-        log.info("ActionSuggestionManager: 处置建议已拒绝 id={}, action={}, rejectedBy={}",
-                id, entity.getAction(), confirmedBy);
-        return toDto(entity);
+        log.info("ActionSuggestionManager: 处置建议已拒绝 id={}, rejectedBy={}", id, rejectedBy);
+        return get(id);
     }
 
     private ActionSuggestion toDto(AiSuggestion entity) {
@@ -147,7 +174,7 @@ public class ActionSuggestionManager {
                 .confidence(entity.getConfidence() != null ? entity.getConfidence().doubleValue() : 0)
                 .conclusion(entity.getConclusion())
                 .suggestTime(entity.getSuggestTime())
-                .status(entity.getStatus() != null ? entity.getStatus() : 0)
+                .status(entity.getStatus() != null ? entity.getStatus() : STATUS_PENDING)
                 .confirmedBy(entity.getConfirmedBy())
                 .confirmedTime(entity.getConfirmedTime())
                 .tenantId(entity.getTenantId())

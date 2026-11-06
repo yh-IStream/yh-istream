@@ -1,6 +1,4 @@
-package com.istream.message.connection;
-
-import com.istream.framework.sse.SseService;
+package com.istream.framework.sse;
 
 /**
  * SSE 连接注册表

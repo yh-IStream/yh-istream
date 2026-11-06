@@ -8,6 +8,10 @@ import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
@@ -52,11 +56,12 @@ class SseServiceTest {
     }
 
     @Test
-    @DisplayName("同一用户重复订阅覆盖旧连接")
-    void shouldReplaceOldConnectionOnReSubscribe() {
+    @DisplayName("同一用户多次订阅并存（多标签页）")
+    void shouldKeepMultipleConnectionsForSameUser() {
         sseService.subscribe(1L);
         sseService.subscribe(1L);
-        assertEquals(1, sseService.getConnectionCount());
+        assertEquals(2, sseService.getConnectionCount());
+        assertEquals(1, sseService.getOnlineUserCount());
     }
 
     @Test
@@ -93,5 +98,47 @@ class SseServiceTest {
             sseService.subscribe(i);
         }
         assertEquals(5, sseService.getConnectionCount());
+    }
+
+    @Test
+    @DisplayName("单用户连接数超过上限时拒绝新连接")
+    void shouldRejectConnectionWhenExceedingPerUserLimit() {
+        int limit = 8;
+        for (int i = 0; i < limit; i++) {
+            sseService.subscribe(1L);
+        }
+        assertEquals(limit, sseService.getConnectionCount());
+
+        sseService.subscribe(1L);
+        assertEquals(limit, sseService.getConnectionCount());
+        assertEquals(1, sseService.getOnlineUserCount());
+    }
+
+    @Test
+    @DisplayName("并发订阅不会突破单用户连接数上限")
+    void shouldNotExceedPerUserLimitUnderConcurrency() throws InterruptedException {
+        int limit = 8;
+        int attempts = 20;
+        CountDownLatch startGate = new CountDownLatch(1);
+        CountDownLatch doneGate = new CountDownLatch(attempts);
+        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+
+        for (int i = 0; i < attempts; i++) {
+            executor.execute(() -> {
+                try {
+                    startGate.await();
+                    sseService.subscribe(1L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneGate.countDown();
+                }
+            });
+        }
+        startGate.countDown();
+        doneGate.await();
+        executor.shutdown();
+
+        assertEquals(limit, sseService.getConnectionCount());
     }
 }
